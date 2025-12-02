@@ -29,81 +29,10 @@ def cli(ctx: click.Context, log_level: str) -> None:
     configure_logging(level=ctx.obj["log_level"])
 
 
-@cli.group()
-def interface() -> None:
-    """Interface component for MeshCore device communication.
+# Import and register interface CLI
+from meshcore_hub.interface.cli import interface
 
-    Runs in RECEIVER or SENDER mode to bridge between
-    MeshCore devices and MQTT broker.
-    """
-    pass
-
-
-@interface.command("run")
-@click.option(
-    "--mode",
-    type=click.Choice(["RECEIVER", "SENDER"]),
-    required=True,
-    envvar="INTERFACE_MODE",
-    help="Interface mode: RECEIVER or SENDER",
-)
-@click.option(
-    "--port",
-    type=str,
-    default="/dev/ttyUSB0",
-    envvar="SERIAL_PORT",
-    help="Serial port path",
-)
-@click.option(
-    "--baud",
-    type=int,
-    default=115200,
-    envvar="SERIAL_BAUD",
-    help="Serial baud rate",
-)
-@click.option(
-    "--mock",
-    is_flag=True,
-    default=False,
-    envvar="MOCK_DEVICE",
-    help="Use mock device for testing",
-)
-@click.option(
-    "--mqtt-host",
-    type=str,
-    default="localhost",
-    envvar="MQTT_HOST",
-    help="MQTT broker host",
-)
-@click.option(
-    "--mqtt-port",
-    type=int,
-    default=1883,
-    envvar="MQTT_PORT",
-    help="MQTT broker port",
-)
-@click.option(
-    "--prefix",
-    type=str,
-    default="meshcore",
-    envvar="MQTT_PREFIX",
-    help="MQTT topic prefix",
-)
-def interface_run(
-    mode: str,
-    port: str,
-    baud: int,
-    mock: bool,
-    mqtt_host: str,
-    mqtt_port: int,
-    prefix: str,
-) -> None:
-    """Run the interface component."""
-    click.echo(f"Starting interface in {mode} mode...")
-    click.echo(f"Serial port: {port} (baud: {baud})")
-    click.echo(f"Mock device: {mock}")
-    click.echo(f"MQTT: {mqtt_host}:{mqtt_port} (prefix: {prefix})")
-    click.echo("Interface component not yet implemented.")
+cli.add_command(interface)
 
 
 @cli.command()
