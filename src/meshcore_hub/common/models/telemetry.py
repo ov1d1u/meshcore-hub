@@ -56,7 +56,6 @@ class Telemetry(Base, UUIDMixin, TimestampMixin):
     )
 
     __table_args__ = (
-        Index("ix_telemetry_node_public_key", "node_public_key"),
         Index("ix_telemetry_received_at", "received_at"),
     )
 

@@ -32,71 +32,11 @@ def cli(ctx: click.Context, log_level: str) -> None:
 # Import and register component CLIs
 from meshcore_hub.interface.cli import interface
 from meshcore_hub.collector.cli import collector
+from meshcore_hub.api.cli import api
 
 cli.add_command(interface)
 cli.add_command(collector)
-
-
-@cli.command()
-@click.option(
-    "--host",
-    type=str,
-    default="0.0.0.0",
-    envvar="API_HOST",
-    help="API server host",
-)
-@click.option(
-    "--port",
-    type=int,
-    default=8000,
-    envvar="API_PORT",
-    help="API server port",
-)
-@click.option(
-    "--database-url",
-    type=str,
-    default="sqlite:///./meshcore.db",
-    envvar="DATABASE_URL",
-    help="Database connection URL",
-)
-@click.option(
-    "--read-key",
-    type=str,
-    default=None,
-    envvar="API_READ_KEY",
-    help="Read-only API key",
-)
-@click.option(
-    "--admin-key",
-    type=str,
-    default=None,
-    envvar="API_ADMIN_KEY",
-    help="Admin API key",
-)
-@click.option(
-    "--reload",
-    is_flag=True,
-    default=False,
-    help="Enable auto-reload for development",
-)
-def api(
-    host: str,
-    port: int,
-    database_url: str,
-    read_key: str | None,
-    admin_key: str | None,
-    reload: bool,
-) -> None:
-    """Run the REST API server.
-
-    Provides REST API endpoints for querying data and sending commands.
-    """
-    click.echo("Starting API server...")
-    click.echo(f"Listening on: {host}:{port}")
-    click.echo(f"Database: {database_url}")
-    click.echo(f"Read key configured: {read_key is not None}")
-    click.echo(f"Admin key configured: {admin_key is not None}")
-    click.echo("API component not yet implemented.")
+cli.add_command(api)
 
 
 @cli.command()
