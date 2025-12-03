@@ -61,8 +61,8 @@ services:
     user: root  # Required for device access
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - MQTT_HOST=mqtt
-      - MQTT_PORT=1883
+      - MQTT_HOST=${MQTT_HOST:-mqtt}
+      - MQTT_PORT=${MQTT_PORT:-1883}
       - MQTT_USERNAME=${MQTT_USERNAME:-}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - MQTT_PREFIX=${MQTT_PREFIX:-meshcore}
@@ -97,8 +97,8 @@ services:
     user: root  # Required for device access
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - MQTT_HOST=mqtt
-      - MQTT_PORT=1883
+      - MQTT_HOST=${MQTT_HOST:-mqtt}
+      - MQTT_PORT=${MQTT_PORT:-1883}
       - MQTT_USERNAME=${MQTT_USERNAME:-}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - MQTT_PREFIX=${MQTT_PREFIX:-meshcore}
@@ -129,8 +129,8 @@ services:
         condition: service_healthy
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - MQTT_HOST=mqtt
-      - MQTT_PORT=1883
+      - MQTT_HOST=${MQTT_HOST:-mqtt}
+      - MQTT_PORT=${MQTT_PORT:-1883}
       - MQTT_USERNAME=${MQTT_USERNAME:-}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - MQTT_PREFIX=${MQTT_PREFIX:-meshcore}
@@ -164,8 +164,8 @@ services:
       - meshcore_data:/data
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - MQTT_HOST=mqtt
-      - MQTT_PORT=1883
+      - MQTT_HOST=${MQTT_HOST:-mqtt}
+      - MQTT_PORT=${MQTT_PORT:-1883}
       - MQTT_USERNAME=${MQTT_USERNAME:-}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - MQTT_PREFIX=${MQTT_PREFIX:-meshcore}
@@ -202,8 +202,8 @@ services:
       - meshcore_data:/data
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - MQTT_HOST=mqtt
-      - MQTT_PORT=1883
+      - MQTT_HOST=${MQTT_HOST:-mqtt}
+      - MQTT_PORT=${MQTT_PORT:-1883}
       - MQTT_USERNAME=${MQTT_USERNAME:-}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - MQTT_PREFIX=${MQTT_PREFIX:-meshcore}
