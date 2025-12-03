@@ -1,5 +1,6 @@
 """MeshCore device wrapper for serial communication."""
 
+import asyncio
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -210,12 +211,23 @@ class BaseMeshCoreDevice(ABC):
                 logger.error(f"Error in event handler for {event_type.value}: {e}")
 
 
-class MeshCoreDevice(BaseMeshCoreDevice):
-    """Real MeshCore device implementation using meshcore_py library.
+# Map meshcore library EventType to our EventType
+MESHCORE_EVENT_MAP = {
+    "advertisement": EventType.ADVERTISEMENT,
+    "contact_message": EventType.CONTACT_MSG_RECV,
+    "channel_message": EventType.CHANNEL_MSG_RECV,
+    "trace_data": EventType.TRACE_DATA,
+    "telemetry_response": EventType.TELEMETRY_RESPONSE,
+    "contacts": EventType.CONTACTS,
+    "message_sent": EventType.SEND_CONFIRMED,
+    "status_response": EventType.STATUS_RESPONSE,
+    "battery_info": EventType.BATTERY,
+    "path_update": EventType.PATH_UPDATED,
+}
 
-    Note: This is a placeholder implementation. The actual implementation
-    would use the meshcore_py library for serial communication.
-    """
+
+class MeshCoreDevice(BaseMeshCoreDevice):
+    """Real MeshCore device implementation using meshcore library."""
 
     def __init__(self, config: DeviceConfig):
         """Initialize real device.
@@ -225,42 +237,115 @@ class MeshCoreDevice(BaseMeshCoreDevice):
         """
         super().__init__(config)
         self._running = False
-        self._device = None
+        self._mc = None
+        self._loop = None
+        self._subscriptions = []
 
     def connect(self) -> bool:
         """Connect to the MeshCore device."""
         try:
-            # Note: In actual implementation, this would use meshcore_py
-            # from meshcore_py import MeshCore
-            # self._device = MeshCore(self.config.port, self.config.baud)
-            # self._device.connect()
-            # self._public_key = self._device.get_public_key()
-
-            logger.info(f"Connecting to MeshCore device on {self.config.port}")
-
-            # Placeholder: In real implementation, connect via meshcore_py
-            # For now, we simulate connection failure since we don't have
-            # the actual device/library available
-            logger.warning(
-                "Real MeshCore device not available. "
-                "Use --mock flag for testing."
+            from meshcore import MeshCore, SerialConnection
+            from meshcore import EventType as MCEventType
+        except ImportError:
+            logger.error(
+                "meshcore library not installed. "
+                "Install with: pip install meshcore"
             )
             return False
+
+        try:
+            logger.info(f"Connecting to MeshCore device on {self.config.port}")
+
+            # Create event loop if needed
+            try:
+                self._loop = asyncio.get_event_loop()
+            except RuntimeError:
+                self._loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(self._loop)
+
+            # Create serial connection and MeshCore instance
+            cx = SerialConnection(
+                self.config.port,
+                baudrate=self.config.baud,
+            )
+            self._mc = MeshCore(cx, auto_reconnect=True)
+
+            # Connect asynchronously
+            self._loop.run_until_complete(self._mc.connect())
+
+            # Get device info to retrieve public key
+            async def get_self_info():
+                from meshcore import EventType as MCEventType
+                # Wait for SELF_INFO event
+                event = await self._mc.wait_for_event(
+                    MCEventType.SELF_INFO,
+                    timeout=5.0
+                )
+                if event:
+                    return event.attributes.get("public_key")
+                return None
+
+            self._public_key = self._loop.run_until_complete(get_self_info())
+
+            if not self._public_key:
+                logger.warning("Could not retrieve device public key")
+
+            self._connected = True
+            logger.info(f"Connected to MeshCore device, public_key: {self._public_key}")
+            return True
 
         except Exception as e:
             logger.error(f"Failed to connect to device: {e}")
             return False
 
+    def _setup_event_subscriptions(self) -> None:
+        """Set up event subscriptions for the meshcore library."""
+        if not self._mc:
+            return
+
+        from meshcore import EventType as MCEventType
+
+        # Map of meshcore event types to subscribe to
+        event_map = {
+            MCEventType.ADVERTISEMENT: EventType.ADVERTISEMENT,
+            MCEventType.CONTACT_MSG_RECV: EventType.CONTACT_MSG_RECV,
+            MCEventType.CHANNEL_MSG_RECV: EventType.CHANNEL_MSG_RECV,
+            MCEventType.TRACE_DATA: EventType.TRACE_DATA,
+            MCEventType.TELEMETRY_RESPONSE: EventType.TELEMETRY_RESPONSE,
+            MCEventType.CONTACTS: EventType.CONTACTS,
+            MCEventType.MSG_SENT: EventType.SEND_CONFIRMED,
+            MCEventType.STATUS_RESPONSE: EventType.STATUS_RESPONSE,
+            MCEventType.BATTERY: EventType.BATTERY,
+            MCEventType.PATH_UPDATE: EventType.PATH_UPDATED,
+        }
+
+        for mc_event_type, our_event_type in event_map.items():
+            async def callback(event, et=our_event_type):
+                # Convert event to dict and dispatch
+                payload = dict(event.attributes) if hasattr(event, 'attributes') else {}
+                self._dispatch_event(et, payload)
+
+            sub = self._mc.subscribe(mc_event_type, callback)
+            self._subscriptions.append(sub)
+            logger.debug(f"Subscribed to {mc_event_type.name}")
+
     def disconnect(self) -> None:
         """Disconnect from the device."""
-        if self._device:
+        if self._mc:
             try:
-                # self._device.disconnect()
-                pass
+                # Unsubscribe from events
+                for sub in self._subscriptions:
+                    self._mc.unsubscribe(sub)
+                self._subscriptions.clear()
+
+                # Disconnect
+                if self._loop:
+                    self._loop.run_until_complete(self._mc.disconnect())
             except Exception as e:
                 logger.error(f"Error disconnecting: {e}")
+
         self._connected = False
-        self._device = None
+        self._mc = None
         logger.info("Disconnected from MeshCore device")
 
     def send_message(
@@ -270,13 +355,16 @@ class MeshCoreDevice(BaseMeshCoreDevice):
         timestamp: Optional[int] = None,
     ) -> bool:
         """Send a direct message."""
-        if not self._connected or not self._device:
+        if not self._connected or not self._mc:
             logger.error("Cannot send message: not connected")
             return False
 
         try:
-            ts = timestamp or int(time.time())
-            # self._device.send_message(destination, text, ts)
+            async def _send():
+                from meshcore.commands import send_msg
+                await send_msg(self._mc, destination, text)
+
+            self._loop.run_until_complete(_send())
             logger.info(f"Sent message to {destination[:12]}...")
             return True
         except Exception as e:
@@ -290,13 +378,16 @@ class MeshCoreDevice(BaseMeshCoreDevice):
         timestamp: Optional[int] = None,
     ) -> bool:
         """Send a channel message."""
-        if not self._connected or not self._device:
+        if not self._connected or not self._mc:
             logger.error("Cannot send channel message: not connected")
             return False
 
         try:
-            ts = timestamp or int(time.time())
-            # self._device.send_channel_message(channel_idx, text, ts)
+            async def _send():
+                from meshcore.commands import send_channel_msg
+                await send_channel_msg(self._mc, channel_idx, text)
+
+            self._loop.run_until_complete(_send())
             logger.info(f"Sent message to channel {channel_idx}")
             return True
         except Exception as e:
@@ -305,12 +396,16 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
     def send_advertisement(self, flood: bool = True) -> bool:
         """Send a node advertisement."""
-        if not self._connected or not self._device:
+        if not self._connected or not self._mc:
             logger.error("Cannot send advertisement: not connected")
             return False
 
         try:
-            # self._device.send_advertisement(flood)
+            async def _send():
+                from meshcore.commands import send_advert
+                await send_advert(self._mc, flood=flood)
+
+            self._loop.run_until_complete(_send())
             logger.info(f"Sent advertisement (flood={flood})")
             return True
         except Exception as e:
@@ -319,12 +414,16 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
     def request_status(self, target: Optional[str] = None) -> bool:
         """Request status from a node."""
-        if not self._connected or not self._device:
+        if not self._connected or not self._mc:
             logger.error("Cannot request status: not connected")
             return False
 
         try:
-            # self._device.request_status(target)
+            async def _request():
+                from meshcore.commands import request_status
+                await request_status(self._mc, target)
+
+            self._loop.run_until_complete(_request())
             logger.info(f"Requested status from {target or 'self'}")
             return True
         except Exception as e:
@@ -333,12 +432,16 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
     def request_telemetry(self, target: str) -> bool:
         """Request telemetry from a node."""
-        if not self._connected or not self._device:
+        if not self._connected or not self._mc:
             logger.error("Cannot request telemetry: not connected")
             return False
 
         try:
-            # self._device.request_telemetry(target)
+            async def _request():
+                from meshcore.commands import request_telemetry
+                await request_telemetry(self._mc, target)
+
+            self._loop.run_until_complete(_request())
             logger.info(f"Requested telemetry from {target[:12]}...")
             return True
         except Exception as e:
@@ -350,22 +453,26 @@ class MeshCoreDevice(BaseMeshCoreDevice):
         self._running = True
         logger.info("Starting device event loop")
 
-        while self._running and self._connected:
-            try:
-                # In actual implementation:
-                # event = self._device.poll_event()
-                # if event:
-                #     event_type = EventType(event.type)
-                #     self._dispatch_event(event_type, event.payload)
-                time.sleep(0.1)
-            except Exception as e:
-                logger.error(f"Error in event loop: {e}")
+        # Set up event subscriptions
+        self._setup_event_subscriptions()
+
+        # Run the async event loop
+        async def _run_loop():
+            while self._running and self._connected:
+                await asyncio.sleep(0.1)
+
+        try:
+            self._loop.run_until_complete(_run_loop())
+        except Exception as e:
+            logger.error(f"Error in event loop: {e}")
 
         logger.info("Device event loop stopped")
 
     def stop(self) -> None:
         """Stop the device event loop."""
         self._running = False
+        if self._mc:
+            self._mc.stop()
         logger.info("Stopping device event loop")
 
 

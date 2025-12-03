@@ -190,6 +190,20 @@ def run(
     help="MQTT broker port",
 )
 @click.option(
+    "--mqtt-username",
+    type=str,
+    default=None,
+    envvar="MQTT_USERNAME",
+    help="MQTT username",
+)
+@click.option(
+    "--mqtt-password",
+    type=str,
+    default=None,
+    envvar="MQTT_PASSWORD",
+    help="MQTT password",
+)
+@click.option(
     "--prefix",
     type=str,
     default="meshcore",
@@ -202,6 +216,8 @@ def receiver(
     mock: bool,
     mqtt_host: str,
     mqtt_port: int,
+    mqtt_username: str | None,
+    mqtt_password: str | None,
     prefix: str,
 ) -> None:
     """Run interface in RECEIVER mode.
@@ -221,6 +237,8 @@ def receiver(
         mock=mock,
         mqtt_host=mqtt_host,
         mqtt_port=mqtt_port,
+        mqtt_username=mqtt_username,
+        mqtt_password=mqtt_password,
         mqtt_prefix=prefix,
     )
 
@@ -262,6 +280,20 @@ def receiver(
     help="MQTT broker port",
 )
 @click.option(
+    "--mqtt-username",
+    type=str,
+    default=None,
+    envvar="MQTT_USERNAME",
+    help="MQTT username",
+)
+@click.option(
+    "--mqtt-password",
+    type=str,
+    default=None,
+    envvar="MQTT_PASSWORD",
+    help="MQTT password",
+)
+@click.option(
     "--prefix",
     type=str,
     default="meshcore",
@@ -274,6 +306,8 @@ def sender(
     mock: bool,
     mqtt_host: str,
     mqtt_port: int,
+    mqtt_username: str | None,
+    mqtt_password: str | None,
     prefix: str,
 ) -> None:
     """Run interface in SENDER mode.
@@ -293,5 +327,7 @@ def sender(
         mock=mock,
         mqtt_host=mqtt_host,
         mqtt_port=mqtt_port,
+        mqtt_username=mqtt_username,
+        mqtt_password=mqtt_password,
         mqtt_prefix=prefix,
     )
