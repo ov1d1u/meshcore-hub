@@ -66,16 +66,61 @@ MeshCore Hub provides a complete solution for monitoring, collecting, and intera
 
 ### Using Docker Compose (Recommended)
 
+Docker Compose supports **profiles** to selectively enable/disable components:
+
+| Profile | Services |
+|---------|----------|
+| `mqtt` | Eclipse Mosquitto MQTT broker |
+| `interface-receiver` | MeshCore device receiver (events to MQTT) |
+| `interface-sender` | MeshCore device sender (MQTT to device) |
+| `collector` | MQTT subscriber + database storage |
+| `api` | REST API server |
+| `web` | Web dashboard |
+| `mock` | All services with mock device (for testing) |
+| `all` | All production services |
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/meshcore-hub.git
-cd meshcore-hub
+cd meshcore-hub/docker
 
-# Start all services
-docker compose -f docker/docker-compose.yml up -d
+# Copy and configure environment
+cp .env.example .env
+# Edit .env with your settings (API keys, serial port, network info)
+
+# Option 1: Start all services with mock device (for testing)
+docker compose --profile mock up -d
+
+# Option 2: Start specific services for production
+docker compose --profile mqtt --profile collector --profile api --profile web up -d
+
+# Option 3: Start all production services (requires real MeshCore device)
+docker compose --profile all up -d
 
 # View logs
-docker compose -f docker/docker-compose.yml logs -f
+docker compose logs -f
+
+# Run database migrations
+docker compose --profile migrate up
+
+# Stop services
+docker compose --profile mock down
+```
+
+#### Serial Device Access
+
+For production with real MeshCore devices, ensure the serial port is accessible:
+
+```bash
+# Check device path
+ls -la /dev/ttyUSB*
+
+# Add user to dialout group (Linux)
+sudo usermod -aG dialout $USER
+
+# Configure in .env
+SERIAL_PORT=/dev/ttyUSB0
+SERIAL_PORT_SENDER=/dev/ttyUSB1  # If using separate sender device
 ```
 
 ### Manual Installation
@@ -177,9 +222,14 @@ meshcore-hub db current      # Show current revision
 
 When running, the API provides interactive documentation at:
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **OpenAPI JSON**: http://localhost:8000/openapi.json
+- **Swagger UI**: http://localhost:8000/api/docs
+- **ReDoc**: http://localhost:8000/api/redoc
+- **OpenAPI JSON**: http://localhost:8000/api/openapi.json
+
+Health check endpoints are also available:
+
+- **Health**: http://localhost:8000/health
+- **Ready**: http://localhost:8000/health/ready (includes database check)
 
 ### Authentication
 

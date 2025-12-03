@@ -43,6 +43,31 @@ class Receiver:
         self.mqtt = mqtt_client
         self._running = False
         self._shutdown_event = threading.Event()
+        self._device_connected = False
+        self._mqtt_connected = False
+
+    @property
+    def is_healthy(self) -> bool:
+        """Check if the receiver is healthy.
+
+        Returns:
+            True if device and MQTT are connected
+        """
+        return self._running and self._device_connected and self._mqtt_connected
+
+    def get_health_status(self) -> dict[str, Any]:
+        """Get detailed health status.
+
+        Returns:
+            Dictionary with health status details
+        """
+        return {
+            "healthy": self.is_healthy,
+            "running": self._running,
+            "device_connected": self._device_connected,
+            "mqtt_connected": self._mqtt_connected,
+            "device_public_key": self.device.public_key,
+        }
 
     def _initialize_device(self) -> None:
         """Initialize device after connection.
@@ -108,18 +133,23 @@ class Receiver:
         try:
             self.mqtt.connect()
             self.mqtt.start_background()
+            self._mqtt_connected = True
             logger.info("Connected to MQTT broker")
         except Exception as e:
+            self._mqtt_connected = False
             logger.error(f"Failed to connect to MQTT broker: {e}")
             raise
 
         # Connect to device
         if not self.device.connect():
+            self._device_connected = False
             logger.error("Failed to connect to MeshCore device")
             self.mqtt.stop()
             self.mqtt.disconnect()
+            self._mqtt_connected = False
             raise RuntimeError("Failed to connect to MeshCore device")
 
+        self._device_connected = True
         logger.info(f"Connected to MeshCore device: {self.device.public_key}")
 
         # Initialize device: set time and send local advertisement
@@ -154,10 +184,12 @@ class Receiver:
         # Stop device
         self.device.stop()
         self.device.disconnect()
+        self._device_connected = False
 
         # Stop MQTT
         self.mqtt.stop()
         self.mqtt.disconnect()
+        self._mqtt_connected = False
 
         logger.info("Receiver stopped")
 
