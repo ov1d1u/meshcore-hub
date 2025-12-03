@@ -42,6 +42,30 @@ class Subscriber:
         self._running = False
         self._shutdown_event = threading.Event()
         self._handlers: dict[str, EventHandler] = {}
+        self._mqtt_connected = False
+        self._db_connected = False
+
+    @property
+    def is_healthy(self) -> bool:
+        """Check if the subscriber is healthy.
+
+        Returns:
+            True if MQTT and database are connected
+        """
+        return self._running and self._mqtt_connected and self._db_connected
+
+    def get_health_status(self) -> dict[str, Any]:
+        """Get detailed health status.
+
+        Returns:
+            Dictionary with health status details
+        """
+        return {
+            "healthy": self.is_healthy,
+            "running": self._running,
+            "mqtt_connected": self._mqtt_connected,
+            "database_connected": self._db_connected,
+        }
 
     def register_handler(self, event_type: str, handler: EventHandler) -> None:
         """Register a handler for an event type.
@@ -96,14 +120,23 @@ class Subscriber:
         logger.info("Starting collector subscriber")
 
         # Create database tables if needed
-        self.db.create_tables()
+        try:
+            self.db.create_tables()
+            self._db_connected = True
+            logger.info("Database initialized")
+        except Exception as e:
+            self._db_connected = False
+            logger.error(f"Failed to initialize database: {e}")
+            raise
 
         # Connect to MQTT broker
         try:
             self.mqtt.connect()
             self.mqtt.start_background()
+            self._mqtt_connected = True
             logger.info("Connected to MQTT broker")
         except Exception as e:
+            self._mqtt_connected = False
             logger.error(f"Failed to connect to MQTT broker: {e}")
             raise
 
@@ -141,6 +174,7 @@ class Subscriber:
         # Stop MQTT
         self.mqtt.stop()
         self.mqtt.disconnect()
+        self._mqtt_connected = False
 
         logger.info("Collector subscriber stopped")
 
