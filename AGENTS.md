@@ -31,7 +31,7 @@ MeshCore Hub is a Python 3.11+ monorepo for managing and orchestrating MeshCore 
 | Migrations | Alembic |
 | REST API | FastAPI |
 | MQTT Client | paho-mqtt |
-| MeshCore Interface | meshcore-py |
+| MeshCore Interface | meshcore |
 | Templates | Jinja2 |
 | CSS Framework | Tailwind CSS + DaisyUI |
 | Testing | pytest, pytest-asyncio |
@@ -432,9 +432,60 @@ logging.basicConfig(level=logging.DEBUG)
 export LOG_LEVEL=DEBUG
 ```
 
+## MeshCore Library Integration
+
+The interface component uses the `meshcore` Python library to communicate with MeshCore devices. Key patterns:
+
+### Device Commands
+
+Commands are accessed via `mc.commands.*` on the MeshCore instance:
+
+```python
+# Set device time
+await mc.commands.set_time(unix_timestamp)
+
+# Send advertisement
+await mc.commands.send_advert(flood=False)
+
+# Send messages
+await mc.commands.send_msg(destination, text)
+await mc.commands.send_chan_msg(channel_idx, text)
+
+# Request data
+await mc.commands.send_statusreq(target)
+await mc.commands.send_telemetry_req(target)
+```
+
+### Event Subscription
+
+Events are received via the subscription system. The `Event` object has:
+- `event.type` - The event type enum
+- `event.payload` - Full event data (dict with all fields like `text`, `pubkey_prefix`, etc.)
+- `event.attributes` - Subset of fields for filtering
+
+**Important**: Use `event.payload` (not `event.attributes`) to get full message data.
+
+### Auto Message Fetching
+
+The library requires explicit message fetching. Call `start_auto_message_fetching()` to:
+1. Subscribe to `MESSAGES_WAITING` events
+2. Automatically call `get_msg()` to fetch pending messages
+3. Immediately fetch any queued messages on startup
+
+```python
+await mc.start_auto_message_fetching()
+```
+
+### Receiver Initialization
+
+On startup, the receiver performs these initialization steps:
+1. Set device clock to current Unix timestamp
+2. Send a local (non-flood) advertisement
+3. Start automatic message fetching
+
 ## References
 
-- [meshcore_py Documentation](https://github.com/meshcore-dev/meshcore_py)
+- [meshcore Documentation](https://github.com/fdlamotte/meshcore)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [SQLAlchemy 2.0 Documentation](https://docs.sqlalchemy.org/en/20/)
 - [Pydantic Documentation](https://docs.pydantic.dev/)

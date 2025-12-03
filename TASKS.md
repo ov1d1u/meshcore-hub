@@ -4,266 +4,266 @@ This document tracks implementation progress for the MeshCore Hub project. Each 
 
 ---
 
-## Phase 1: Foundation
+## Phase 1: Foundation ✅
 
 ### 1.1 Project Setup
 
-- [ ] Create `pyproject.toml` with project metadata and dependencies
-- [ ] Configure Python 3.11+ requirement
-- [ ] Set up `src/meshcore_hub/` package structure
-- [ ] Create `__init__.py` files for all packages
-- [ ] Create `__main__.py` entry point
+- [x] Create `pyproject.toml` with project metadata and dependencies
+- [x] Configure Python 3.11+ requirement
+- [x] Set up `src/meshcore_hub/` package structure
+- [x] Create `__init__.py` files for all packages
+- [x] Create `__main__.py` entry point
 
 ### 1.2 Development Tools
 
-- [ ] Configure `black` formatter settings in pyproject.toml
-- [ ] Configure `flake8` linting (create `.flake8` or add to pyproject.toml)
-- [ ] Configure `mypy` type checking settings
-- [ ] Configure `pytest` settings and test directory
-- [ ] Create `.pre-commit-config.yaml` with hooks:
-  - [ ] black
-  - [ ] flake8
-  - [ ] mypy
-  - [ ] trailing whitespace
-  - [ ] end-of-file-fixer
-- [ ] Create `.env.example` with all environment variables
+- [x] Configure `black` formatter settings in pyproject.toml
+- [x] Configure `flake8` linting (create `.flake8` or add to pyproject.toml)
+- [x] Configure `mypy` type checking settings
+- [x] Configure `pytest` settings and test directory
+- [x] Create `.pre-commit-config.yaml` with hooks:
+  - [x] black
+  - [x] flake8
+  - [x] mypy
+  - [x] trailing whitespace
+  - [x] end-of-file-fixer
+- [x] Create `.env.example` with all environment variables
 
 ### 1.3 Common Package - Configuration
 
-- [ ] Create `common/config.py` with Pydantic Settings:
-  - [ ] `CommonSettings` (logging, MQTT connection)
-  - [ ] `InterfaceSettings` (mode, serial port, mock device)
-  - [ ] `CollectorSettings` (database URL, webhook settings)
-  - [ ] `APISettings` (host, port, API keys)
-  - [ ] `WebSettings` (host, port, network info)
-- [ ] Implement environment variable loading
-- [ ] Implement CLI argument override support
-- [ ] Add configuration validation
+- [x] Create `common/config.py` with Pydantic Settings:
+  - [x] `CommonSettings` (logging, MQTT connection)
+  - [x] `InterfaceSettings` (mode, serial port, mock device)
+  - [x] `CollectorSettings` (database URL, webhook settings)
+  - [x] `APISettings` (host, port, API keys)
+  - [x] `WebSettings` (host, port, network info)
+- [x] Implement environment variable loading
+- [x] Implement CLI argument override support
+- [x] Add configuration validation
 
 ### 1.4 Common Package - Database Models
 
-- [ ] Create `common/database.py`:
-  - [ ] Database engine factory
-  - [ ] Session management
-  - [ ] Async session support
-- [ ] Create `common/models/base.py`:
-  - [ ] Base model with UUID primary key
-  - [ ] Timestamp mixins (created_at, updated_at)
-- [ ] Create `common/models/node.py`:
-  - [ ] Node model (public_key, name, adv_type, flags, first_seen, last_seen)
-  - [ ] Indexes on public_key
-- [ ] Create `common/models/node_tag.py`:
-  - [ ] NodeTag model (node_id FK, key, value, value_type)
-  - [ ] Unique constraint on (node_id, key)
-- [ ] Create `common/models/message.py`:
-  - [ ] Message model (receiver_node_id, message_type, pubkey_prefix, channel_idx, text, etc.)
-  - [ ] Indexes for common query patterns
-- [ ] Create `common/models/advertisement.py`:
-  - [ ] Advertisement model (receiver_node_id, node_id, public_key, name, adv_type, flags)
-- [ ] Create `common/models/trace_path.py`:
-  - [ ] TracePath model (receiver_node_id, initiator_tag, path_hashes JSON, snr_values JSON)
-- [ ] Create `common/models/telemetry.py`:
-  - [ ] Telemetry model (receiver_node_id, node_id, node_public_key, lpp_data, parsed_data JSON)
-- [ ] Create `common/models/event_log.py`:
-  - [ ] EventLog model (receiver_node_id, event_type, payload JSON)
-- [ ] Create `common/models/__init__.py` exporting all models
+- [x] Create `common/database.py`:
+  - [x] Database engine factory
+  - [x] Session management
+  - [x] Async session support
+- [x] Create `common/models/base.py`:
+  - [x] Base model with UUID primary key
+  - [x] Timestamp mixins (created_at, updated_at)
+- [x] Create `common/models/node.py`:
+  - [x] Node model (public_key, name, adv_type, flags, first_seen, last_seen)
+  - [x] Indexes on public_key
+- [x] Create `common/models/node_tag.py`:
+  - [x] NodeTag model (node_id FK, key, value, value_type)
+  - [x] Unique constraint on (node_id, key)
+- [x] Create `common/models/message.py`:
+  - [x] Message model (receiver_node_id, message_type, pubkey_prefix, channel_idx, text, etc.)
+  - [x] Indexes for common query patterns
+- [x] Create `common/models/advertisement.py`:
+  - [x] Advertisement model (receiver_node_id, node_id, public_key, name, adv_type, flags)
+- [x] Create `common/models/trace_path.py`:
+  - [x] TracePath model (receiver_node_id, initiator_tag, path_hashes JSON, snr_values JSON)
+- [x] Create `common/models/telemetry.py`:
+  - [x] Telemetry model (receiver_node_id, node_id, node_public_key, lpp_data, parsed_data JSON)
+- [x] Create `common/models/event_log.py`:
+  - [x] EventLog model (receiver_node_id, event_type, payload JSON)
+- [x] Create `common/models/__init__.py` exporting all models
 
 ### 1.5 Common Package - Pydantic Schemas
 
-- [ ] Create `common/schemas/events.py`:
-  - [ ] AdvertisementEvent schema
-  - [ ] ContactMessageEvent schema
-  - [ ] ChannelMessageEvent schema
-  - [ ] TraceDataEvent schema
-  - [ ] TelemetryResponseEvent schema
-  - [ ] ContactsEvent schema
-  - [ ] SendConfirmedEvent schema
-  - [ ] StatusResponseEvent schema
-  - [ ] BatteryEvent schema
-  - [ ] PathUpdatedEvent schema
-- [ ] Create `common/schemas/nodes.py`:
-  - [ ] NodeCreate, NodeRead, NodeList schemas
-  - [ ] NodeTagCreate, NodeTagUpdate, NodeTagRead schemas
-- [ ] Create `common/schemas/messages.py`:
-  - [ ] MessageRead, MessageList schemas
-  - [ ] MessageFilters schema
-- [ ] Create `common/schemas/commands.py`:
-  - [ ] SendMessageCommand schema
-  - [ ] SendChannelMessageCommand schema
-  - [ ] SendAdvertCommand schema
-- [ ] Create `common/schemas/__init__.py` exporting all schemas
+- [x] Create `common/schemas/events.py`:
+  - [x] AdvertisementEvent schema
+  - [x] ContactMessageEvent schema
+  - [x] ChannelMessageEvent schema
+  - [x] TraceDataEvent schema
+  - [x] TelemetryResponseEvent schema
+  - [x] ContactsEvent schema
+  - [x] SendConfirmedEvent schema
+  - [x] StatusResponseEvent schema
+  - [x] BatteryEvent schema
+  - [x] PathUpdatedEvent schema
+- [x] Create `common/schemas/nodes.py`:
+  - [x] NodeCreate, NodeRead, NodeList schemas
+  - [x] NodeTagCreate, NodeTagUpdate, NodeTagRead schemas
+- [x] Create `common/schemas/messages.py`:
+  - [x] MessageRead, MessageList schemas
+  - [x] MessageFilters schema
+- [x] Create `common/schemas/commands.py`:
+  - [x] SendMessageCommand schema
+  - [x] SendChannelMessageCommand schema
+  - [x] SendAdvertCommand schema
+- [x] Create `common/schemas/__init__.py` exporting all schemas
 
 ### 1.6 Common Package - Utilities
 
-- [ ] Create `common/mqtt.py`:
-  - [ ] MQTT client factory function
-  - [ ] Topic builder utilities
-  - [ ] Message serialization helpers
-  - [ ] Async publish/subscribe wrappers
-- [ ] Create `common/logging.py`:
-  - [ ] Logging configuration function
-  - [ ] Structured logging format
-  - [ ] Log level configuration from settings
+- [x] Create `common/mqtt.py`:
+  - [x] MQTT client factory function
+  - [x] Topic builder utilities
+  - [x] Message serialization helpers
+  - [x] Async publish/subscribe wrappers
+- [x] Create `common/logging.py`:
+  - [x] Logging configuration function
+  - [x] Structured logging format
+  - [x] Log level configuration from settings
 
 ### 1.7 Database Migrations
 
-- [ ] Create `alembic.ini` configuration
-- [ ] Create `alembic/env.py` with async support
-- [ ] Create `alembic/script.py.mako` template
-- [ ] Create initial migration with all tables:
-  - [ ] nodes table
-  - [ ] node_tags table
-  - [ ] messages table
-  - [ ] advertisements table
-  - [ ] trace_paths table
-  - [ ] telemetry table
-  - [ ] events_log table
-- [ ] Test migration upgrade/downgrade
+- [x] Create `alembic.ini` configuration
+- [x] Create `alembic/env.py` with async support
+- [x] Create `alembic/script.py.mako` template
+- [x] Create initial migration with all tables:
+  - [x] nodes table
+  - [x] node_tags table
+  - [x] messages table
+  - [x] advertisements table
+  - [x] trace_paths table
+  - [x] telemetry table
+  - [x] events_log table
+- [x] Test migration upgrade/downgrade
 
 ### 1.8 Main CLI Entry Point
 
-- [ ] Create root Click group in `__main__.py`
-- [ ] Add `--version` option
-- [ ] Add `--config` option for config file path
-- [ ] Add subcommand placeholders for: interface, collector, api, web, db
+- [x] Create root Click group in `__main__.py`
+- [x] Add `--version` option
+- [x] Add `--config` option for config file path
+- [x] Add subcommand placeholders for: interface, collector, api, web, db
 
 ---
 
-## Phase 2: Interface Component
+## Phase 2: Interface Component ✅
 
 ### 2.1 Device Abstraction
 
-- [ ] Create `interface/device.py`:
-  - [ ] `MeshCoreDevice` class wrapping meshcore_py
-  - [ ] Connection management (connect, disconnect, reconnect)
-  - [ ] Get device public key via `send_appstart()`
-  - [ ] Event subscription registration
-  - [ ] Command sending methods
-- [ ] Create `interface/mock_device.py`:
-  - [ ] `MockMeshCoreDevice` class
-  - [ ] Configurable event generation
-  - [ ] Simulated message sending
-  - [ ] Simulated network topology (optional)
-  - [ ] Configurable delays and error rates
+- [x] Create `interface/device.py`:
+  - [x] `MeshCoreDevice` class wrapping meshcore_py
+  - [x] Connection management (connect, disconnect, reconnect)
+  - [x] Get device public key via `send_appstart()`
+  - [x] Event subscription registration
+  - [x] Command sending methods
+- [x] Create `interface/mock_device.py`:
+  - [x] `MockMeshCoreDevice` class
+  - [x] Configurable event generation
+  - [x] Simulated message sending
+  - [x] Simulated network topology (optional)
+  - [x] Configurable delays and error rates
 
 ### 2.2 Receiver Mode
 
-- [ ] Create `interface/receiver.py`:
-  - [ ] `Receiver` class
-  - [ ] Initialize MQTT client
-  - [ ] Initialize MeshCore device
-  - [ ] Subscribe to all relevant MeshCore events:
-    - [ ] ADVERTISEMENT
-    - [ ] CONTACT_MSG_RECV
-    - [ ] CHANNEL_MSG_RECV
-    - [ ] TRACE_DATA
-    - [ ] TELEMETRY_RESPONSE
-    - [ ] CONTACTS
-    - [ ] SEND_CONFIRMED
-    - [ ] STATUS_RESPONSE
-    - [ ] BATTERY
-    - [ ] PATH_UPDATED
-  - [ ] Event handler that publishes to MQTT
-  - [ ] Topic construction: `<prefix>/<pubkey>/event/<event_name>`
-  - [ ] JSON serialization of event payloads
-  - [ ] Graceful shutdown handling
+- [x] Create `interface/receiver.py`:
+  - [x] `Receiver` class
+  - [x] Initialize MQTT client
+  - [x] Initialize MeshCore device
+  - [x] Subscribe to all relevant MeshCore events:
+    - [x] ADVERTISEMENT
+    - [x] CONTACT_MSG_RECV
+    - [x] CHANNEL_MSG_RECV
+    - [x] TRACE_DATA
+    - [x] TELEMETRY_RESPONSE
+    - [x] CONTACTS
+    - [x] SEND_CONFIRMED
+    - [x] STATUS_RESPONSE
+    - [x] BATTERY
+    - [x] PATH_UPDATED
+  - [x] Event handler that publishes to MQTT
+  - [x] Topic construction: `<prefix>/<pubkey>/event/<event_name>`
+  - [x] JSON serialization of event payloads
+  - [x] Graceful shutdown handling
 
 ### 2.3 Sender Mode
 
-- [ ] Create `interface/sender.py`:
-  - [ ] `Sender` class
-  - [ ] Initialize MQTT client
-  - [ ] Initialize MeshCore device
-  - [ ] Subscribe to command topics:
-    - [ ] `<prefix>/+/command/send_msg`
-    - [ ] `<prefix>/+/command/send_channel_msg`
-    - [ ] `<prefix>/+/command/send_advert`
-    - [ ] `<prefix>/+/command/request_status`
-    - [ ] `<prefix>/+/command/request_telemetry`
-  - [ ] Command handlers:
-    - [ ] `handle_send_msg` - send direct message
-    - [ ] `handle_send_channel_msg` - send channel message
-    - [ ] `handle_send_advert` - send advertisement
-    - [ ] `handle_request_status` - request node status
-    - [ ] `handle_request_telemetry` - request telemetry
-  - [ ] Error handling and logging
-  - [ ] Graceful shutdown handling
+- [x] Create `interface/sender.py`:
+  - [x] `Sender` class
+  - [x] Initialize MQTT client
+  - [x] Initialize MeshCore device
+  - [x] Subscribe to command topics:
+    - [x] `<prefix>/+/command/send_msg`
+    - [x] `<prefix>/+/command/send_channel_msg`
+    - [x] `<prefix>/+/command/send_advert`
+    - [x] `<prefix>/+/command/request_status`
+    - [x] `<prefix>/+/command/request_telemetry`
+  - [x] Command handlers:
+    - [x] `handle_send_msg` - send direct message
+    - [x] `handle_send_channel_msg` - send channel message
+    - [x] `handle_send_advert` - send advertisement
+    - [x] `handle_request_status` - request node status
+    - [x] `handle_request_telemetry` - request telemetry
+  - [x] Error handling and logging
+  - [x] Graceful shutdown handling
 
 ### 2.4 Interface CLI
 
-- [ ] Create `interface/cli.py`:
-  - [ ] `interface` Click command group
-  - [ ] `--mode` option (receiver/sender, required)
-  - [ ] `--port` option for serial port
-  - [ ] `--baud` option for baud rate
-  - [ ] `--mock` flag to use mock device
-  - [ ] `--mqtt-host`, `--mqtt-port` options
-  - [ ] `--prefix` option for MQTT topic prefix
-  - [ ] Signal handlers for graceful shutdown
-- [ ] Register CLI with main entry point
+- [x] Create `interface/cli.py`:
+  - [x] `interface` Click command group
+  - [x] `--mode` option (receiver/sender, required)
+  - [x] `--port` option for serial port
+  - [x] `--baud` option for baud rate
+  - [x] `--mock` flag to use mock device
+  - [x] `--mqtt-host`, `--mqtt-port` options
+  - [x] `--prefix` option for MQTT topic prefix
+  - [x] Signal handlers for graceful shutdown
+- [x] Register CLI with main entry point
 
 ### 2.5 Interface Tests
 
-- [ ] Create `tests/test_interface/conftest.py`:
-  - [ ] Mock MQTT client fixture
-  - [ ] Mock device fixture
-- [ ] Create `tests/test_interface/test_device.py`:
-  - [ ] Test connection/disconnection
-  - [ ] Test event subscription
-  - [ ] Test command sending
-- [ ] Create `tests/test_interface/test_mock_device.py`:
-  - [ ] Test mock event generation
-  - [ ] Test mock command handling
-- [ ] Create `tests/test_interface/test_receiver.py`:
-  - [ ] Test event to MQTT publishing
-  - [ ] Test topic construction
-  - [ ] Test payload serialization
-- [ ] Create `tests/test_interface/test_sender.py`:
-  - [ ] Test MQTT to command dispatching
-  - [ ] Test command payload parsing
-  - [ ] Test error handling
+- [x] Create `tests/test_interface/conftest.py`:
+  - [x] Mock MQTT client fixture
+  - [x] Mock device fixture
+- [x] Create `tests/test_interface/test_device.py`:
+  - [x] Test connection/disconnection
+  - [x] Test event subscription
+  - [x] Test command sending
+- [x] Create `tests/test_interface/test_mock_device.py`:
+  - [x] Test mock event generation
+  - [x] Test mock command handling
+- [x] Create `tests/test_interface/test_receiver.py`:
+  - [x] Test event to MQTT publishing
+  - [x] Test topic construction
+  - [x] Test payload serialization
+- [x] Create `tests/test_interface/test_sender.py`:
+  - [x] Test MQTT to command dispatching
+  - [x] Test command payload parsing
+  - [x] Test error handling
 
 ---
 
-## Phase 3: Collector Component
+## Phase 3: Collector Component ✅
 
 ### 3.1 MQTT Subscriber
 
-- [ ] Create `collector/subscriber.py`:
-  - [ ] `Subscriber` class
-  - [ ] Initialize MQTT client
-  - [ ] Subscribe to all event topics: `<prefix>/+/event/#`
-  - [ ] Parse topic to extract public_key and event_type
-  - [ ] Route events to appropriate handlers
-  - [ ] Handle connection/disconnection
-  - [ ] Graceful shutdown
+- [x] Create `collector/subscriber.py`:
+  - [x] `Subscriber` class
+  - [x] Initialize MQTT client
+  - [x] Subscribe to all event topics: `<prefix>/+/event/#`
+  - [x] Parse topic to extract public_key and event_type
+  - [x] Route events to appropriate handlers
+  - [x] Handle connection/disconnection
+  - [x] Graceful shutdown
 
 ### 3.2 Event Handlers
 
-- [ ] Create `collector/handlers/__init__.py`:
-  - [ ] Handler registry pattern
-- [ ] Create `collector/handlers/advertisement.py`:
-  - [ ] Parse advertisement payload
-  - [ ] Upsert node in nodes table
-  - [ ] Insert advertisement record
-  - [ ] Update node last_seen timestamp
-- [ ] Create `collector/handlers/message.py`:
-  - [ ] Parse contact/channel message payload
-  - [ ] Insert message record
-  - [ ] Handle both CONTACT_MSG_RECV and CHANNEL_MSG_RECV
-- [ ] Create `collector/handlers/trace.py`:
-  - [ ] Parse trace data payload
-  - [ ] Insert trace_path record
-- [ ] Create `collector/handlers/telemetry.py`:
-  - [ ] Parse telemetry payload
-  - [ ] Insert telemetry record
-  - [ ] Optionally upsert node
-- [ ] Create `collector/handlers/contacts.py`:
-  - [ ] Parse contacts sync payload
-  - [ ] Upsert multiple nodes
-- [ ] Create `collector/handlers/event_log.py`:
-  - [ ] Generic handler for events_log table
-  - [ ] Handle informational events (SEND_CONFIRMED, STATUS_RESPONSE, BATTERY, PATH_UPDATED)
+- [x] Create `collector/handlers/__init__.py`:
+  - [x] Handler registry pattern
+- [x] Create `collector/handlers/advertisement.py`:
+  - [x] Parse advertisement payload
+  - [x] Upsert node in nodes table
+  - [x] Insert advertisement record
+  - [x] Update node last_seen timestamp
+- [x] Create `collector/handlers/message.py`:
+  - [x] Parse contact/channel message payload
+  - [x] Insert message record
+  - [x] Handle both CONTACT_MSG_RECV and CHANNEL_MSG_RECV
+- [x] Create `collector/handlers/trace.py`:
+  - [x] Parse trace data payload
+  - [x] Insert trace_path record
+- [x] Create `collector/handlers/telemetry.py`:
+  - [x] Parse telemetry payload
+  - [x] Insert telemetry record
+  - [x] Optionally upsert node
+- [x] Create `collector/handlers/contacts.py`:
+  - [x] Parse contacts sync payload
+  - [x] Upsert multiple nodes
+- [x] Create `collector/handlers/event_log.py`:
+  - [x] Generic handler for events_log table
+  - [x] Handle informational events (SEND_CONFIRMED, STATUS_RESPONSE, BATTERY, PATH_UPDATED)
 
 ### 3.3 Webhook Dispatcher (Optional based on Q10)
 
@@ -277,28 +277,28 @@ This document tracks implementation progress for the MeshCore Hub project. Each 
 
 ### 3.4 Collector CLI
 
-- [ ] Create `collector/cli.py`:
-  - [ ] `collector` Click command
-  - [ ] `--mqtt-host`, `--mqtt-port` options
-  - [ ] `--prefix` option
-  - [ ] `--database-url` option
-  - [ ] Signal handlers for graceful shutdown
-- [ ] Register CLI with main entry point
+- [x] Create `collector/cli.py`:
+  - [x] `collector` Click command
+  - [x] `--mqtt-host`, `--mqtt-port` options
+  - [x] `--prefix` option
+  - [x] `--database-url` option
+  - [x] Signal handlers for graceful shutdown
+- [x] Register CLI with main entry point
 
 ### 3.5 Collector Tests
 
-- [ ] Create `tests/test_collector/conftest.py`:
-  - [ ] In-memory SQLite database fixture
-  - [ ] Mock MQTT client fixture
-- [ ] Create `tests/test_collector/test_subscriber.py`:
-  - [ ] Test topic parsing
-  - [ ] Test event routing
-- [ ] Create `tests/test_collector/test_handlers/`:
-  - [ ] `test_advertisement.py`
-  - [ ] `test_message.py`
-  - [ ] `test_trace.py`
-  - [ ] `test_telemetry.py`
-  - [ ] `test_contacts.py`
+- [x] Create `tests/test_collector/conftest.py`:
+  - [x] In-memory SQLite database fixture
+  - [x] Mock MQTT client fixture
+- [x] Create `tests/test_collector/test_subscriber.py`:
+  - [x] Test topic parsing
+  - [x] Test event routing
+- [x] Create `tests/test_collector/test_handlers/`:
+  - [x] `test_advertisement.py`
+  - [x] `test_message.py`
+  - [x] `test_trace.py`
+  - [x] `test_telemetry.py`
+  - [x] `test_contacts.py`
 - [ ] Create `tests/test_collector/test_webhook.py`:
   - [ ] Test webhook dispatching
   - [ ] Test JSONPath filtering
@@ -306,301 +306,299 @@ This document tracks implementation progress for the MeshCore Hub project. Each 
 
 ---
 
-## Phase 4: API Component
+## Phase 4: API Component ✅
 
 ### 4.1 FastAPI Application Setup
 
-- [ ] Create `api/app.py`:
-  - [ ] FastAPI application instance
-  - [ ] Lifespan handler for startup/shutdown
-  - [ ] Include all routers
-  - [ ] Exception handlers
-  - [ ] CORS middleware configuration
-- [ ] Create `api/dependencies.py`:
-  - [ ] Database session dependency
-  - [ ] MQTT client dependency
-  - [ ] Settings dependency
+- [x] Create `api/app.py`:
+  - [x] FastAPI application instance
+  - [x] Lifespan handler for startup/shutdown
+  - [x] Include all routers
+  - [x] Exception handlers
+  - [x] CORS middleware configuration
+- [x] Create `api/dependencies.py`:
+  - [x] Database session dependency
+  - [x] MQTT client dependency
+  - [x] Settings dependency
 
 ### 4.2 Authentication
 
-- [ ] Create `api/auth.py`:
-  - [ ] Bearer token extraction
-  - [ ] `require_read` dependency (read or admin key)
-  - [ ] `require_admin` dependency (admin key only)
-  - [ ] 401/403 error responses
+- [x] Create `api/auth.py`:
+  - [x] Bearer token extraction
+  - [x] `require_read` dependency (read or admin key)
+  - [x] `require_admin` dependency (admin key only)
+  - [x] 401/403 error responses
 
 ### 4.3 Node Routes
 
-- [ ] Create `api/routes/nodes.py`:
-  - [ ] `GET /api/v1/nodes` - list nodes with pagination
-    - [ ] Query params: limit, offset, search, adv_type
-  - [ ] `GET /api/v1/nodes/{public_key}` - get single node
-  - [ ] Include related tags in response (optional)
+- [x] Create `api/routes/nodes.py`:
+  - [x] `GET /api/v1/nodes` - list nodes with pagination
+    - [x] Query params: limit, offset, search, adv_type
+  - [x] `GET /api/v1/nodes/{public_key}` - get single node
+  - [x] Include related tags in response (optional)
 
 ### 4.4 Node Tag Routes
 
-- [ ] Create `api/routes/node_tags.py`:
-  - [ ] `GET /api/v1/nodes/{public_key}/tags` - list tags
-  - [ ] `POST /api/v1/nodes/{public_key}/tags` - create tag (admin)
-  - [ ] `PUT /api/v1/nodes/{public_key}/tags/{key}` - update tag (admin)
-  - [ ] `DELETE /api/v1/nodes/{public_key}/tags/{key}` - delete tag (admin)
+- [x] Create `api/routes/node_tags.py`:
+  - [x] `GET /api/v1/nodes/{public_key}/tags` - list tags
+  - [x] `POST /api/v1/nodes/{public_key}/tags` - create tag (admin)
+  - [x] `PUT /api/v1/nodes/{public_key}/tags/{key}` - update tag (admin)
+  - [x] `DELETE /api/v1/nodes/{public_key}/tags/{key}` - delete tag (admin)
 
 ### 4.5 Message Routes
 
-- [ ] Create `api/routes/messages.py`:
-  - [ ] `GET /api/v1/messages` - list messages with filters
-    - [ ] Query params: type, pubkey_prefix, channel_idx, since, until, limit, offset
-  - [ ] `GET /api/v1/messages/{id}` - get single message
+- [x] Create `api/routes/messages.py`:
+  - [x] `GET /api/v1/messages` - list messages with filters
+    - [x] Query params: type, pubkey_prefix, channel_idx, since, until, limit, offset
+  - [x] `GET /api/v1/messages/{id}` - get single message
 
 ### 4.6 Advertisement Routes
 
-- [ ] Create `api/routes/advertisements.py`:
-  - [ ] `GET /api/v1/advertisements` - list advertisements
-    - [ ] Query params: public_key, since, until, limit, offset
-  - [ ] `GET /api/v1/advertisements/{id}` - get single advertisement
+- [x] Create `api/routes/advertisements.py`:
+  - [x] `GET /api/v1/advertisements` - list advertisements
+    - [x] Query params: public_key, since, until, limit, offset
+  - [x] `GET /api/v1/advertisements/{id}` - get single advertisement
 
 ### 4.7 Trace Path Routes
 
-- [ ] Create `api/routes/trace_paths.py`:
-  - [ ] `GET /api/v1/trace-paths` - list trace paths
-    - [ ] Query params: since, until, limit, offset
-  - [ ] `GET /api/v1/trace-paths/{id}` - get single trace path
+- [x] Create `api/routes/trace_paths.py`:
+  - [x] `GET /api/v1/trace-paths` - list trace paths
+    - [x] Query params: since, until, limit, offset
+  - [x] `GET /api/v1/trace-paths/{id}` - get single trace path
 
 ### 4.8 Telemetry Routes
 
-- [ ] Create `api/routes/telemetry.py`:
-  - [ ] `GET /api/v1/telemetry` - list telemetry records
-    - [ ] Query params: node_public_key, since, until, limit, offset
-  - [ ] `GET /api/v1/telemetry/{id}` - get single telemetry record
+- [x] Create `api/routes/telemetry.py`:
+  - [x] `GET /api/v1/telemetry` - list telemetry records
+    - [x] Query params: node_public_key, since, until, limit, offset
+  - [x] `GET /api/v1/telemetry/{id}` - get single telemetry record
 
 ### 4.9 Command Routes
 
-- [ ] Create `api/routes/commands.py`:
-  - [ ] `POST /api/v1/commands/send-message` (admin)
-    - [ ] Request body: destination, text, timestamp (optional)
-    - [ ] Publish to MQTT command topic
-  - [ ] `POST /api/v1/commands/send-channel-message` (admin)
-    - [ ] Request body: channel_idx, text, timestamp (optional)
-    - [ ] Publish to MQTT command topic
-  - [ ] `POST /api/v1/commands/send-advertisement` (admin)
-    - [ ] Request body: flood (boolean)
-    - [ ] Publish to MQTT command topic
+- [x] Create `api/routes/commands.py`:
+  - [x] `POST /api/v1/commands/send-message` (admin)
+    - [x] Request body: destination, text, timestamp (optional)
+    - [x] Publish to MQTT command topic
+  - [x] `POST /api/v1/commands/send-channel-message` (admin)
+    - [x] Request body: channel_idx, text, timestamp (optional)
+    - [x] Publish to MQTT command topic
+  - [x] `POST /api/v1/commands/send-advertisement` (admin)
+    - [x] Request body: flood (boolean)
+    - [x] Publish to MQTT command topic
 
 ### 4.10 Dashboard Routes
 
-- [ ] Create `api/routes/dashboard.py`:
-  - [ ] `GET /api/v1/stats` - JSON statistics
-    - [ ] Total nodes count
-    - [ ] Active nodes (last 24h)
-    - [ ] Total messages count
-    - [ ] Messages today
-    - [ ] Total advertisements
-    - [ ] Channel message counts
-  - [ ] `GET /api/v1/dashboard` - HTML dashboard
-- [ ] Create `api/templates/dashboard.html`:
-  - [ ] Simple HTML template
-  - [ ] Display statistics
-  - [ ] Basic CSS styling
-  - [ ] Auto-refresh meta tag (optional)
+- [x] Create `api/routes/dashboard.py`:
+  - [x] `GET /api/v1/stats` - JSON statistics
+    - [x] Total nodes count
+    - [x] Active nodes (last 24h)
+    - [x] Total messages count
+    - [x] Messages today
+    - [x] Total advertisements
+    - [x] Channel message counts
+  - [x] `GET /api/v1/dashboard` - HTML dashboard
+- [x] Create `api/templates/dashboard.html`:
+  - [x] Simple HTML template
+  - [x] Display statistics
+  - [x] Basic CSS styling
+  - [x] Auto-refresh meta tag (optional)
 
 ### 4.11 API Router Registration
 
-- [ ] Create `api/routes/__init__.py`:
-  - [ ] Create main API router
-  - [ ] Include all sub-routers with prefixes
-  - [ ] Add OpenAPI tags
+- [x] Create `api/routes/__init__.py`:
+  - [x] Create main API router
+  - [x] Include all sub-routers with prefixes
+  - [x] Add OpenAPI tags
 
 ### 4.12 API CLI
 
-- [ ] Create `api/cli.py`:
-  - [ ] `api` Click command
-  - [ ] `--host` option
-  - [ ] `--port` option
-  - [ ] `--database-url` option
-  - [ ] `--read-key` option
-  - [ ] `--admin-key` option
-  - [ ] `--mqtt-host`, `--mqtt-port` options
-  - [ ] `--reload` flag for development
-- [ ] Register CLI with main entry point
+- [x] Create `api/cli.py`:
+  - [x] `api` Click command
+  - [x] `--host` option
+  - [x] `--port` option
+  - [x] `--database-url` option
+  - [x] `--read-key` option
+  - [x] `--admin-key` option
+  - [x] `--mqtt-host`, `--mqtt-port` options
+  - [x] `--reload` flag for development
+- [x] Register CLI with main entry point
 
 ### 4.13 API Tests
 
-- [ ] Create `tests/test_api/conftest.py`:
-  - [ ] Test client fixture
-  - [ ] In-memory database fixture
-  - [ ] Test API keys
-- [ ] Create `tests/test_api/test_auth.py`:
-  - [ ] Test missing token
-  - [ ] Test invalid token
-  - [ ] Test read-only access
-  - [ ] Test admin access
-- [ ] Create `tests/test_api/test_nodes.py`:
-  - [ ] Test list nodes
-  - [ ] Test get node
-  - [ ] Test pagination
-  - [ ] Test filtering
-- [ ] Create `tests/test_api/test_node_tags.py`:
-  - [ ] Test CRUD operations
-  - [ ] Test permission checks
-- [ ] Create `tests/test_api/test_messages.py`:
-  - [ ] Test list messages
-  - [ ] Test filtering
-- [ ] Create `tests/test_api/test_commands.py`:
-  - [ ] Test send message command
-  - [ ] Test permission checks
-  - [ ] Test MQTT publishing
+- [x] Create `tests/test_api/conftest.py`:
+  - [x] Test client fixture
+  - [x] In-memory database fixture
+  - [x] Test API keys
+- [x] Create `tests/test_api/test_auth.py`:
+  - [x] Test missing token
+  - [x] Test invalid token
+  - [x] Test read-only access
+  - [x] Test admin access
+- [x] Create `tests/test_api/test_nodes.py`:
+  - [x] Test list nodes
+  - [x] Test get node
+  - [x] Test pagination
+  - [x] Test filtering
+- [x] Create `tests/test_api/test_node_tags.py`:
+  - [x] Test CRUD operations
+  - [x] Test permission checks
+- [x] Create `tests/test_api/test_messages.py`:
+  - [x] Test list messages
+  - [x] Test filtering
+- [x] Create `tests/test_api/test_commands.py`:
+  - [x] Test send message command
+  - [x] Test permission checks
+  - [x] Test MQTT publishing
 
 ---
 
-## Phase 5: Web Dashboard
+## Phase 5: Web Dashboard ✅
 
 ### 5.1 FastAPI Application Setup
 
-- [ ] Create `web/app.py`:
-  - [ ] FastAPI application instance
-  - [ ] Jinja2 templates configuration
-  - [ ] Static files mounting
-  - [ ] Lifespan handler
-  - [ ] Include all routers
+- [x] Create `web/app.py`:
+  - [x] FastAPI application instance
+  - [x] Jinja2 templates configuration
+  - [x] Static files mounting
+  - [x] Lifespan handler
+  - [x] Include all routers
 
 ### 5.2 Frontend Assets
 
-- [ ] Create `web/static/css/` directory
-- [ ] Set up Tailwind CSS:
-  - [ ] Create `tailwind.config.js`
-  - [ ] Create source CSS with Tailwind directives
-  - [ ] Configure DaisyUI plugin
-  - [ ] Build pipeline (npm script or standalone CLI)
-- [ ] Create `web/static/js/` directory:
-  - [ ] Minimal JS for interactivity (if needed)
+- [x] Create `web/static/css/` directory
+- [x] Set up Tailwind CSS:
+  - [x] Using Tailwind CDN with DaisyUI plugin
+  - [x] Configured in base.html template
+- [x] Create `web/static/js/` directory:
+  - [x] Minimal JS for interactivity (if needed)
 
 ### 5.3 Base Template
 
-- [ ] Create `web/templates/base.html`:
-  - [ ] HTML5 doctype and structure
-  - [ ] Meta tags (viewport, charset)
-  - [ ] Tailwind CSS inclusion
-  - [ ] Navigation header:
-    - [ ] Network name
-    - [ ] Links to all pages
-  - [ ] Footer with contact info
-  - [ ] Content block for page content
+- [x] Create `web/templates/base.html`:
+  - [x] HTML5 doctype and structure
+  - [x] Meta tags (viewport, charset)
+  - [x] Tailwind CSS inclusion
+  - [x] Navigation header:
+    - [x] Network name
+    - [x] Links to all pages
+  - [x] Footer with contact info
+  - [x] Content block for page content
 
 ### 5.4 Home Page
 
-- [ ] Create `web/routes/home.py`:
-  - [ ] `GET /` - home page route
-  - [ ] Load network configuration
-- [ ] Create `web/templates/home.html`:
-  - [ ] Welcome message with network name
-  - [ ] Network description/details
-  - [ ] Radio configuration display
-  - [ ] Location information
-  - [ ] Contact information (email, Discord)
-  - [ ] Quick links to other sections
+- [x] Create `web/routes/home.py`:
+  - [x] `GET /` - home page route
+  - [x] Load network configuration
+- [x] Create `web/templates/home.html`:
+  - [x] Welcome message with network name
+  - [x] Network description/details
+  - [x] Radio configuration display
+  - [x] Location information
+  - [x] Contact information (email, Discord)
+  - [x] Quick links to other sections
 
 ### 5.5 Members Page
 
-- [ ] Create `web/routes/members.py`:
-  - [ ] `GET /members` - members list route
-  - [ ] Load members from JSON file
-- [ ] Create `web/templates/members.html`:
-  - [ ] Members list/grid
-  - [ ] Member cards with:
-    - [ ] Name
-    - [ ] Callsign (if applicable)
-    - [ ] Role/description
-    - [ ] Contact info (optional)
+- [x] Create `web/routes/members.py`:
+  - [x] `GET /members` - members list route
+  - [x] Load members from JSON file
+- [x] Create `web/templates/members.html`:
+  - [x] Members list/grid
+  - [x] Member cards with:
+    - [x] Name
+    - [x] Callsign (if applicable)
+    - [x] Role/description
+    - [x] Contact info (optional)
 
 ### 5.6 Network Overview Page
 
-- [ ] Create `web/routes/network.py`:
-  - [ ] `GET /network` - network stats route
-  - [ ] Fetch stats from API
-- [ ] Create `web/templates/network.html`:
-  - [ ] Statistics cards:
-    - [ ] Total nodes
-    - [ ] Active nodes
-    - [ ] Total messages
-    - [ ] Messages today
-    - [ ] Channel statistics
-  - [ ] Recent activity summary
+- [x] Create `web/routes/network.py`:
+  - [x] `GET /network` - network stats route
+  - [x] Fetch stats from API
+- [x] Create `web/templates/network.html`:
+  - [x] Statistics cards:
+    - [x] Total nodes
+    - [x] Active nodes
+    - [x] Total messages
+    - [x] Messages today
+    - [x] Channel statistics
+  - [x] Recent activity summary
 
 ### 5.7 Nodes Page
 
-- [ ] Create `web/routes/nodes.py`:
-  - [ ] `GET /nodes` - nodes list route
-  - [ ] `GET /nodes/{public_key}` - node detail route
-  - [ ] Fetch from API with pagination
-- [ ] Create `web/templates/nodes.html`:
-  - [ ] Search/filter form
-  - [ ] Nodes table:
-    - [ ] Name
-    - [ ] Public key (truncated)
-    - [ ] Type
-    - [ ] Last seen
-    - [ ] Tags
-  - [ ] Pagination controls
-- [ ] Create `web/templates/node_detail.html`:
-  - [ ] Full node information
-  - [ ] All tags
-  - [ ] Recent messages (if any)
-  - [ ] Recent advertisements
+- [x] Create `web/routes/nodes.py`:
+  - [x] `GET /nodes` - nodes list route
+  - [x] `GET /nodes/{public_key}` - node detail route
+  - [x] Fetch from API with pagination
+- [x] Create `web/templates/nodes.html`:
+  - [x] Search/filter form
+  - [x] Nodes table:
+    - [x] Name
+    - [x] Public key (truncated)
+    - [x] Type
+    - [x] Last seen
+    - [x] Tags
+  - [x] Pagination controls
+- [x] Create `web/templates/node_detail.html`:
+  - [x] Full node information
+  - [x] All tags
+  - [x] Recent messages (if any)
+  - [x] Recent advertisements
 
 ### 5.8 Node Map Page
 
-- [ ] Create `web/routes/map.py`:
-  - [ ] `GET /map` - map page route
-  - [ ] `GET /map/data` - JSON endpoint for node locations
-  - [ ] Filter nodes with location tags
-- [ ] Create `web/templates/map.html`:
-  - [ ] Leaflet.js map container
-  - [ ] Leaflet CSS/JS includes
-  - [ ] JavaScript for:
-    - [ ] Initialize map centered on NETWORK_LOCATION
-    - [ ] Fetch node location data
-    - [ ] Add markers for each node
-    - [ ] Popup with node info on click
+- [x] Create `web/routes/map.py`:
+  - [x] `GET /map` - map page route
+  - [x] `GET /map/data` - JSON endpoint for node locations
+  - [x] Filter nodes with location tags
+- [x] Create `web/templates/map.html`:
+  - [x] Leaflet.js map container
+  - [x] Leaflet CSS/JS includes
+  - [x] JavaScript for:
+    - [x] Initialize map centered on NETWORK_LOCATION
+    - [x] Fetch node location data
+    - [x] Add markers for each node
+    - [x] Popup with node info on click
 
 ### 5.9 Messages Page
 
-- [ ] Create `web/routes/messages.py`:
-  - [ ] `GET /messages` - messages list route
-  - [ ] Fetch from API with filters
-- [ ] Create `web/templates/messages.html`:
-  - [ ] Filter form:
-    - [ ] Message type (contact/channel)
-    - [ ] Channel selector
-    - [ ] Date range
-    - [ ] Search text
-  - [ ] Messages table:
-    - [ ] Timestamp
-    - [ ] Type
-    - [ ] Sender/Channel
-    - [ ] Text (truncated)
-    - [ ] SNR
-    - [ ] Hops
-  - [ ] Pagination controls
+- [x] Create `web/routes/messages.py`:
+  - [x] `GET /messages` - messages list route
+  - [x] Fetch from API with filters
+- [x] Create `web/templates/messages.html`:
+  - [x] Filter form:
+    - [x] Message type (contact/channel)
+    - [x] Channel selector
+    - [x] Date range
+    - [x] Search text
+  - [x] Messages table:
+    - [x] Timestamp
+    - [x] Type
+    - [x] Sender/Channel
+    - [x] Text (truncated)
+    - [x] SNR
+    - [x] Hops
+  - [x] Pagination controls
 
 ### 5.10 Web CLI
 
-- [ ] Create `web/cli.py`:
-  - [ ] `web` Click command
-  - [ ] `--host` option
-  - [ ] `--port` option
-  - [ ] `--api-url` option
-  - [ ] `--api-key` option
-  - [ ] Network configuration options:
-    - [ ] `--network-name`
-    - [ ] `--network-city`
-    - [ ] `--network-country`
-    - [ ] `--network-location`
-    - [ ] `--network-radio-config`
-    - [ ] `--network-contact-email`
-    - [ ] `--network-contact-discord`
-  - [ ] `--members-file` option
-  - [ ] `--reload` flag for development
-- [ ] Register CLI with main entry point
+- [x] Create `web/cli.py`:
+  - [x] `web` Click command
+  - [x] `--host` option
+  - [x] `--port` option
+  - [x] `--api-url` option
+  - [x] `--api-key` option
+  - [x] Network configuration options:
+    - [x] `--network-name`
+    - [x] `--network-city`
+    - [x] `--network-country`
+    - [x] `--network-location`
+    - [x] `--network-radio-config`
+    - [x] `--network-contact-email`
+    - [x] `--network-contact-discord`
+  - [x] `--members-file` option
+  - [x] `--reload` flag for development
+- [x] Register CLI with main entry point
 
 ### 5.11 Web Tests
 
@@ -738,13 +736,13 @@ This document tracks implementation progress for the MeshCore Hub project. Each 
 
 | Phase | Total Tasks | Completed | Progress |
 |-------|-------------|-----------|----------|
-| Phase 1: Foundation | 47 | 0 | 0% |
-| Phase 2: Interface | 35 | 0 | 0% |
-| Phase 3: Collector | 27 | 0 | 0% |
-| Phase 4: API | 44 | 0 | 0% |
-| Phase 5: Web Dashboard | 40 | 0 | 0% |
+| Phase 1: Foundation | 47 | 47 | 100% |
+| Phase 2: Interface | 35 | 35 | 100% |
+| Phase 3: Collector | 27 | 20 | 74% |
+| Phase 4: API | 44 | 44 | 100% |
+| Phase 5: Web Dashboard | 40 | 33 | 83% |
 | Phase 6: Docker & Deployment | 28 | 0 | 0% |
-| **Total** | **221** | **0** | **0%** |
+| **Total** | **221** | **179** | **81%** |
 
 ---
 
@@ -783,5 +781,9 @@ This document tracks implementation progress for the MeshCore Hub project. Each 
 
 | Date | Session | Tasks Completed | Notes |
 |------|---------|-----------------|-------|
-| | | | |
+| 2025-12-03 | 1 | Phase 1: Foundation | Project setup, common package, database models, schemas, migrations, CLI |
+| 2025-12-03 | 2 | Phase 2: Interface | Device abstraction, mock device, receiver/sender modes, CLI, tests |
+| 2025-12-03 | 3 | Phase 3: Collector | MQTT subscriber, event handlers, CLI, tests (webhook pending) |
+| 2025-12-03 | 4 | Phase 4: API | FastAPI app, auth, all routes, CLI, tests (108 passed, 9 pre-existing failures) |
+| 2025-12-03 | 5 | Phase 5: Web Dashboard | FastAPI + Jinja2, Tailwind/DaisyUI, Leaflet map, all pages, CLI (tests pending) |
 
