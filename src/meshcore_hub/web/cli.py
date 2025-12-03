@@ -33,6 +33,13 @@ import click
     help="API key for queries",
 )
 @click.option(
+    "--data-home",
+    type=str,
+    default=None,
+    envvar="DATA_HOME",
+    help="Base data directory (default: ./data)",
+)
+@click.option(
     "--network-name",
     type=str,
     default="MeshCore Network",
@@ -93,7 +100,7 @@ import click
     type=str,
     default=None,
     envvar="MEMBERS_FILE",
-    help="Path to members JSON file",
+    help="Path to members JSON file (default: {data_home}/web/members.json)",
 )
 @click.option(
     "--reload",
@@ -108,6 +115,7 @@ def web(
     port: int,
     api_url: str,
     api_key: str | None,
+    data_home: str | None,
     network_name: str,
     network_city: str | None,
     network_country: str | None,
@@ -142,14 +150,34 @@ def web(
         meshcore-hub web --reload
     """
     import uvicorn
+    from pathlib import Path
 
+    from meshcore_hub.common.config import get_web_settings
     from meshcore_hub.web.app import create_app
+
+    # Get settings to compute effective values
+    settings = get_web_settings()
+
+    # Override data_home if provided
+    if data_home:
+        settings = settings.model_copy(update={"data_home": data_home})
+
+    # Use effective members file if not explicitly provided
+    effective_members_file = (
+        members_file if members_file else settings.effective_members_file
+    )
+    effective_data_home = data_home or settings.data_home
+
+    # Ensure web data directory exists
+    web_data_dir = Path(effective_data_home) / "web"
+    web_data_dir.mkdir(parents=True, exist_ok=True)
 
     click.echo("=" * 50)
     click.echo("MeshCore Hub Web Dashboard")
     click.echo("=" * 50)
     click.echo(f"Host: {host}")
     click.echo(f"Port: {port}")
+    click.echo(f"Data home: {effective_data_home}")
     click.echo(f"API URL: {api_url}")
     click.echo(f"API key configured: {api_key is not None}")
     click.echo(f"Network: {network_name}")
@@ -157,8 +185,7 @@ def web(
         click.echo(f"Location: {network_city}, {network_country}")
     if network_lat != 0.0 or network_lon != 0.0:
         click.echo(f"Map center: {network_lat}, {network_lon}")
-    if members_file:
-        click.echo(f"Members file: {members_file}")
+    click.echo(f"Members file: {effective_members_file}")
     click.echo(f"Reload mode: {reload}")
     click.echo("=" * 50)
 
@@ -188,7 +215,7 @@ def web(
             network_radio_config=network_radio_config,
             network_contact_email=network_contact_email,
             network_contact_discord=network_contact_discord,
-            members_file=members_file,
+            members_file=effective_members_file,
         )
 
         click.echo("\nStarting web dashboard...")

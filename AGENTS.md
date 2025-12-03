@@ -283,9 +283,12 @@ meshcore-hub/
 │       │   └── tags.json     # Example node tags data
 │       └── web/
 │           └── members.json  # Example network members data
-├── data/                     # Runtime data (gitignored)
-│   ├── collector/            # Collector data (tags.json)
-│   └── web/                  # Web data (members.json)
+├── data/                     # Runtime data (gitignored, DATA_HOME default)
+│   ├── collector/            # Collector data
+│   │   ├── meshcore.db       # SQLite database
+│   │   └── tags.json         # Node tags for import
+│   └── web/                  # Web data
+│       └── members.json      # Network members list
 ├── Dockerfile                # Docker build configuration
 ├── docker-compose.yml        # Docker Compose services (gitignored)
 └── docker-compose.yml.example  # Docker Compose template
@@ -433,10 +436,25 @@ meshcore-hub interface --mode receiver --mock
 See [PLAN.md](PLAN.md#configuration-environment-variables) for complete list.
 
 Key variables:
+- `DATA_HOME` - Base directory for all service data (default: `./data`)
 - `MQTT_HOST`, `MQTT_PORT`, `MQTT_PREFIX` - MQTT broker connection
-- `DATABASE_URL` - SQLAlchemy database URL
+- `DATABASE_URL` - SQLAlchemy database URL (default: `sqlite:///{DATA_HOME}/collector/meshcore.db`)
 - `API_READ_KEY`, `API_ADMIN_KEY` - API authentication keys
 - `LOG_LEVEL` - Logging verbosity
+
+### Data Directory Structure
+
+The `DATA_HOME` environment variable controls where all service data is stored:
+```
+${DATA_HOME}/
+├── collector/
+│   ├── meshcore.db    # SQLite database
+│   └── tags.json      # Node tags for import
+└── web/
+    └── members.json   # Network members list
+```
+
+Services automatically create their subdirectories if they don't exist.
 
 ### Webhook Configuration
 

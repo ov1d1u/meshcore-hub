@@ -17,9 +17,14 @@
 #   - migrate: Run database migrations
 #   - import-tags: Import node tags from JSON file
 #
-# Data Directory Structure:
-#   ./data/
+# Data Directory (DATA_HOME):
+#   The DATA_HOME environment variable controls where all service data is stored.
+#   Default: ./data (local) or /data (in containers)
+#
+#   Structure:
+#   ${DATA_HOME}/
 #   ├── collector/
+#   │   ├── meshcore.db    # SQLite database
 #   │   └── tags.json      # Node tags for import
 #   └── web/
 #       └── members.json   # Network members list
@@ -175,9 +180,8 @@ services:
       mqtt:
         condition: service_healthy
     volumes:
-      - meshcore_data:/data
-      # Mount collector data directory for tags.json (optional)
-      - ${COLLECTOR_DATA_PATH:-./data/collector}:/app/collector-data:ro
+      # Mount data directory (contains collector/meshcore.db and collector/tags.json)
+      - ${DATA_HOME:-./data}:/data
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - MQTT_HOST=${MQTT_HOST:-mqtt}
@@ -185,7 +189,7 @@ services:
       - MQTT_USERNAME=${MQTT_USERNAME:-}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - MQTT_PREFIX=${MQTT_PREFIX:-meshcore}
-      - DATABASE_URL=sqlite:////data/meshcore.db
+      - DATA_HOME=/data
       # Webhook configuration
       - WEBHOOK_ADVERTISEMENT_URL=${WEBHOOK_ADVERTISEMENT_URL:-}
       - WEBHOOK_ADVERTISEMENT_SECRET=${WEBHOOK_ADVERTISEMENT_SECRET:-}
@@ -227,7 +231,8 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
-      - meshcore_data:/data
+      # Mount data directory (uses collector/meshcore.db)
+      - ${DATA_HOME:-./data}:/data
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - MQTT_HOST=${MQTT_HOST:-mqtt}
@@ -235,7 +240,7 @@ services:
       - MQTT_USERNAME=${MQTT_USERNAME:-}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - MQTT_PREFIX=${MQTT_PREFIX:-meshcore}
-      - DATABASE_URL=sqlite:////data/meshcore.db
+      - DATA_HOME=/data
       - API_HOST=0.0.0.0
       - API_PORT=8000
       - API_READ_KEY=${API_READ_KEY:-}
@@ -266,12 +271,16 @@ services:
         condition: service_healthy
     ports:
       - "${WEB_PORT:-8080}:8080"
+    volumes:
+      # Mount data directory (uses web/members.json)
+      - ${DATA_HOME:-./data}:/data
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - API_BASE_URL=http://api:8000
       - API_KEY=${API_READ_KEY:-}
       - WEB_HOST=0.0.0.0
       - WEB_PORT=8080
+      - DATA_HOME=/data
       - NETWORK_NAME=${NETWORK_NAME:-MeshCore Network}
       - NETWORK_CITY=${NETWORK_CITY:-}
       - NETWORK_COUNTRY=${NETWORK_COUNTRY:-}
@@ -279,10 +288,6 @@ services:
       - NETWORK_RADIO_CONFIG=${NETWORK_RADIO_CONFIG:-}
       - NETWORK_CONTACT_EMAIL=${NETWORK_CONTACT_EMAIL:-}
       - NETWORK_CONTACT_DISCORD=${NETWORK_CONTACT_DISCORD:-}
-      - MEMBERS_FILE=${MEMBERS_FILE:-/app/web-data/members.json}
-    volumes:
-      # Mount web data directory for members.json (optional)
-      - ${WEB_DATA_PATH:-./data/web}:/app/web-data:ro
     command: ["web"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
@@ -302,9 +307,10 @@ services:
     profiles:
       - migrate
     volumes:
-      - meshcore_data:/data
+      # Mount data directory (uses collector/meshcore.db)
+      - ${DATA_HOME:-./data}:/data
     environment:
-      - DATABASE_URL=sqlite:////data/meshcore.db
+      - DATA_HOME=/data
     command: ["db", "upgrade"]
 
   # ==========================================================================
@@ -318,12 +324,13 @@ services:
     profiles:
       - import-tags
     volumes:
-      - meshcore_data:/data
-      - ${COLLECTOR_DATA_PATH:-./data/collector}:/app/collector-data:ro
+      # Mount data directory (uses collector/tags.json and collector/meshcore.db)
+      - ${DATA_HOME:-./data}:/data
     environment:
-      - DATABASE_URL=sqlite:////data/meshcore.db
+      - DATA_HOME=/data
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-    command: ["collector", "import-tags", "/app/collector-data/tags.json"]
+    # Uses default tags file: /data/collector/tags.json
+    command: ["collector", "import-tags"]
 
 # ==========================================================================
 # Volumes
@@ -333,5 +340,3 @@ volumes:
     name: meshcore_mosquitto_data
   mosquitto_log:
     name: meshcore_mosquitto_log
-  meshcore_data:
-    name: meshcore_data

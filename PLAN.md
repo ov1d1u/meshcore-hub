@@ -456,12 +456,24 @@ meshcore/+/command/request_telemetry
 ### Common
 | Variable | Default | Description |
 |----------|---------|-------------|
+| DATA_HOME | ./data | Base directory for service data |
 | LOG_LEVEL | INFO | Logging level |
 | MQTT_HOST | localhost | MQTT broker host |
 | MQTT_PORT | 1883 | MQTT broker port |
 | MQTT_USERNAME | | MQTT username (optional) |
 | MQTT_PASSWORD | | MQTT password (optional) |
 | MQTT_PREFIX | meshcore | Topic prefix |
+
+### Data Directory Structure
+The `DATA_HOME` environment variable controls where all service data is stored:
+```
+${DATA_HOME}/
+├── collector/
+│   ├── meshcore.db    # SQLite database
+│   └── tags.json      # Node tags for import
+└── web/
+    └── members.json   # Network members list
+```
 
 ### Interface
 | Variable | Default | Description |
@@ -474,7 +486,8 @@ meshcore/+/command/request_telemetry
 ### Collector
 | Variable | Default | Description |
 |----------|---------|-------------|
-| DATABASE_URL | sqlite:///./meshcore.db | SQLAlchemy URL |
+| DATABASE_URL | sqlite:///{DATA_HOME}/collector/meshcore.db | SQLAlchemy URL |
+| TAGS_FILE | {DATA_HOME}/collector/tags.json | Path to tags JSON file |
 
 ### API
 | Variable | Default | Description |
@@ -483,7 +496,7 @@ meshcore/+/command/request_telemetry
 | API_PORT | 8000 | API bind port |
 | API_READ_KEY | | Read-only API key |
 | API_ADMIN_KEY | | Admin API key |
-| DATABASE_URL | sqlite:///./meshcore.db | SQLAlchemy URL |
+| DATABASE_URL | sqlite:///{DATA_HOME}/collector/meshcore.db | SQLAlchemy URL |
 
 ### Web Dashboard
 | Variable | Default | Description |
@@ -500,7 +513,7 @@ meshcore/+/command/request_telemetry
 | NETWORK_RADIO_CONFIG | | Radio config details |
 | NETWORK_CONTACT_EMAIL | | Contact email |
 | NETWORK_CONTACT_DISCORD | | Discord link |
-| MEMBERS_FILE | members.json | Path to members JSON |
+| MEMBERS_FILE | {DATA_HOME}/web/members.json | Path to members JSON |
 
 ---
 
