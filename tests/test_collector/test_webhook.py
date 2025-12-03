@@ -1,6 +1,6 @@
 """Tests for the webhook dispatcher module."""
 
-import asyncio
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -312,9 +312,7 @@ class TestWebhookDispatcher:
         mock_response = AsyncMock()
         mock_response.status_code = 500
 
-        with patch.object(
-            dispatcher._client, "post", return_value=mock_response
-        ):
+        with patch.object(dispatcher._client, "post", return_value=mock_response):
             result = await dispatcher.dispatch("event", {"data": "test"})
             assert result == {"error-webhook": False}
 
@@ -403,7 +401,7 @@ class TestWebhookDispatcherFactory:
 
     def test_create_from_config(self):
         """Test creating dispatcher from configuration."""
-        config = [
+        config: list[dict[str, Any]] = [
             {
                 "name": "webhook-1",
                 "url": "https://example.com/webhook1",

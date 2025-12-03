@@ -76,7 +76,7 @@ class WebhookConfig:
         # Parse expression: $.path operator value
         # Supports: ==, !=, >, <, >=, <=, exists, not exists
         # Note: >= and <= must come before > and < in the alternation
-        pattern = r'^\$\.([a-zA-Z0-9_.]+)\s+(==|!=|>=|<=|>|<|exists|not exists)\s*(.*)$'
+        pattern = r"^\$\.([a-zA-Z0-9_.]+)\s+(==|!=|>=|<=|>|<|exists|not exists)\s*(.*)$"
         match = re.match(pattern, expr)
 
         if not match:
@@ -88,8 +88,8 @@ class WebhookConfig:
         value_str = match.group(3).strip() if match.group(3) else None
 
         # Navigate the path
-        current = payload
-        for part in path.split('.'):
+        current: Any = payload
+        for part in path.split("."):
             if isinstance(current, dict) and part in current:
                 current = current[part]
             else:
@@ -109,8 +109,9 @@ class WebhookConfig:
             return False
 
         # Handle quoted strings
+        compare_value: Any
         if value_str.startswith('"') and value_str.endswith('"'):
-            compare_value: Any = value_str[1:-1]
+            compare_value = value_str[1:-1]
         elif value_str.startswith("'") and value_str.endswith("'"):
             compare_value = value_str[1:-1]
         elif value_str == "null":
@@ -131,17 +132,17 @@ class WebhookConfig:
         # Perform comparison
         try:
             if operator == "==":
-                return current == compare_value
+                return bool(current == compare_value)
             elif operator == "!=":
-                return current != compare_value
+                return bool(current != compare_value)
             elif operator == ">":
-                return current > compare_value
+                return bool(current > compare_value)
             elif operator == "<":
-                return current < compare_value
+                return bool(current < compare_value)
             elif operator == ">=":
-                return current >= compare_value
+                return bool(current >= compare_value)
             elif operator == "<=":
-                return current <= compare_value
+                return bool(current <= compare_value)
         except TypeError:
             return False
 
@@ -250,14 +251,21 @@ class WebhookDispatcher:
         if tasks:
             task_results = await asyncio.gather(*tasks, return_exceptions=True)
             for webhook, result in zip(
-                [w for w in self.webhooks if w.enabled and w.matches_event(event_type, payload)],
+                [
+                    w
+                    for w in self.webhooks
+                    if w.enabled and w.matches_event(event_type, payload)
+                ],
                 task_results,
             ):
                 if isinstance(result, Exception):
                     results[webhook.name] = False
                     logger.error(f"Webhook {webhook.name} failed: {result}")
-                else:
+                elif isinstance(result, bool):
                     results[webhook.name] = result
+                else:
+                    # Should not happen, but handle gracefully
+                    results[webhook.name] = False
 
         return results
 
@@ -319,7 +327,7 @@ class WebhookDispatcher:
 
             # Retry with backoff (but not after the last attempt)
             if attempt < webhook.max_retries:
-                backoff = webhook.retry_backoff * (2 ** attempt)
+                backoff = webhook.retry_backoff * (2**attempt)
                 logger.info(
                     f"Retrying webhook {webhook.name} in {backoff}s "
                     f"(attempt {attempt + 2}/{webhook.max_retries + 1})"
@@ -387,7 +395,9 @@ def create_webhook_dispatcher_from_config(
 # Synchronous wrapper for use in non-async handlers
 _dispatcher: Optional[WebhookDispatcher] = None
 _dispatch_queue: list[tuple[str, dict[str, Any], Optional[str]]] = []
-_dispatch_callback: Optional[Callable[[str, dict[str, Any], Optional[str]], None]] = None
+_dispatch_callback: Optional[Callable[[str, dict[str, Any], Optional[str]], None]] = (
+    None
+)
 
 
 def set_dispatch_callback(

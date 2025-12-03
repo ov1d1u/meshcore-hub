@@ -33,7 +33,9 @@ class HealthStatus:
 
     healthy: bool
     component: str
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
     details: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -153,7 +155,9 @@ def read_health_status(component: str) -> Optional[HealthStatus]:
         return None
 
 
-def check_health(component: str, stale_threshold: int = HEALTH_STALE_THRESHOLD) -> tuple[bool, str]:
+def check_health(
+    component: str, stale_threshold: int = HEALTH_STALE_THRESHOLD
+) -> tuple[bool, str]:
     """Check health status for a component.
 
     Args:
