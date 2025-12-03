@@ -230,20 +230,26 @@ def import_tags_cmd(
     FILE is the path to the JSON file containing tags.
     If not provided, defaults to {DATA_HOME}/collector/tags.json.
 
-    Expected JSON format:
+    Expected JSON format (keyed by public_key):
     \b
     {
-      "tags": [
-        {
-          "public_key": "64-char-hex-string",
-          "key": "tag-name",
-          "value": "tag-value",
-          "value_type": "string"
-        }
-      ]
+      "0123456789abcdef...": {
+        "friendly_name": "My Node",
+        "location": {"value": "52.0,1.0", "type": "coordinate"},
+        "altitude": {"value": "150", "type": "number"}
+      }
     }
 
-    Supported value_type: string, number, boolean, coordinate
+    Shorthand is also supported (string values with default type):
+    \b
+    {
+      "0123456789abcdef...": {
+        "friendly_name": "My Node",
+        "role": "gateway"
+      }
+    }
+
+    Supported types: string, number, boolean, coordinate
     """
     from pathlib import Path
 

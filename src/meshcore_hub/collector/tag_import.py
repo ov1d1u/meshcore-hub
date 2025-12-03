@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import select
 
 from meshcore_hub.common.database import DatabaseManager
@@ -15,44 +15,83 @@ from meshcore_hub.common.models import Node, NodeTag
 logger = logging.getLogger(__name__)
 
 
-class TagEntry(BaseModel):
-    """Schema for a tag entry in the import file."""
+class TagValue(BaseModel):
+    """Schema for a tag value with type."""
 
-    public_key: str = Field(..., min_length=64, max_length=64)
-    key: str = Field(..., min_length=1, max_length=100)
     value: str | None = None
-    value_type: str = Field(
-        default="string", pattern=r"^(string|number|boolean|coordinate)$"
-    )
+    type: str = Field(default="string", pattern=r"^(string|number|boolean|coordinate)$")
 
-    @field_validator("public_key")
+
+class NodeTags(BaseModel):
+    """Schema for tags associated with a node.
+
+    Each key in the model is a tag name, value is TagValue.
+    """
+
+    model_config = {"extra": "allow"}
+
+    @model_validator(mode="before")
     @classmethod
-    def validate_public_key(cls, v: str) -> str:
-        """Validate that public_key is a valid hex string."""
-        if not all(c in "0123456789abcdefABCDEF" for c in v):
-            raise ValueError("public_key must be a valid hex string")
-        return v.lower()
+    def validate_tags(cls, data: dict[str, Any]) -> dict[str, Any]:
+        """Validate that all values are valid tag entries."""
+        if not isinstance(data, dict):
+            raise ValueError("Node tags must be a dictionary")
+
+        validated = {}
+        for key, value in data.items():
+            if isinstance(value, dict):
+                # Full format: {"value": "...", "type": "..."}
+                validated[key] = value
+            elif isinstance(value, str):
+                # Shorthand: just a string value
+                validated[key] = {"value": value, "type": "string"}
+            elif value is None:
+                validated[key] = {"value": None, "type": "string"}
+            else:
+                # Convert other types to string
+                validated[key] = {"value": str(value), "type": "string"}
+
+        return validated
 
 
-class TagsFile(BaseModel):
-    """Schema for the tags JSON file."""
+def validate_public_key(public_key: str) -> str:
+    """Validate that public_key is a valid 64-char hex string."""
+    if len(public_key) != 64:
+        raise ValueError(f"public_key must be 64 characters, got {len(public_key)}")
+    if not all(c in "0123456789abcdefABCDEF" for c in public_key):
+        raise ValueError("public_key must be a valid hex string")
+    return public_key.lower()
 
-    tags: list[TagEntry]
 
-
-def load_tags_file(file_path: str | Path) -> TagsFile:
+def load_tags_file(file_path: str | Path) -> dict[str, dict[str, Any]]:
     """Load and validate tags from a JSON file.
+
+    New format - dictionary keyed by public_key:
+    {
+      "0123456789abcdef...": {
+        "friendly_name": "My Node",
+        "location": {"value": "52.0,1.0", "type": "coordinate"},
+        "altitude": {"value": "150", "type": "number"}
+      }
+    }
+
+    Shorthand is allowed - string values are auto-converted:
+    {
+      "0123456789abcdef...": {
+        "friendly_name": "My Node"
+      }
+    }
 
     Args:
         file_path: Path to the tags JSON file
 
     Returns:
-        Validated TagsFile instance
+        Dictionary mapping public_key to tag dictionary
 
     Raises:
         FileNotFoundError: If file does not exist
         json.JSONDecodeError: If file is not valid JSON
-        pydantic.ValidationError: If file content is invalid
+        ValueError: If file content is invalid
     """
     path = Path(file_path)
     if not path.exists():
@@ -61,7 +100,39 @@ def load_tags_file(file_path: str | Path) -> TagsFile:
     with open(path, "r") as f:
         data = json.load(f)
 
-    return TagsFile.model_validate(data)
+    if not isinstance(data, dict):
+        raise ValueError("Tags file must contain a JSON object")
+
+    # Validate each entry
+    validated: dict[str, dict[str, Any]] = {}
+    for public_key, tags in data.items():
+        # Validate public key
+        validated_key = validate_public_key(public_key)
+
+        # Validate tags
+        if not isinstance(tags, dict):
+            raise ValueError(f"Tags for {public_key[:12]}... must be a dictionary")
+
+        validated_tags: dict[str, Any] = {}
+        for tag_key, tag_value in tags.items():
+            if isinstance(tag_value, dict):
+                # Full format with value and type
+                validated_tags[tag_key] = {
+                    "value": tag_value.get("value"),
+                    "type": tag_value.get("type", "string"),
+                }
+            elif isinstance(tag_value, str):
+                # Shorthand: just a string value
+                validated_tags[tag_key] = {"value": tag_value, "type": "string"}
+            elif tag_value is None:
+                validated_tags[tag_key] = {"value": None, "type": "string"}
+            else:
+                # Convert other types to string
+                validated_tags[tag_key] = {"value": str(tag_value), "type": "string"}
+
+        validated[validated_key] = validated_tags
+
+    return validated
 
 
 def import_tags(
@@ -99,81 +170,93 @@ def import_tags(
 
     # Load and validate file
     try:
-        tags_file = load_tags_file(file_path)
+        tags_data = load_tags_file(file_path)
     except Exception as e:
         stats["errors"].append(f"Failed to load tags file: {e}")
         return stats
 
-    stats["total"] = len(tags_file.tags)
+    # Count total tags
+    for tags in tags_data.values():
+        stats["total"] += len(tags)
+
     now = datetime.now(timezone.utc)
 
     with db.session_scope() as session:
         # Cache nodes by public_key to reduce queries
         node_cache: dict[str, Node] = {}
 
-        for tag_entry in tags_file.tags:
+        for public_key, tags in tags_data.items():
             try:
                 # Get or create node
-                node = node_cache.get(tag_entry.public_key)
+                node = node_cache.get(public_key)
                 if node is None:
-                    query = select(Node).where(Node.public_key == tag_entry.public_key)
+                    query = select(Node).where(Node.public_key == public_key)
                     node = session.execute(query).scalar_one_or_none()
 
                     if node is None:
                         if create_nodes:
                             node = Node(
-                                public_key=tag_entry.public_key,
+                                public_key=public_key,
                                 first_seen=now,
                                 last_seen=now,
                             )
                             session.add(node)
                             session.flush()
                             stats["nodes_created"] += 1
-                            logger.debug(
-                                f"Created node for {tag_entry.public_key[:12]}..."
-                            )
+                            logger.debug(f"Created node for {public_key[:12]}...")
                         else:
-                            stats["skipped"] += 1
+                            stats["skipped"] += len(tags)
                             logger.debug(
-                                f"Skipped tag for unknown node {tag_entry.public_key[:12]}..."
+                                f"Skipped {len(tags)} tags for unknown node {public_key[:12]}..."
                             )
                             continue
 
-                    node_cache[tag_entry.public_key] = node
+                    node_cache[public_key] = node
 
-                # Find or create tag
-                tag_query = select(NodeTag).where(
-                    NodeTag.node_id == node.id,
-                    NodeTag.key == tag_entry.key,
-                )
-                existing_tag = session.execute(tag_query).scalar_one_or_none()
+                # Process each tag
+                for tag_key, tag_data in tags.items():
+                    try:
+                        tag_value = tag_data.get("value")
+                        tag_type = tag_data.get("type", "string")
 
-                if existing_tag:
-                    # Update existing tag
-                    existing_tag.value = tag_entry.value
-                    existing_tag.value_type = tag_entry.value_type
-                    stats["updated"] += 1
-                    logger.debug(
-                        f"Updated tag {tag_entry.key}={tag_entry.value} "
-                        f"for {tag_entry.public_key[:12]}..."
-                    )
-                else:
-                    # Create new tag
-                    new_tag = NodeTag(
-                        node_id=node.id,
-                        key=tag_entry.key,
-                        value=tag_entry.value,
-                        value_type=tag_entry.value_type,
-                    )
-                    session.add(new_tag)
-                    stats["created"] += 1
-                    logger.debug(
-                        f"Created tag {tag_entry.key}={tag_entry.value} "
-                        f"for {tag_entry.public_key[:12]}..."
-                    )
+                        # Find or create tag
+                        tag_query = select(NodeTag).where(
+                            NodeTag.node_id == node.id,
+                            NodeTag.key == tag_key,
+                        )
+                        existing_tag = session.execute(tag_query).scalar_one_or_none()
+
+                        if existing_tag:
+                            # Update existing tag
+                            existing_tag.value = tag_value
+                            existing_tag.value_type = tag_type
+                            stats["updated"] += 1
+                            logger.debug(
+                                f"Updated tag {tag_key}={tag_value} "
+                                f"for {public_key[:12]}..."
+                            )
+                        else:
+                            # Create new tag
+                            new_tag = NodeTag(
+                                node_id=node.id,
+                                key=tag_key,
+                                value=tag_value,
+                                value_type=tag_type,
+                            )
+                            session.add(new_tag)
+                            stats["created"] += 1
+                            logger.debug(
+                                f"Created tag {tag_key}={tag_value} "
+                                f"for {public_key[:12]}..."
+                            )
+
+                    except Exception as e:
+                        error_msg = f"Error processing tag {tag_key} for {public_key[:12]}...: {e}"
+                        stats["errors"].append(error_msg)
+                        logger.error(error_msg)
 
             except Exception as e:
-                error_msg = f"Error processing tag {tag_entry.key} for {tag_entry.public_key[:12]}...: {e}"
+                error_msg = f"Error processing node {public_key[:12]}...: {e}"
                 stats["errors"].append(error_msg)
                 logger.error(error_msg)
 

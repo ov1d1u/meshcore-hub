@@ -5,134 +5,61 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
 from sqlalchemy import select
 
 from meshcore_hub.collector.tag_import import (
-    TagEntry,
-    TagsFile,
     import_tags,
     load_tags_file,
+    validate_public_key,
 )
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.models import Node, NodeTag
 
 
-class TestTagEntry:
-    """Tests for TagEntry model."""
+class TestValidatePublicKey:
+    """Tests for validate_public_key function."""
 
-    def test_valid_tag_entry(self):
-        """Test creating a valid tag entry."""
-        entry = TagEntry(
-            public_key="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-            key="location",
-            value="San Francisco",
-            value_type="string",
+    def test_valid_public_key(self):
+        """Test valid public key is returned lowercase."""
+        result = validate_public_key(
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
         )
         assert (
-            entry.public_key
-            == "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+            result == "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
         )
-        assert entry.key == "location"
-        assert entry.value == "San Francisco"
-        assert entry.value_type == "string"
 
     def test_public_key_lowercase(self):
         """Test that public key is normalized to lowercase."""
-        entry = TagEntry(
-            public_key="0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
-            key="test",
+        result = validate_public_key(
+            "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
         )
         assert (
-            entry.public_key
-            == "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+            result == "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
         )
-
-    def test_default_value_type(self):
-        """Test default value_type is string."""
-        entry = TagEntry(
-            public_key="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-            key="test",
-        )
-        assert entry.value_type == "string"
 
     def test_invalid_public_key_length(self):
         """Test that short public key is rejected."""
-        with pytest.raises(ValidationError):
-            TagEntry(
-                public_key="0123456789abcdef",
-                key="test",
-            )
+        with pytest.raises(ValueError, match="must be 64 characters"):
+            validate_public_key("0123456789abcdef")
 
     def test_invalid_public_key_chars(self):
         """Test that non-hex public key is rejected."""
-        with pytest.raises(ValidationError):
-            TagEntry(
-                public_key="zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
-                key="test",
+        with pytest.raises(ValueError, match="valid hex string"):
+            validate_public_key(
+                "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
             )
-
-    def test_invalid_value_type(self):
-        """Test that invalid value_type is rejected."""
-        with pytest.raises(ValidationError):
-            TagEntry(
-                public_key="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                key="test",
-                value_type="invalid",
-            )
-
-    def test_valid_value_types(self):
-        """Test all valid value types."""
-        for vt in ["string", "number", "boolean", "coordinate"]:
-            entry = TagEntry(
-                public_key="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                key="test",
-                value_type=vt,
-            )
-            assert entry.value_type == vt
-
-
-class TestTagsFile:
-    """Tests for TagsFile model."""
-
-    def test_valid_tags_file(self):
-        """Test creating a valid tags file."""
-        tags_file = TagsFile(
-            tags=[
-                TagEntry(
-                    public_key="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                    key="location",
-                    value="SF",
-                ),
-                TagEntry(
-                    public_key="fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
-                    key="role",
-                    value="gateway",
-                ),
-            ]
-        )
-        assert len(tags_file.tags) == 2
-
-    def test_empty_tags(self):
-        """Test tags file with empty tags list."""
-        tags_file = TagsFile(tags=[])
-        assert len(tags_file.tags) == 0
 
 
 class TestLoadTagsFile:
     """Tests for load_tags_file function."""
 
     def test_load_valid_file(self):
-        """Test loading a valid tags file."""
+        """Test loading a valid tags file with new format."""
         data = {
-            "tags": [
-                {
-                    "public_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                    "key": "location",
-                    "value": "San Francisco",
-                    "value_type": "string",
-                }
-            ]
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef": {
+                "location": "San Francisco",
+                "role": {"value": "gateway", "type": "string"},
+            }
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
@@ -140,8 +67,51 @@ class TestLoadTagsFile:
             f.flush()
 
             result = load_tags_file(f.name)
-            assert len(result.tags) == 1
-            assert result.tags[0].key == "location"
+            assert len(result) == 1
+            key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+            assert key in result
+            assert result[key]["location"]["value"] == "San Francisco"
+            assert result[key]["location"]["type"] == "string"
+            assert result[key]["role"]["value"] == "gateway"
+
+        Path(f.name).unlink()
+
+    def test_load_shorthand_format(self):
+        """Test loading file with shorthand string values."""
+        data = {
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef": {
+                "friendly_name": "My Node",
+            }
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            f.flush()
+
+            result = load_tags_file(f.name)
+            key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+            assert result[key]["friendly_name"]["value"] == "My Node"
+            assert result[key]["friendly_name"]["type"] == "string"
+
+        Path(f.name).unlink()
+
+    def test_load_full_format(self):
+        """Test loading file with full format (value and type)."""
+        data = {
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef": {
+                "location": {"value": "52.0,1.0", "type": "coordinate"},
+                "altitude": {"value": "150", "type": "number"},
+            }
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            f.flush()
+
+            result = load_tags_file(f.name)
+            key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+            assert result[key]["location"]["type"] == "coordinate"
+            assert result[key]["altitude"]["type"] == "number"
 
         Path(f.name).unlink()
 
@@ -161,16 +131,42 @@ class TestLoadTagsFile:
 
         Path(f.name).unlink()
 
-    def test_invalid_schema(self):
-        """Test loading file with invalid schema."""
-        data: dict[str, list[str]] = {"not_tags": []}
+    def test_invalid_schema_not_dict(self):
+        """Test loading file with invalid schema (not a dict)."""
+        data = [{"public_key": "abc"}]
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
             f.flush()
 
-            with pytest.raises(ValidationError):
+            with pytest.raises(ValueError, match="must contain a JSON object"):
                 load_tags_file(f.name)
+
+        Path(f.name).unlink()
+
+    def test_invalid_public_key(self):
+        """Test loading file with invalid public key."""
+        data = {"invalid_key": {"tag": "value"}}
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            f.flush()
+
+            with pytest.raises(ValueError, match="must be 64 characters"):
+                load_tags_file(f.name)
+
+        Path(f.name).unlink()
+
+    def test_load_empty_file(self):
+        """Test loading empty tags file."""
+        data: dict[str, dict[str, str]] = {}
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            f.flush()
+
+            result = load_tags_file(f.name)
+            assert len(result) == 0
 
         Path(f.name).unlink()
 
@@ -188,28 +184,15 @@ class TestImportTags:
 
     @pytest.fixture
     def sample_tags_file(self):
-        """Create a sample tags file."""
+        """Create a sample tags file with new format."""
         data = {
-            "tags": [
-                {
-                    "public_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                    "key": "location",
-                    "value": "San Francisco",
-                    "value_type": "string",
-                },
-                {
-                    "public_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                    "key": "role",
-                    "value": "gateway",
-                    "value_type": "string",
-                },
-                {
-                    "public_key": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
-                    "key": "altitude",
-                    "value": "100",
-                    "value_type": "number",
-                },
-            ]
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef": {
+                "location": "San Francisco",
+                "role": {"value": "gateway", "type": "string"},
+            },
+            "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210": {
+                "altitude": {"value": "100", "type": "number"},
+            },
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
@@ -294,8 +277,8 @@ class TestImportTags:
         assert "Failed to load" in stats["errors"][0]
 
     def test_import_empty_file(self, db_manager):
-        """Test import with empty tags list."""
-        data: dict[str, list[str]] = {"tags": []}
+        """Test import with empty tags object."""
+        data: dict[str, dict[str, str]] = {}
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
@@ -311,20 +294,10 @@ class TestImportTags:
     def test_import_preserves_value_type(self, db_manager):
         """Test that import preserves value_type correctly."""
         data = {
-            "tags": [
-                {
-                    "public_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                    "key": "count",
-                    "value": "42",
-                    "value_type": "number",
-                },
-                {
-                    "public_key": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                    "key": "active",
-                    "value": "true",
-                    "value_type": "boolean",
-                },
-            ]
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef": {
+                "count": {"value": "42", "type": "number"},
+                "active": {"value": "true", "type": "boolean"},
+            }
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
@@ -339,5 +312,53 @@ class TestImportTags:
 
             assert tag_dict["count"].value_type == "number"
             assert tag_dict["active"].value_type == "boolean"
+
+        Path(f.name).unlink()
+
+    def test_import_null_value(self, db_manager):
+        """Test that null values are handled correctly."""
+        data = {
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef": {
+                "empty_tag": None,
+            }
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            f.flush()
+
+            stats = import_tags(f.name, db_manager, create_nodes=True)
+
+        assert stats["created"] == 1
+
+        with db_manager.session_scope() as session:
+            tag = session.execute(select(NodeTag)).scalar_one()
+            assert tag.key == "empty_tag"
+            assert tag.value is None
+            assert tag.value_type == "string"
+
+        Path(f.name).unlink()
+
+    def test_import_numeric_value_converted(self, db_manager):
+        """Test that numeric values are converted to strings."""
+        data = {
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef": {
+                "num_val": 42,
+            }
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            f.flush()
+
+            stats = import_tags(f.name, db_manager, create_nodes=True)
+
+        assert stats["created"] == 1
+
+        with db_manager.session_scope() as session:
+            tag = session.execute(select(NodeTag)).scalar_one()
+            assert tag.key == "num_val"
+            assert tag.value == "42"
+            assert tag.value_type == "string"
 
         Path(f.name).unlink()
