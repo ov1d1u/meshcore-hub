@@ -21,10 +21,22 @@ target_metadata = Base.metadata
 
 def get_database_url() -> str:
     """Get database URL from environment or config."""
-    # First try environment variable
+    from pathlib import Path
+
+    # First try explicit DATABASE_URL environment variable
     url = os.environ.get("DATABASE_URL")
     if url:
+        # Ensure directory exists for sqlite URLs
+        if url.startswith("sqlite:///"):
+            db_path = Path(url.replace("sqlite:///", ""))
+            db_path.parent.mkdir(parents=True, exist_ok=True)
         return url
+    # Try DATA_HOME environment variable
+    data_home = os.environ.get("DATA_HOME")
+    if data_home:
+        db_path = Path(data_home) / "collector" / "meshcore.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        return f"sqlite:///{db_path}"
     # Fall back to alembic.ini
     return config.get_main_option("sqlalchemy.url", "sqlite:///./meshcore.db")
 
