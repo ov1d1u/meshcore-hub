@@ -38,6 +38,7 @@ class DeviceConfig:
     timeout: float = 1.0
     reconnect_delay: float = 5.0
     max_reconnect_attempts: int = 10
+    node_address: Optional[str] = None  # Override for device public key/address
 
 
 class BaseMeshCoreDevice(ABC):
@@ -244,8 +245,8 @@ class MeshCoreDevice(BaseMeshCoreDevice):
     def connect(self) -> bool:
         """Connect to the MeshCore device."""
         try:
-            from meshcore import MeshCore, SerialConnection
-            from meshcore import EventType as MCEventType
+            from meshcore import MeshCore
+            from meshcore.serial_cx import SerialConnection
         except ImportError:
             logger.error(
                 "meshcore library not installed. "
@@ -273,22 +274,30 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             # Connect asynchronously
             self._loop.run_until_complete(self._mc.connect())
 
-            # Get device info to retrieve public key
-            async def get_self_info():
-                from meshcore import EventType as MCEventType
-                # Wait for SELF_INFO event
-                event = await self._mc.wait_for_event(
-                    MCEventType.SELF_INFO,
-                    timeout=5.0
-                )
-                if event:
-                    return event.attributes.get("public_key")
-                return None
-
-            self._public_key = self._loop.run_until_complete(get_self_info())
-
-            if not self._public_key:
-                logger.warning("Could not retrieve device public key")
+            # Get device public key from self_info property
+            # After connect(), the library internally processes SELF_INFO
+            # and stores it in the self_info property
+            if self.config.node_address:
+                # Use configured override
+                self._public_key = self.config.node_address
+                logger.info(f"Using configured node address: {self._public_key}")
+            else:
+                # Get from device self_info
+                self_info = self._mc.self_info
+                if self_info:
+                    self._public_key = self_info.get("public_key")
+                    if self._public_key:
+                        logger.info(f"Retrieved device public key from self_info")
+                    else:
+                        logger.warning(
+                            "Device self_info missing public_key field. "
+                            "Use --node-address to configure manually."
+                        )
+                else:
+                    logger.warning(
+                        "Could not retrieve device self_info. "
+                        "Use --node-address to configure manually."
+                    )
 
             self._connected = True
             logger.info(f"Connected to MeshCore device, public_key: {self._public_key}")
@@ -480,6 +489,7 @@ def create_device(
     port: str = "/dev/ttyUSB0",
     baud: int = 115200,
     mock: bool = False,
+    node_address: Optional[str] = None,
 ) -> BaseMeshCoreDevice:
     """Create a MeshCore device instance.
 
@@ -487,11 +497,12 @@ def create_device(
         port: Serial port path
         baud: Baud rate
         mock: Use mock device for testing
+        node_address: Optional override for device public key/address
 
     Returns:
         Device instance
     """
-    config = DeviceConfig(port=port, baud=baud)
+    config = DeviceConfig(port=port, baud=baud, node_address=node_address)
 
     if mock:
         from meshcore_hub.interface.mock_device import MockMeshCoreDevice

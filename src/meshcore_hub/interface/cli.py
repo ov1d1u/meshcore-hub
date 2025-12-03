@@ -46,6 +46,13 @@ def interface() -> None:
     help="Use mock device for testing",
 )
 @click.option(
+    "--node-address",
+    type=str,
+    default=None,
+    envvar="NODE_ADDRESS",
+    help="Override for device public key/address (hex string)",
+)
+@click.option(
     "--mqtt-host",
     type=str,
     default="localhost",
@@ -92,6 +99,7 @@ def run(
     port: str,
     baud: int,
     mock: bool,
+    node_address: str | None,
     mqtt_host: str,
     mqtt_port: int,
     mqtt_username: str | None,
@@ -119,6 +127,8 @@ def run(
     click.echo(f"Serial: {port} @ {baud} baud")
     click.echo(f"MQTT: {mqtt_host}:{mqtt_port} (prefix: {prefix})")
     click.echo(f"Mock device: {mock}")
+    if node_address:
+        click.echo(f"Node address: {node_address}")
 
     mode_upper = mode.upper()
 
@@ -129,6 +139,7 @@ def run(
             port=port,
             baud=baud,
             mock=mock,
+            node_address=node_address,
             mqtt_host=mqtt_host,
             mqtt_port=mqtt_port,
             mqtt_username=mqtt_username,
@@ -142,6 +153,7 @@ def run(
             port=port,
             baud=baud,
             mock=mock,
+            node_address=node_address,
             mqtt_host=mqtt_host,
             mqtt_port=mqtt_port,
             mqtt_username=mqtt_username,
@@ -174,6 +186,13 @@ def run(
     default=False,
     envvar="MOCK_DEVICE",
     help="Use mock device for testing",
+)
+@click.option(
+    "--node-address",
+    type=str,
+    default=None,
+    envvar="NODE_ADDRESS",
+    help="Override for device public key/address (hex string)",
 )
 @click.option(
     "--mqtt-host",
@@ -214,6 +233,7 @@ def receiver(
     port: str,
     baud: int,
     mock: bool,
+    node_address: str | None,
     mqtt_host: str,
     mqtt_port: int,
     mqtt_username: str | None,
@@ -230,11 +250,14 @@ def receiver(
     click.echo(f"Serial: {port} @ {baud} baud")
     click.echo(f"MQTT: {mqtt_host}:{mqtt_port} (prefix: {prefix})")
     click.echo(f"Mock device: {mock}")
+    if node_address:
+        click.echo(f"Node address: {node_address}")
 
     run_receiver(
         port=port,
         baud=baud,
         mock=mock,
+        node_address=node_address,
         mqtt_host=mqtt_host,
         mqtt_port=mqtt_port,
         mqtt_username=mqtt_username,
@@ -264,6 +287,13 @@ def receiver(
     default=False,
     envvar="MOCK_DEVICE",
     help="Use mock device for testing",
+)
+@click.option(
+    "--node-address",
+    type=str,
+    default=None,
+    envvar="NODE_ADDRESS",
+    help="Override for device public key/address (hex string)",
 )
 @click.option(
     "--mqtt-host",
@@ -304,6 +334,7 @@ def sender(
     port: str,
     baud: int,
     mock: bool,
+    node_address: str | None,
     mqtt_host: str,
     mqtt_port: int,
     mqtt_username: str | None,
@@ -320,11 +351,14 @@ def sender(
     click.echo(f"Serial: {port} @ {baud} baud")
     click.echo(f"MQTT: {mqtt_host}:{mqtt_port} (prefix: {prefix})")
     click.echo(f"Mock device: {mock}")
+    if node_address:
+        click.echo(f"Node address: {node_address}")
 
     run_sender(
         port=port,
         baud=baud,
         mock=mock,
+        node_address=node_address,
         mqtt_host=mqtt_host,
         mqtt_port=mqtt_port,
         mqtt_username=mqtt_username,

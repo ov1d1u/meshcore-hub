@@ -239,6 +239,7 @@ def create_sender(
     port: str = "/dev/ttyUSB0",
     baud: int = 115200,
     mock: bool = False,
+    node_address: Optional[str] = None,
     mqtt_host: str = "localhost",
     mqtt_port: int = 1883,
     mqtt_username: Optional[str] = None,
@@ -251,6 +252,7 @@ def create_sender(
         port: Serial port path
         baud: Baud rate
         mock: Use mock device
+        node_address: Optional override for device public key/address
         mqtt_host: MQTT broker host
         mqtt_port: MQTT broker port
         mqtt_username: MQTT username
@@ -261,7 +263,7 @@ def create_sender(
         Configured Sender instance
     """
     # Create device
-    device = create_device(port=port, baud=baud, mock=mock)
+    device = create_device(port=port, baud=baud, mock=mock, node_address=node_address)
 
     # Create MQTT client
     mqtt_config = MQTTConfig(
@@ -281,6 +283,7 @@ def run_sender(
     port: str = "/dev/ttyUSB0",
     baud: int = 115200,
     mock: bool = False,
+    node_address: Optional[str] = None,
     mqtt_host: str = "localhost",
     mqtt_port: int = 1883,
     mqtt_username: Optional[str] = None,
@@ -295,6 +298,7 @@ def run_sender(
         port: Serial port path
         baud: Baud rate
         mock: Use mock device
+        node_address: Optional override for device public key/address
         mqtt_host: MQTT broker host
         mqtt_port: MQTT broker port
         mqtt_username: MQTT username
@@ -305,6 +309,7 @@ def run_sender(
         port=port,
         baud=baud,
         mock=mock,
+        node_address=node_address,
         mqtt_host=mqtt_host,
         mqtt_port=mqtt_port,
         mqtt_username=mqtt_username,
