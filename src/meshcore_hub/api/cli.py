@@ -19,11 +19,18 @@ import click
     help="API server port",
 )
 @click.option(
+    "--data-home",
+    type=str,
+    default=None,
+    envvar="DATA_HOME",
+    help="Base data directory (default: ./data)",
+)
+@click.option(
     "--database-url",
     type=str,
-    default="sqlite:///./meshcore.db",
+    default=None,
     envvar="DATABASE_URL",
-    help="Database connection URL",
+    help="Database connection URL (default: sqlite:///{data_home}/collector/meshcore.db)",
 )
 @click.option(
     "--read-key",
@@ -78,7 +85,8 @@ def api(
     ctx: click.Context,
     host: str,
     port: int,
-    database_url: str,
+    data_home: str | None,
+    database_url: str | None,
     read_key: str | None,
     admin_key: str | None,
     mqtt_host: str,
@@ -108,14 +116,27 @@ def api(
     """
     import uvicorn
 
+    from meshcore_hub.common.config import get_api_settings
     from meshcore_hub.api.app import create_app
+
+    # Get settings to compute effective values
+    settings = get_api_settings()
+
+    # Override data_home if provided
+    if data_home:
+        settings = settings.model_copy(update={"data_home": data_home})
+
+    # Use effective database URL if not explicitly provided
+    effective_db_url = database_url if database_url else settings.effective_database_url
+    effective_data_home = data_home or settings.data_home
 
     click.echo("=" * 50)
     click.echo("MeshCore Hub API Server")
     click.echo("=" * 50)
     click.echo(f"Host: {host}")
     click.echo(f"Port: {port}")
-    click.echo(f"Database: {database_url}")
+    click.echo(f"Data home: {effective_data_home}")
+    click.echo(f"Database: {effective_db_url}")
     click.echo(f"MQTT: {mqtt_host}:{mqtt_port} (prefix: {mqtt_prefix})")
     click.echo(f"Read key configured: {read_key is not None}")
     click.echo(f"Admin key configured: {admin_key is not None}")
@@ -144,7 +165,7 @@ def api(
     else:
         # For production, create app directly
         app = create_app(
-            database_url=database_url,
+            database_url=effective_db_url,
             read_key=read_key,
             admin_key=admin_key,
             mqtt_host=mqtt_host,

@@ -1,7 +1,5 @@
 """Tests for configuration settings."""
 
-import pytest
-
 from meshcore_hub.common.config import (
     CommonSettings,
     InterfaceSettings,
@@ -20,12 +18,19 @@ class TestCommonSettings:
         """Test default setting values without .env file influence."""
         settings = CommonSettings(_env_file=None)
 
+        assert settings.data_home == "./data"
         assert settings.log_level == LogLevel.INFO
         assert settings.mqtt_host == "localhost"
         assert settings.mqtt_port == 1883
         assert settings.mqtt_username is None
         assert settings.mqtt_password is None
         assert settings.mqtt_prefix == "meshcore"
+
+    def test_custom_data_home(self) -> None:
+        """Test custom DATA_HOME setting."""
+        settings = CommonSettings(_env_file=None, data_home="/custom/data")
+
+        assert settings.data_home == "/custom/data"
 
 
 class TestInterfaceSettings:
@@ -48,12 +53,34 @@ class TestCollectorSettings:
         """Test default setting values without .env file influence."""
         settings = CollectorSettings(_env_file=None)
 
-        assert settings.database_url == "sqlite:///./meshcore.db"
+        # database_url is None by default, effective_database_url computes it
+        assert settings.database_url is None
+        # Path normalizes ./data to data
+        assert settings.effective_database_url == "sqlite:///data/collector/meshcore.db"
+        assert settings.data_home == "./data"
+        assert settings.collector_data_dir == "data/collector"
+        assert settings.tags_file is None
+        assert settings.effective_tags_file == "data/collector/tags.json"
 
-    def test_database_url_validation(self) -> None:
-        """Test database URL validation."""
-        with pytest.raises(ValueError):
-            CollectorSettings(_env_file=None, database_url="")
+    def test_custom_data_home(self) -> None:
+        """Test that custom data_home affects effective paths."""
+        settings = CollectorSettings(_env_file=None, data_home="/custom/data")
+
+        assert (
+            settings.effective_database_url
+            == "sqlite:////custom/data/collector/meshcore.db"
+        )
+        assert settings.collector_data_dir == "/custom/data/collector"
+        assert settings.effective_tags_file == "/custom/data/collector/tags.json"
+
+    def test_explicit_database_url_overrides(self) -> None:
+        """Test that explicit database_url overrides the default."""
+        settings = CollectorSettings(
+            _env_file=None, database_url="postgresql://user@host/db"
+        )
+
+        assert settings.database_url == "postgresql://user@host/db"
+        assert settings.effective_database_url == "postgresql://user@host/db"
 
 
 class TestAPISettings:
@@ -65,9 +92,28 @@ class TestAPISettings:
 
         assert settings.api_host == "0.0.0.0"
         assert settings.api_port == 8000
-        assert settings.database_url == "sqlite:///./meshcore.db"
+        # database_url is None by default, effective_database_url computes it
+        assert settings.database_url is None
+        # Path normalizes ./data to data
+        assert settings.effective_database_url == "sqlite:///data/collector/meshcore.db"
         assert settings.api_read_key is None
         assert settings.api_admin_key is None
+
+    def test_custom_data_home(self) -> None:
+        """Test that custom data_home affects effective database path."""
+        settings = APISettings(_env_file=None, data_home="/custom/data")
+
+        assert (
+            settings.effective_database_url
+            == "sqlite:////custom/data/collector/meshcore.db"
+        )
+
+    def test_explicit_database_url_overrides(self) -> None:
+        """Test that explicit database_url overrides the default."""
+        settings = APISettings(_env_file=None, database_url="postgresql://user@host/db")
+
+        assert settings.database_url == "postgresql://user@host/db"
+        assert settings.effective_database_url == "postgresql://user@host/db"
 
 
 class TestWebSettings:
@@ -81,4 +127,22 @@ class TestWebSettings:
         assert settings.web_port == 8080
         assert settings.api_base_url == "http://localhost:8000"
         assert settings.network_name == "MeshCore Network"
-        assert settings.members_file == "members.json"
+        # members_file is None by default, effective_members_file computes it
+        assert settings.members_file is None
+        # Path normalizes ./data to data
+        assert settings.effective_members_file == "data/web/members.json"
+        assert settings.web_data_dir == "data/web"
+
+    def test_custom_data_home(self) -> None:
+        """Test that custom data_home affects effective paths."""
+        settings = WebSettings(_env_file=None, data_home="/custom/data")
+
+        assert settings.effective_members_file == "/custom/data/web/members.json"
+        assert settings.web_data_dir == "/custom/data/web"
+
+    def test_explicit_members_file_overrides(self) -> None:
+        """Test that explicit members_file overrides the default."""
+        settings = WebSettings(_env_file=None, members_file="/path/to/members.json")
+
+        assert settings.members_file == "/path/to/members.json"
+        assert settings.effective_members_file == "/path/to/members.json"

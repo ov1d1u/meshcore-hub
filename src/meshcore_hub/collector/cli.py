@@ -43,11 +43,18 @@ from meshcore_hub.common.logging import configure_logging
     help="MQTT topic prefix",
 )
 @click.option(
+    "--data-home",
+    type=str,
+    default=None,
+    envvar="DATA_HOME",
+    help="Base data directory (default: ./data)",
+)
+@click.option(
     "--database-url",
     type=str,
-    default="sqlite:///./meshcore.db",
+    default=None,
     envvar="DATABASE_URL",
-    help="Database connection URL",
+    help="Database connection URL (default: sqlite:///{data_home}/collector/meshcore.db)",
 )
 @click.option(
     "--log-level",
@@ -63,7 +70,8 @@ def collector(
     mqtt_username: str | None,
     mqtt_password: str | None,
     prefix: str,
-    database_url: str,
+    data_home: str | None,
+    database_url: str | None,
     log_level: str,
 ) -> None:
     """Collector component for storing MeshCore events.
@@ -80,14 +88,30 @@ def collector(
 
     When invoked without a subcommand, runs the collector service.
     """
+    from meshcore_hub.common.config import get_collector_settings
+
+    # Get settings to compute effective values
+    settings = get_collector_settings()
+
+    # Override data_home if provided
+    if data_home:
+        settings = get_collector_settings()
+        # Re-create settings with data_home override
+        settings = settings.model_copy(update={"data_home": data_home})
+
+    # Use effective database URL if not explicitly provided
+    effective_db_url = database_url if database_url else settings.effective_database_url
+
     ctx.ensure_object(dict)
     ctx.obj["mqtt_host"] = mqtt_host
     ctx.obj["mqtt_port"] = mqtt_port
     ctx.obj["mqtt_username"] = mqtt_username
     ctx.obj["mqtt_password"] = mqtt_password
     ctx.obj["prefix"] = prefix
-    ctx.obj["database_url"] = database_url
+    ctx.obj["data_home"] = data_home or settings.data_home
+    ctx.obj["database_url"] = effective_db_url
     ctx.obj["log_level"] = log_level
+    ctx.obj["settings"] = settings
 
     # If no subcommand, run the collector service
     if ctx.invoked_subcommand is None:
@@ -97,8 +121,9 @@ def collector(
             mqtt_username=mqtt_username,
             mqtt_password=mqtt_password,
             prefix=prefix,
-            database_url=database_url,
+            database_url=effective_db_url,
             log_level=log_level,
+            data_home=data_home or settings.data_home,
         )
 
 
@@ -110,6 +135,7 @@ def _run_collector_service(
     prefix: str,
     database_url: str,
     log_level: str,
+    data_home: str,
 ) -> None:
     """Run the collector service.
 
@@ -119,9 +145,16 @@ def _run_collector_service(
     - WEBHOOK_CHANNEL_MESSAGE_URL: Override for channel messages
     - WEBHOOK_DIRECT_MESSAGE_URL: Override for direct messages
     """
+    from pathlib import Path
+
     configure_logging(level=log_level)
 
+    # Ensure data directory exists
+    collector_data_dir = Path(data_home) / "collector"
+    collector_data_dir.mkdir(parents=True, exist_ok=True)
+
     click.echo("Starting MeshCore Collector")
+    click.echo(f"Data home: {data_home}")
     click.echo(f"MQTT: {mqtt_host}:{mqtt_port} (prefix: {prefix})")
     click.echo(f"Database: {database_url}")
 
@@ -171,11 +204,12 @@ def run_cmd(ctx: click.Context) -> None:
         prefix=ctx.obj["prefix"],
         database_url=ctx.obj["database_url"],
         log_level=ctx.obj["log_level"],
+        data_home=ctx.obj["data_home"],
     )
 
 
 @collector.command("import-tags")
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True), required=False, default=None)
 @click.option(
     "--no-create-nodes",
     is_flag=True,
@@ -185,7 +219,7 @@ def run_cmd(ctx: click.Context) -> None:
 @click.pass_context
 def import_tags_cmd(
     ctx: click.Context,
-    file: str,
+    file: str | None,
     no_create_nodes: bool,
 ) -> None:
     """Import node tags from a JSON file.
@@ -194,6 +228,7 @@ def import_tags_cmd(
     into the database. Existing tags are updated, new tags are created.
 
     FILE is the path to the JSON file containing tags.
+    If not provided, defaults to {DATA_HOME}/collector/tags.json.
 
     Expected JSON format:
     \b
@@ -210,9 +245,21 @@ def import_tags_cmd(
 
     Supported value_type: string, number, boolean, coordinate
     """
+    from pathlib import Path
+
     configure_logging(level=ctx.obj["log_level"])
 
-    click.echo(f"Importing tags from: {file}")
+    # Use effective tags file if not provided
+    settings = ctx.obj["settings"]
+    tags_file = file if file else settings.effective_tags_file
+
+    # Check if file exists when using default
+    if not file and not Path(tags_file).exists():
+        click.echo(f"Tags file not found: {tags_file}")
+        click.echo("Specify a file path or create the default tags file.")
+        return
+
+    click.echo(f"Importing tags from: {tags_file}")
     click.echo(f"Database: {ctx.obj['database_url']}")
 
     from meshcore_hub.common.database import DatabaseManager
@@ -224,7 +271,7 @@ def import_tags_cmd(
 
     # Import tags
     stats = import_tags(
-        file_path=file,
+        file_path=tags_file,
         db=db,
         create_nodes=not no_create_nodes,
     )

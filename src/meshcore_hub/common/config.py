@@ -33,6 +33,12 @@ class CommonSettings(BaseSettings):
         extra="ignore",
     )
 
+    # Data home directory (base for all service data directories)
+    data_home: str = Field(
+        default="./data",
+        description="Base directory for service data (e.g., ./data or /data)",
+    )
+
     # Logging
     log_level: LogLevel = Field(default=LogLevel.INFO, description="Logging level")
 
@@ -68,10 +74,16 @@ class InterfaceSettings(CommonSettings):
 class CollectorSettings(CommonSettings):
     """Settings for the Collector component."""
 
-    # Database
-    database_url: str = Field(
-        default="sqlite:///./meshcore.db",
-        description="SQLAlchemy database URL",
+    # Database - default uses data_home/collector/meshcore.db
+    database_url: Optional[str] = Field(
+        default=None,
+        description="SQLAlchemy database URL (default: sqlite:///{data_home}/collector/meshcore.db)",
+    )
+
+    # Tags file for import - default uses data_home/collector/tags.json
+    tags_file: Optional[str] = Field(
+        default=None,
+        description="Path to tags JSON file (default: {data_home}/collector/tags.json)",
     )
 
     # Webhook URLs (empty = disabled)
@@ -109,12 +121,37 @@ class CollectorSettings(CommonSettings):
         default=2.0, description="Retry backoff multiplier"
     )
 
+    @property
+    def collector_data_dir(self) -> str:
+        """Get the collector data directory path."""
+        from pathlib import Path
+
+        return str(Path(self.data_home) / "collector")
+
+    @property
+    def effective_database_url(self) -> str:
+        """Get the effective database URL, using default if not set."""
+        if self.database_url:
+            return self.database_url
+        from pathlib import Path
+
+        db_path = Path(self.data_home) / "collector" / "meshcore.db"
+        return f"sqlite:///{db_path}"
+
+    @property
+    def effective_tags_file(self) -> str:
+        """Get the effective tags file path, using default if not set."""
+        if self.tags_file:
+            return self.tags_file
+        from pathlib import Path
+
+        return str(Path(self.data_home) / "collector" / "tags.json")
+
     @field_validator("database_url")
     @classmethod
-    def validate_database_url(cls, v: str) -> str:
+    def validate_database_url(cls, v: Optional[str]) -> Optional[str]:
         """Validate database URL format."""
-        if not v:
-            raise ValueError("Database URL cannot be empty")
+        # None is allowed - will use default
         return v
 
 
@@ -125,10 +162,10 @@ class APISettings(CommonSettings):
     api_host: str = Field(default="0.0.0.0", description="API server host")
     api_port: int = Field(default=8000, description="API server port")
 
-    # Database
-    database_url: str = Field(
-        default="sqlite:///./meshcore.db",
-        description="SQLAlchemy database URL",
+    # Database - default uses data_home/collector/meshcore.db (same as collector)
+    database_url: Optional[str] = Field(
+        default=None,
+        description="SQLAlchemy database URL (default: sqlite:///{data_home}/collector/meshcore.db)",
     )
 
     # Authentication
@@ -137,12 +174,21 @@ class APISettings(CommonSettings):
         default=None, description="Admin API key (full access)"
     )
 
+    @property
+    def effective_database_url(self) -> str:
+        """Get the effective database URL, using default if not set."""
+        if self.database_url:
+            return self.database_url
+        from pathlib import Path
+
+        db_path = Path(self.data_home) / "collector" / "meshcore.db"
+        return f"sqlite:///{db_path}"
+
     @field_validator("database_url")
     @classmethod
-    def validate_database_url(cls, v: str) -> str:
+    def validate_database_url(cls, v: Optional[str]) -> Optional[str]:
         """Validate database URL format."""
-        if not v:
-            raise ValueError("Database URL cannot be empty")
+        # None is allowed - will use default
         return v
 
 
@@ -186,10 +232,27 @@ class WebSettings(CommonSettings):
         default=None, description="Discord server link"
     )
 
-    # Members file
-    members_file: str = Field(
-        default="members.json", description="Path to members JSON file"
+    # Members file - default uses data_home/web/members.json
+    members_file: Optional[str] = Field(
+        default=None,
+        description="Path to members JSON file (default: {data_home}/web/members.json)",
     )
+
+    @property
+    def web_data_dir(self) -> str:
+        """Get the web data directory path."""
+        from pathlib import Path
+
+        return str(Path(self.data_home) / "web")
+
+    @property
+    def effective_members_file(self) -> str:
+        """Get the effective members file path, using default if not set."""
+        if self.members_file:
+            return self.members_file
+        from pathlib import Path
+
+        return str(Path(self.data_home) / "web" / "members.json")
 
 
 def get_common_settings() -> CommonSettings:
