@@ -332,10 +332,10 @@ services:
     profiles:
       - seed
     volumes:
-      # Mount data directory for database
+      # Mount data directory for database (read-write)
       - ${DATA_HOME:-./data}:/data
-      # Mount seed directory for seed files
-      - ${SEED_HOME:-./seed}:/seed
+      # Mount seed directory for seed files (read-only)
+      - ${SEED_HOME:-./seed}:/seed:ro
     environment:
       - DATA_HOME=/data
       - SEED_HOME=/seed
