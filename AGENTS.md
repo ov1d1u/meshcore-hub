@@ -274,9 +274,12 @@ meshcore-hub/
 ├── alembic/
 │   ├── env.py
 │   └── versions/
-└── docker/
-    ├── Dockerfile
-    └── docker-compose.yml
+├── etc/
+│   └── mosquitto.conf        # MQTT broker configuration
+├── data/
+│   └── members.json          # Network members data
+├── Dockerfile                # Docker build configuration
+└── docker-compose.yml        # Docker Compose services
 ```
 
 ## MQTT Topic Structure

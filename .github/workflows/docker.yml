@@ -50,7 +50,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: docker/Dockerfile
+          file: Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -60,6 +60,6 @@ jobs:
       - name: Test Docker image
         if: github.event_name == 'pull_request'
         run: |
-          docker build -t meshcore-hub-test -f docker/Dockerfile .
+          docker build -t meshcore-hub-test -f Dockerfile .
           docker run --rm meshcore-hub-test --version
           docker run --rm meshcore-hub-test --help

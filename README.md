@@ -333,7 +333,10 @@ meshcore-hub/
 │   └── web/                # Web dashboard
 ├── tests/                  # Test suite
 ├── alembic/                # Database migrations
-├── docker/                 # Docker configuration
+├── etc/                    # Configuration files (mosquitto.conf)
+├── data/                   # Data files (members.json)
+├── Dockerfile              # Docker build configuration
+├── docker-compose.yml      # Docker Compose services
 ├── PROMPT.md               # Project specification
 ├── SCHEMAS.md              # Event schema documentation
 ├── PLAN.md                 # Implementation plan

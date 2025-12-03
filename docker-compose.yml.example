@@ -31,7 +31,7 @@ services:
       - "${MQTT_EXTERNAL_PORT:-1883}:1883"
       - "${MQTT_WS_PORT:-9001}:9001"
     volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./etc/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
     healthcheck:
@@ -46,8 +46,8 @@ services:
   # ==========================================================================
   interface-receiver:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: meshcore-interface-receiver
     profiles:
       - interface-receiver
@@ -82,8 +82,8 @@ services:
   # ==========================================================================
   interface-sender:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: meshcore-interface-sender
     profiles:
       - interface-sender
@@ -118,8 +118,8 @@ services:
   # ==========================================================================
   interface-mock-receiver:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: meshcore-interface-mock-receiver
     profiles:
       - mock
@@ -149,8 +149,8 @@ services:
   # ==========================================================================
   collector:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: meshcore-collector
     profiles:
       - collector
@@ -183,8 +183,8 @@ services:
   # ==========================================================================
   api:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: meshcore-api
     profiles:
       - api
@@ -225,8 +225,8 @@ services:
   # ==========================================================================
   web:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: meshcore-web
     profiles:
       - web
@@ -253,7 +253,7 @@ services:
       - NETWORK_CONTACT_DISCORD=${NETWORK_CONTACT_DISCORD:-}
       - MEMBERS_FILE=${MEMBERS_FILE:-}
     volumes:
-      - ${MEMBERS_FILE_PATH:-./members.json}:/app/members.json:ro
+      - ${MEMBERS_FILE_PATH:-./data/members.json}:/app/members.json:ro
     command: ["web"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
@@ -267,8 +267,8 @@ services:
   # ==========================================================================
   db-migrate:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: meshcore-db-migrate
     profiles:
       - migrate
