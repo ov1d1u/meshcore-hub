@@ -1,6 +1,5 @@
 """Tests for telemetry handler."""
 
-import pytest
 from sqlalchemy import select
 
 from meshcore_hub.common.models import Node, Telemetry

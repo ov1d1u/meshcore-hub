@@ -29,7 +29,7 @@ async def messages_list(
     offset = (page - 1) * limit
 
     # Build query params
-    params = {"limit": limit, "offset": offset}
+    params: dict[str, int | str] = {"limit": limit, "offset": offset}
     if message_type:
         params["message_type"] = message_type
     if channel_idx is not None:

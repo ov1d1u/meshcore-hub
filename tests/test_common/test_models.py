@@ -155,6 +155,7 @@ class TestTelemetryModel:
         db_session.commit()
 
         assert telemetry.id is not None
+        assert telemetry.parsed_data is not None
         assert telemetry.parsed_data["temperature"] == 22.5
 
 
@@ -175,4 +176,5 @@ class TestEventLogModel:
 
         assert event.id is not None
         assert event.event_type == "BATTERY"
+        assert event.payload is not None
         assert event.payload["battery_percentage"] == 75

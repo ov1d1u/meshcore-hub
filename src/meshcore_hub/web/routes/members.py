@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def load_members(members_file: str | None) -> list[dict]:
+def load_members(members_file: str | None) -> list[dict[str, str]]:
     """Load members from JSON file.
 
     Args:
@@ -32,9 +32,11 @@ def load_members(members_file: str | None) -> list[dict]:
                 data = json.load(f)
                 # Handle both list and dict with "members" key
                 if isinstance(data, list):
-                    return data
+                    return list(data)
                 elif isinstance(data, dict) and "members" in data:
-                    return data["members"]
+                    members = data["members"]
+                    if isinstance(members, list):
+                        return list(members)
         else:
             logger.warning(f"Members file not found: {members_file}")
     except Exception as e:

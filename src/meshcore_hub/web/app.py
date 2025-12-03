@@ -7,7 +7,6 @@ from typing import AsyncGenerator
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -132,7 +131,8 @@ def create_app(
 
 def get_templates(request: Request) -> Jinja2Templates:
     """Get templates from app state."""
-    return request.app.state.templates
+    templates: Jinja2Templates = request.app.state.templates
+    return templates
 
 
 def get_network_context(request: Request) -> dict:

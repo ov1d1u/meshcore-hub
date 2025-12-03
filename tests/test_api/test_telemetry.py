@@ -1,7 +1,5 @@
 """Tests for telemetry API routes."""
 
-import pytest
-
 
 class TestListTelemetry:
     """Tests for GET /telemetry endpoint."""

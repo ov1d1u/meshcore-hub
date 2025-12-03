@@ -21,6 +21,7 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
+        args: ["--config=.flake8"]
         additional_dependencies:
           - flake8-bugbear
           - flake8-comprehensions
@@ -29,6 +30,7 @@ repos:
     rev: v1.9.0
     hooks:
       - id: mypy
+        exclude: ^alembic/
         additional_dependencies:
           - pydantic>=2.0.0
           - pydantic-settings>=2.0.0

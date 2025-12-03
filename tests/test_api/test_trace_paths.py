@@ -1,7 +1,5 @@
 """Tests for trace path API routes."""
 
-import pytest
-
 
 class TestListTracePaths:
     """Tests for GET /trace-paths endpoint."""

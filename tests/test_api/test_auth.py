@@ -1,7 +1,5 @@
 """Tests for API authentication."""
 
-import pytest
-
 
 class TestAuthenticationFlow:
     """Tests for authentication behavior."""

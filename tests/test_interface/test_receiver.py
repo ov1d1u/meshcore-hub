@@ -3,8 +3,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from meshcore_hub.interface.device import DeviceConfig, EventType
-from meshcore_hub.interface.mock_device import MockDeviceConfig, MockMeshCoreDevice
+from meshcore_hub.interface.device import EventType
 from meshcore_hub.interface.receiver import Receiver, create_receiver
 
 
@@ -69,7 +68,7 @@ class TestCreateReceiver:
 
     def test_creates_receiver_with_mock_device(self):
         """Test creating receiver with mock device."""
-        with patch("meshcore_hub.interface.receiver.MQTTClient") as MockMQTT:
+        with patch("meshcore_hub.interface.receiver.MQTTClient"):
             receiver = create_receiver(mock=True)
 
             assert receiver is not None
@@ -78,8 +77,8 @@ class TestCreateReceiver:
 
     def test_creates_receiver_with_custom_mqtt_config(self):
         """Test creating receiver with custom MQTT configuration."""
-        with patch("meshcore_hub.interface.receiver.MQTTClient") as MockMQTT:
-            receiver = create_receiver(
+        with patch("meshcore_hub.interface.receiver.MQTTClient") as mock_mqtt:
+            create_receiver(
                 mock=True,
                 mqtt_host="mqtt.example.com",
                 mqtt_port=8883,
@@ -87,8 +86,8 @@ class TestCreateReceiver:
             )
 
             # Verify MQTT client was created with correct config
-            MockMQTT.assert_called_once()
-            config = MockMQTT.call_args[0][0]
+            mock_mqtt.assert_called_once()
+            config = mock_mqtt.call_args[0][0]
             assert config.host == "mqtt.example.com"
             assert config.port == 8883
             assert config.prefix == "custom"

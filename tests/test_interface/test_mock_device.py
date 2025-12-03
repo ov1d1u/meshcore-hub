@@ -1,8 +1,6 @@
 """Tests for mock device implementation."""
 
-import pytest
 import time
-import threading
 
 from meshcore_hub.interface.device import EventType
 from meshcore_hub.interface.mock_device import (

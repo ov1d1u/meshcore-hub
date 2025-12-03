@@ -1,7 +1,5 @@
 """Tests for advertisement API routes."""
 
-import pytest
-
 
 class TestListAdvertisements:
     """Tests for GET /advertisements endpoint."""

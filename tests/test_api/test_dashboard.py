@@ -1,7 +1,5 @@
 """Tests for dashboard API routes."""
 
-import pytest
-
 
 class TestDashboardStats:
     """Tests for GET /dashboard/stats endpoint."""

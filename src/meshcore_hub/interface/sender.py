@@ -6,7 +6,6 @@ In SENDER mode, the interface:
 3. Executes received commands on the device
 """
 
-import json
 import logging
 import signal
 import threading
@@ -16,7 +15,6 @@ from typing import Any, Optional
 from meshcore_hub.common.mqtt import MQTTClient, MQTTConfig
 from meshcore_hub.interface.device import (
     BaseMeshCoreDevice,
-    DeviceConfig,
     create_device,
 )
 

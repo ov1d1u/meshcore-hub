@@ -62,7 +62,7 @@ def _handle_message(
     """
     text = payload.get("text")
     if not text:
-        logger.warning(f"Message missing text content")
+        logger.warning("Message missing text content")
         return
 
     now = datetime.now(timezone.utc)

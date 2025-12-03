@@ -1,7 +1,5 @@
 """Tests for message API routes."""
 
-import pytest
-
 
 class TestListMessages:
     """Tests for GET /messages endpoint."""
