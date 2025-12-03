@@ -5,17 +5,22 @@ The subscriber:
 2. Subscribes to all event topics
 3. Routes events to appropriate handlers
 4. Persists data to database
+5. Dispatches events to configured webhooks
 """
 
+import asyncio
 import logging
 import signal
 import threading
 import time
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, TYPE_CHECKING
 
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.health import HealthReporter
 from meshcore_hub.common.mqtt import MQTTClient, MQTTConfig
+
+if TYPE_CHECKING:
+    from meshcore_hub.collector.webhook import WebhookDispatcher
 
 logger = logging.getLogger(__name__)
 
@@ -31,21 +36,28 @@ class Subscriber:
         self,
         mqtt_client: MQTTClient,
         db_manager: DatabaseManager,
+        webhook_dispatcher: Optional["WebhookDispatcher"] = None,
     ):
         """Initialize subscriber.
 
         Args:
             mqtt_client: MQTT client instance
             db_manager: Database manager instance
+            webhook_dispatcher: Optional webhook dispatcher for event forwarding
         """
         self.mqtt = mqtt_client
         self.db = db_manager
+        self._webhook_dispatcher = webhook_dispatcher
         self._running = False
         self._shutdown_event = threading.Event()
         self._handlers: dict[str, EventHandler] = {}
         self._mqtt_connected = False
         self._db_connected = False
         self._health_reporter: Optional[HealthReporter] = None
+        # Webhook processing
+        self._webhook_queue: list[tuple[str, dict[str, Any], str]] = []
+        self._webhook_lock = threading.Lock()
+        self._webhook_thread: Optional[threading.Thread] = None
 
     @property
     def is_healthy(self) -> bool:
@@ -117,6 +129,78 @@ class Subscriber:
             except Exception as e:
                 logger.error(f"Error logging event {event_type}: {e}")
 
+        # Queue event for webhook dispatch
+        if self._webhook_dispatcher and self._webhook_dispatcher.webhooks:
+            self._queue_webhook_event(event_type, payload, public_key)
+
+    def _queue_webhook_event(
+        self, event_type: str, payload: dict[str, Any], public_key: str
+    ) -> None:
+        """Queue an event for webhook dispatch.
+
+        Args:
+            event_type: Event type name
+            payload: Event payload
+            public_key: Source node public key
+        """
+        with self._webhook_lock:
+            self._webhook_queue.append((event_type, payload, public_key))
+
+    def _start_webhook_processor(self) -> None:
+        """Start background thread for webhook processing."""
+        if not self._webhook_dispatcher or not self._webhook_dispatcher.webhooks:
+            return
+
+        # Capture dispatcher in local variable for closure (avoids Optional issues)
+        dispatcher = self._webhook_dispatcher
+
+        def run_webhook_loop() -> None:
+            """Run async webhook dispatch in background thread."""
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            try:
+                loop.run_until_complete(dispatcher.start())
+                logger.info("Webhook processor started")
+
+                while self._running:
+                    # Get queued events
+                    events_to_process: list[tuple[str, dict[str, Any], str]] = []
+                    with self._webhook_lock:
+                        if self._webhook_queue:
+                            events_to_process = self._webhook_queue.copy()
+                            self._webhook_queue.clear()
+
+                    # Process events
+                    for event_type, payload, public_key in events_to_process:
+                        try:
+                            loop.run_until_complete(
+                                dispatcher.dispatch(event_type, payload, public_key)
+                            )
+                        except Exception as e:
+                            logger.error(f"Webhook dispatch error: {e}")
+
+                    # Small sleep to prevent busy-waiting
+                    time.sleep(0.01)
+
+            finally:
+                loop.run_until_complete(dispatcher.stop())
+                loop.close()
+                logger.info("Webhook processor stopped")
+
+        self._webhook_thread = threading.Thread(
+            target=run_webhook_loop, daemon=True, name="webhook-processor"
+        )
+        self._webhook_thread.start()
+
+    def _stop_webhook_processor(self) -> None:
+        """Stop the webhook processor thread."""
+        if self._webhook_thread and self._webhook_thread.is_alive():
+            # Thread will exit when self._running becomes False
+            self._webhook_thread.join(timeout=5.0)
+            if self._webhook_thread.is_alive():
+                logger.warning("Webhook processor thread did not stop cleanly")
+
     def start(self) -> None:
         """Start the subscriber."""
         logger.info("Starting collector subscriber")
@@ -148,6 +232,9 @@ class Subscriber:
         logger.info(f"Subscribed to event topic: {event_topic}")
 
         self._running = True
+
+        # Start webhook processor if configured
+        self._start_webhook_processor()
 
         # Start health reporter for Docker health checks
         self._health_reporter = HealthReporter(
@@ -181,6 +268,9 @@ class Subscriber:
         self._running = False
         self._shutdown_event.set()
 
+        # Stop webhook processor
+        self._stop_webhook_processor()
+
         # Stop health reporter
         if self._health_reporter:
             self._health_reporter.stop()
@@ -201,6 +291,7 @@ def create_subscriber(
     mqtt_password: Optional[str] = None,
     mqtt_prefix: str = "meshcore",
     database_url: str = "sqlite:///./meshcore.db",
+    webhook_dispatcher: Optional["WebhookDispatcher"] = None,
 ) -> Subscriber:
     """Create a configured subscriber instance.
 
@@ -211,6 +302,7 @@ def create_subscriber(
         mqtt_password: MQTT password
         mqtt_prefix: MQTT topic prefix
         database_url: Database connection URL
+        webhook_dispatcher: Optional webhook dispatcher for event forwarding
 
     Returns:
         Configured Subscriber instance
@@ -230,7 +322,7 @@ def create_subscriber(
     db_manager = DatabaseManager(database_url)
 
     # Create subscriber
-    subscriber = Subscriber(mqtt_client, db_manager)
+    subscriber = Subscriber(mqtt_client, db_manager, webhook_dispatcher)
 
     # Register handlers
     from meshcore_hub.collector.handlers import register_all_handlers
@@ -247,6 +339,7 @@ def run_collector(
     mqtt_password: Optional[str] = None,
     mqtt_prefix: str = "meshcore",
     database_url: str = "sqlite:///./meshcore.db",
+    webhook_dispatcher: Optional["WebhookDispatcher"] = None,
 ) -> None:
     """Run the collector (blocking).
 
@@ -257,6 +350,7 @@ def run_collector(
         mqtt_password: MQTT password
         mqtt_prefix: MQTT topic prefix
         database_url: Database connection URL
+        webhook_dispatcher: Optional webhook dispatcher for event forwarding
     """
     subscriber = create_subscriber(
         mqtt_host=mqtt_host,
@@ -265,6 +359,7 @@ def run_collector(
         mqtt_password=mqtt_password,
         mqtt_prefix=mqtt_prefix,
         database_url=database_url,
+        webhook_dispatcher=webhook_dispatcher,
     )
 
     # Set up signal handlers

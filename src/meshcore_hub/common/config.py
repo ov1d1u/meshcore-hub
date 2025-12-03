@@ -74,6 +74,41 @@ class CollectorSettings(CommonSettings):
         description="SQLAlchemy database URL",
     )
 
+    # Webhook URLs (empty = disabled)
+    webhook_advertisement_url: Optional[str] = Field(
+        default=None, description="Webhook URL for advertisement events"
+    )
+    webhook_advertisement_secret: Optional[str] = Field(
+        default=None, description="Secret/API key for advertisement webhook"
+    )
+    webhook_message_url: Optional[str] = Field(
+        default=None, description="Webhook URL for all message events"
+    )
+    webhook_message_secret: Optional[str] = Field(
+        default=None, description="Secret/API key for message webhook"
+    )
+    webhook_channel_message_url: Optional[str] = Field(
+        default=None,
+        description="Webhook URL for channel messages (overrides message_url)",
+    )
+    webhook_channel_message_secret: Optional[str] = Field(
+        default=None, description="Secret for channel message webhook"
+    )
+    webhook_direct_message_url: Optional[str] = Field(
+        default=None,
+        description="Webhook URL for direct messages (overrides message_url)",
+    )
+    webhook_direct_message_secret: Optional[str] = Field(
+        default=None, description="Secret for direct message webhook"
+    )
+
+    # Global webhook settings
+    webhook_timeout: float = Field(default=10.0, description="Webhook request timeout")
+    webhook_max_retries: int = Field(default=3, description="Max retry attempts")
+    webhook_retry_backoff: float = Field(
+        default=2.0, description="Retry backoff multiplier"
+    )
+
     @field_validator("database_url")
     @classmethod
     def validate_database_url(cls, v: str) -> str:

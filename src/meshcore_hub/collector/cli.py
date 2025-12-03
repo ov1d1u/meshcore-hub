@@ -75,12 +75,36 @@ def collector(
     - Trace path data
     - Telemetry responses
     - Informational events (battery, status, etc.)
+
+    Webhooks can be configured via environment variables:
+    - WEBHOOK_ADVERTISEMENT_URL: Webhook for advertisement events
+    - WEBHOOK_MESSAGE_URL: Webhook for all message events
+    - WEBHOOK_CHANNEL_MESSAGE_URL: Override for channel messages
+    - WEBHOOK_DIRECT_MESSAGE_URL: Override for direct messages
     """
     configure_logging(level=log_level)
 
     click.echo("Starting MeshCore Collector")
     click.echo(f"MQTT: {mqtt_host}:{mqtt_port} (prefix: {prefix})")
     click.echo(f"Database: {database_url}")
+
+    # Load webhook configuration from settings
+    from meshcore_hub.common.config import get_collector_settings
+    from meshcore_hub.collector.webhook import (
+        WebhookDispatcher,
+        create_webhooks_from_settings,
+    )
+
+    settings = get_collector_settings()
+    webhooks = create_webhooks_from_settings(settings)
+    webhook_dispatcher = WebhookDispatcher(webhooks) if webhooks else None
+
+    if webhook_dispatcher and webhook_dispatcher.webhooks:
+        click.echo(f"Webhooks configured: {len(webhooks)}")
+        for wh in webhooks:
+            click.echo(f"  - {wh.name}: {wh.url}")
+    else:
+        click.echo("Webhooks: None configured")
 
     from meshcore_hub.collector.subscriber import run_collector
 
@@ -91,4 +115,5 @@ def collector(
         mqtt_password=mqtt_password,
         mqtt_prefix=prefix,
         database_url=database_url,
+        webhook_dispatcher=webhook_dispatcher,
     )

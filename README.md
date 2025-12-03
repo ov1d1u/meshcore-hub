@@ -172,6 +172,31 @@ All components are configured via environment variables. Create a `.env` file or
 |----------|---------|-------------|
 | `DATABASE_URL` | `sqlite:///./meshcore.db` | SQLAlchemy database URL |
 
+#### Webhook Configuration
+
+The collector can forward events to external HTTP endpoints:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WEBHOOK_ADVERTISEMENT_URL` | *(none)* | Webhook URL for advertisement events |
+| `WEBHOOK_ADVERTISEMENT_SECRET` | *(none)* | Secret sent as `X-Webhook-Secret` header |
+| `WEBHOOK_MESSAGE_URL` | *(none)* | Webhook URL for all message events |
+| `WEBHOOK_MESSAGE_SECRET` | *(none)* | Secret for message webhook |
+| `WEBHOOK_CHANNEL_MESSAGE_URL` | *(none)* | Override URL for channel messages only |
+| `WEBHOOK_DIRECT_MESSAGE_URL` | *(none)* | Override URL for direct messages only |
+| `WEBHOOK_TIMEOUT` | `10.0` | Request timeout in seconds |
+| `WEBHOOK_MAX_RETRIES` | `3` | Max retry attempts on failure |
+| `WEBHOOK_RETRY_BACKOFF` | `2.0` | Exponential backoff multiplier |
+
+Webhook payload format:
+```json
+{
+  "event_type": "advertisement",
+  "public_key": "abc123...",
+  "payload": { ... event data ... }
+}
+```
+
 ### API Settings
 
 | Variable | Default | Description |

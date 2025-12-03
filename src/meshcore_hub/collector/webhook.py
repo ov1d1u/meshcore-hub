@@ -11,9 +11,12 @@ import asyncio
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import httpx
+
+if TYPE_CHECKING:
+    from meshcore_hub.common.config import CollectorSettings
 
 logger = logging.getLogger(__name__)
 
@@ -446,3 +449,89 @@ def get_queued_events() -> list[tuple[str, dict[str, Any], Optional[str]]]:
     events = _dispatch_queue.copy()
     _dispatch_queue = []
     return events
+
+
+def create_webhooks_from_settings(
+    settings: "CollectorSettings",
+) -> list[WebhookConfig]:
+    """Create webhook configurations from CollectorSettings.
+
+    This function converts environment-based settings into WebhookConfig objects.
+    It supports:
+    - Advertisement webhook (WEBHOOK_ADVERTISEMENT_URL)
+    - Message webhook for all messages (WEBHOOK_MESSAGE_URL)
+    - Separate channel/direct message webhooks (override message webhook)
+
+    Args:
+        settings: CollectorSettings instance with webhook configuration
+
+    Returns:
+        List of WebhookConfig objects for configured webhooks
+    """
+    webhooks: list[WebhookConfig] = []
+
+    # Advertisement webhook
+    if settings.webhook_advertisement_url:
+        headers: dict[str, str] = {}
+        if settings.webhook_advertisement_secret:
+            headers["X-Webhook-Secret"] = settings.webhook_advertisement_secret
+        webhooks.append(
+            WebhookConfig(
+                name="advertisement",
+                url=settings.webhook_advertisement_url,
+                event_types=["advertisement"],
+                headers=headers,
+                timeout=settings.webhook_timeout,
+                max_retries=settings.webhook_max_retries,
+                retry_backoff=settings.webhook_retry_backoff,
+            )
+        )
+        logger.info(
+            f"Configured advertisement webhook: {settings.webhook_advertisement_url}"
+        )
+
+    # Channel message webhook (specific URL or fallback to general message URL)
+    channel_url = settings.webhook_channel_message_url or settings.webhook_message_url
+    if channel_url:
+        headers = {}
+        secret = (
+            settings.webhook_channel_message_secret or settings.webhook_message_secret
+        )
+        if secret:
+            headers["X-Webhook-Secret"] = secret
+        webhooks.append(
+            WebhookConfig(
+                name="channel-message",
+                url=channel_url,
+                event_types=["channel_msg_recv"],
+                headers=headers,
+                timeout=settings.webhook_timeout,
+                max_retries=settings.webhook_max_retries,
+                retry_backoff=settings.webhook_retry_backoff,
+            )
+        )
+        logger.info(f"Configured channel message webhook: {channel_url}")
+
+    # Direct message webhook (specific URL or fallback to general message URL)
+    direct_url = settings.webhook_direct_message_url or settings.webhook_message_url
+    if direct_url:
+        headers = {}
+        secret = (
+            settings.webhook_direct_message_secret or settings.webhook_message_secret
+        )
+        if secret:
+            headers["X-Webhook-Secret"] = secret
+        webhooks.append(
+            WebhookConfig(
+                name="direct-message",
+                url=direct_url,
+                event_types=["contact_msg_recv"],
+                headers=headers,
+                timeout=settings.webhook_timeout,
+                max_retries=settings.webhook_max_retries,
+                retry_backoff=settings.webhook_retry_backoff,
+            )
+        )
+        logger.info(f"Configured direct message webhook: {direct_url}")
+
+    return webhooks

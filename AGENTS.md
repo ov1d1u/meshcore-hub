@@ -429,6 +429,31 @@ Key variables:
 - `API_READ_KEY`, `API_ADMIN_KEY` - API authentication keys
 - `LOG_LEVEL` - Logging verbosity
 
+### Webhook Configuration
+
+The collector supports forwarding events to external HTTP endpoints:
+
+| Variable | Description |
+|----------|-------------|
+| `WEBHOOK_ADVERTISEMENT_URL` | Webhook for node advertisement events |
+| `WEBHOOK_ADVERTISEMENT_SECRET` | Secret sent as `X-Webhook-Secret` header |
+| `WEBHOOK_MESSAGE_URL` | Webhook for all message events (channel + direct) |
+| `WEBHOOK_MESSAGE_SECRET` | Secret for message webhook |
+| `WEBHOOK_CHANNEL_MESSAGE_URL` | Override for channel messages only |
+| `WEBHOOK_DIRECT_MESSAGE_URL` | Override for direct messages only |
+| `WEBHOOK_TIMEOUT` | Request timeout (default: 10.0s) |
+| `WEBHOOK_MAX_RETRIES` | Max retries on failure (default: 3) |
+| `WEBHOOK_RETRY_BACKOFF` | Exponential backoff multiplier (default: 2.0) |
+
+Webhook payload structure:
+```json
+{
+  "event_type": "advertisement",
+  "public_key": "abc123...",
+  "payload": { ... }
+}
+```
+
 ## Troubleshooting
 
 ### Common Issues
