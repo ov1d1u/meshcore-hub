@@ -9,6 +9,7 @@ In RECEIVER mode, the interface:
 import logging
 import signal
 import threading
+import time
 from typing import Any, Optional
 
 from meshcore_hub.common.mqtt import MQTTClient, MQTTConfig
@@ -43,6 +44,30 @@ class Receiver:
         self.mqtt = mqtt_client
         self._running = False
         self._shutdown_event = threading.Event()
+
+    def _initialize_device(self) -> None:
+        """Initialize device after connection.
+
+        Sets the hardware clock, sends a local advertisement, and starts message fetching.
+        """
+        # Set device time to current Unix timestamp
+        current_time = int(time.time())
+        if self.device.set_time(current_time):
+            logger.info(f"Synchronized device clock to {current_time}")
+        else:
+            logger.warning("Failed to synchronize device clock")
+
+        # Send a local (non-flood) advertisement to announce presence
+        if self.device.send_advertisement(flood=False):
+            logger.info("Sent local advertisement")
+        else:
+            logger.warning("Failed to send local advertisement")
+
+        # Start automatic message fetching
+        if self.device.start_message_fetching():
+            logger.info("Started automatic message fetching")
+        else:
+            logger.warning("Failed to start automatic message fetching")
 
     def _handle_event(self, event_type: EventType, payload: dict[str, Any]) -> None:
         """Handle device event and publish to MQTT.
@@ -97,6 +122,9 @@ class Receiver:
             raise RuntimeError("Failed to connect to MeshCore device")
 
         logger.info(f"Connected to MeshCore device: {self.device.public_key}")
+
+        # Initialize device: set time and send local advertisement
+        self._initialize_device()
 
         self._running = True
 

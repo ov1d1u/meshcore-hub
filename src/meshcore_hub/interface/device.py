@@ -154,6 +154,29 @@ class BaseMeshCoreDevice(ABC):
         pass
 
     @abstractmethod
+    def set_time(self, timestamp: int) -> bool:
+        """Set the device's hardware clock.
+
+        Args:
+            timestamp: Unix timestamp to set
+
+        Returns:
+            True if time was set successfully
+        """
+        pass
+
+    @abstractmethod
+    def start_message_fetching(self) -> bool:
+        """Start automatic message fetching.
+
+        Subscribes to MESSAGES_WAITING events and fetches pending messages.
+
+        Returns:
+            True if started successfully
+        """
+        pass
+
+    @abstractmethod
     def run(self) -> None:
         """Run the device event loop (blocking)."""
         pass
@@ -331,7 +354,9 @@ class MeshCoreDevice(BaseMeshCoreDevice):
         for mc_event_type, our_event_type in event_map.items():
             async def callback(event, et=our_event_type):
                 # Convert event to dict and dispatch
-                payload = dict(event.attributes) if hasattr(event, 'attributes') else {}
+                # Use event.payload for the full data (text, etc.)
+                # event.attributes only contains filtering fields
+                payload = dict(event.payload) if hasattr(event, 'payload') and isinstance(event.payload, dict) else {}
                 self._dispatch_event(et, payload)
 
             sub = self._mc.subscribe(mc_event_type, callback)
@@ -370,8 +395,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
             async def _send():
-                from meshcore.commands import send_msg
-                await send_msg(self._mc, destination, text)
+                await self._mc.commands.send_msg(destination, text)
 
             self._loop.run_until_complete(_send())
             logger.info(f"Sent message to {destination[:12]}...")
@@ -393,8 +417,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
             async def _send():
-                from meshcore.commands import send_channel_msg
-                await send_channel_msg(self._mc, channel_idx, text)
+                await self._mc.commands.send_chan_msg(channel_idx, text)
 
             self._loop.run_until_complete(_send())
             logger.info(f"Sent message to channel {channel_idx}")
@@ -411,8 +434,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
             async def _send():
-                from meshcore.commands import send_advert
-                await send_advert(self._mc, flood=flood)
+                await self._mc.commands.send_advert(flood=flood)
 
             self._loop.run_until_complete(_send())
             logger.info(f"Sent advertisement (flood={flood})")
@@ -429,8 +451,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
             async def _request():
-                from meshcore.commands import request_status
-                await request_status(self._mc, target)
+                await self._mc.commands.send_statusreq(target)
 
             self._loop.run_until_complete(_request())
             logger.info(f"Requested status from {target or 'self'}")
@@ -447,14 +468,47 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
             async def _request():
-                from meshcore.commands import request_telemetry
-                await request_telemetry(self._mc, target)
+                await self._mc.commands.send_telemetry_req(target)
 
             self._loop.run_until_complete(_request())
             logger.info(f"Requested telemetry from {target[:12]}...")
             return True
         except Exception as e:
             logger.error(f"Failed to request telemetry: {e}")
+            return False
+
+    def set_time(self, timestamp: int) -> bool:
+        """Set the device's hardware clock."""
+        if not self._connected or not self._mc:
+            logger.error("Cannot set time: not connected")
+            return False
+
+        try:
+            async def _set_time():
+                await self._mc.commands.set_time(timestamp)
+
+            self._loop.run_until_complete(_set_time())
+            logger.info(f"Set device time to {timestamp}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to set device time: {e}")
+            return False
+
+    def start_message_fetching(self) -> bool:
+        """Start automatic message fetching."""
+        if not self._connected or not self._mc:
+            logger.error("Cannot start message fetching: not connected")
+            return False
+
+        try:
+            async def _start_fetching():
+                await self._mc.start_auto_message_fetching()
+
+            self._loop.run_until_complete(_start_fetching())
+            logger.info("Started automatic message fetching")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to start message fetching: {e}")
             return False
 
     def run(self) -> None:

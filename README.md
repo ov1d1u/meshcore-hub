@@ -316,4 +316,4 @@ See [LICENSE](LICENSE) for details.
 ## Acknowledgments
 
 - [MeshCore](https://meshcore.dev/) - The mesh networking protocol
-- [meshcore_py](https://github.com/meshcore-dev/meshcore_py) - Python library for MeshCore devices
+- [meshcore](https://github.com/fdlamotte/meshcore) - Python library for MeshCore devices

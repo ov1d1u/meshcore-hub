@@ -262,6 +262,24 @@ class MockMeshCoreDevice(BaseMeshCoreDevice):
         threading.Thread(target=send_telemetry, daemon=True).start()
         return True
 
+    def set_time(self, timestamp: int) -> bool:
+        """Set the mock device's hardware clock."""
+        if not self._connected:
+            logger.error("Cannot set time: not connected")
+            return False
+
+        logger.info(f"Mock: Set device time to {timestamp}")
+        return True
+
+    def start_message_fetching(self) -> bool:
+        """Start automatic message fetching (mock)."""
+        if not self._connected:
+            logger.error("Cannot start message fetching: not connected")
+            return False
+
+        logger.info("Mock: Started automatic message fetching")
+        return True
+
     def run(self) -> None:
         """Run the mock device event loop."""
         self._running = True
