@@ -45,9 +45,7 @@ class CommonSettings(BaseSettings):
     mqtt_password: Optional[str] = Field(
         default=None, description="MQTT password (optional)"
     )
-    mqtt_prefix: str = Field(
-        default="meshcore", description="MQTT topic prefix"
-    )
+    mqtt_prefix: str = Field(default="meshcore", description="MQTT topic prefix")
 
 
 class InterfaceSettings(CommonSettings):
@@ -60,15 +58,11 @@ class InterfaceSettings(CommonSettings):
     )
 
     # Serial connection
-    serial_port: str = Field(
-        default="/dev/ttyUSB0", description="Serial port path"
-    )
+    serial_port: str = Field(default="/dev/ttyUSB0", description="Serial port path")
     serial_baud: int = Field(default=115200, description="Serial baud rate")
 
     # Mock device
-    mock_device: bool = Field(
-        default=False, description="Use mock device for testing"
-    )
+    mock_device: bool = Field(default=False, description="Use mock device for testing")
 
 
 class CollectorSettings(CommonSettings):
@@ -103,9 +97,7 @@ class APISettings(CommonSettings):
     )
 
     # Authentication
-    api_read_key: Optional[str] = Field(
-        default=None, description="Read-only API key"
-    )
+    api_read_key: Optional[str] = Field(default=None, description="Read-only API key")
     api_admin_key: Optional[str] = Field(
         default=None, description="Admin API key (full access)"
     )
@@ -131,9 +123,7 @@ class WebSettings(CommonSettings):
         default="http://localhost:8000",
         description="API server base URL",
     )
-    api_key: Optional[str] = Field(
-        default=None, description="API key for queries"
-    )
+    api_key: Optional[str] = Field(default=None, description="API key for queries")
 
     # Network information
     network_domain: Optional[str] = Field(

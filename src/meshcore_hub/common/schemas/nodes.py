@@ -65,9 +65,7 @@ class NodeRead(BaseModel):
     last_seen: datetime = Field(..., description="Last activity timestamp")
     created_at: datetime = Field(..., description="Record creation timestamp")
     updated_at: datetime = Field(..., description="Record update timestamp")
-    tags: list[NodeTagRead] = Field(
-        default_factory=list, description="Node tags"
-    )
+    tags: list[NodeTagRead] = Field(default_factory=list, description="Node tags")
 
     class Config:
         from_attributes = True

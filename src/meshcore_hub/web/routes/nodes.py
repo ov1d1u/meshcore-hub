@@ -53,15 +53,17 @@ async def nodes_list(
     # Calculate pagination
     total_pages = (total + limit - 1) // limit if total > 0 else 1
 
-    context.update({
-        "nodes": nodes,
-        "total": total,
-        "page": page,
-        "limit": limit,
-        "total_pages": total_pages,
-        "search": search or "",
-        "adv_type": adv_type or "",
-    })
+    context.update(
+        {
+            "nodes": nodes,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "total_pages": total_pages,
+            "search": search or "",
+            "adv_type": adv_type or "",
+        }
+    )
 
     return templates.TemplateResponse("nodes.html", context)
 
@@ -79,22 +81,22 @@ async def node_detail(request: Request, public_key: str) -> HTMLResponse:
 
     try:
         # Fetch node details
-        response = await request.app.state.http_client.get(f"/api/v1/nodes/{public_key}")
+        response = await request.app.state.http_client.get(
+            f"/api/v1/nodes/{public_key}"
+        )
         if response.status_code == 200:
             node = response.json()
 
         # Fetch recent advertisements for this node
         response = await request.app.state.http_client.get(
-            "/api/v1/advertisements",
-            params={"public_key": public_key, "limit": 10}
+            "/api/v1/advertisements", params={"public_key": public_key, "limit": 10}
         )
         if response.status_code == 200:
             advertisements = response.json().get("items", [])
 
         # Fetch recent telemetry for this node
         response = await request.app.state.http_client.get(
-            "/api/v1/telemetry",
-            params={"node_public_key": public_key, "limit": 10}
+            "/api/v1/telemetry", params={"node_public_key": public_key, "limit": 10}
         )
         if response.status_code == 200:
             telemetry = response.json().get("items", [])
@@ -103,11 +105,13 @@ async def node_detail(request: Request, public_key: str) -> HTMLResponse:
         logger.warning(f"Failed to fetch node details from API: {e}")
         context["api_error"] = str(e)
 
-    context.update({
-        "node": node,
-        "advertisements": advertisements,
-        "telemetry": telemetry,
-        "public_key": public_key,
-    })
+    context.update(
+        {
+            "node": node,
+            "advertisements": advertisements,
+            "telemetry": telemetry,
+            "public_key": public_key,
+        }
+    )
 
     return templates.TemplateResponse("node_detail.html", context)

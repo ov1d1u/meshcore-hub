@@ -11,9 +11,7 @@ from meshcore_hub.common.config import LogLevel
 DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # Structured log format (more suitable for production/parsing)
-STRUCTURED_FORMAT = (
-    "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
-)
+STRUCTURED_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
 
 
 def configure_logging(

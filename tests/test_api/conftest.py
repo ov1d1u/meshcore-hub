@@ -11,7 +11,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from meshcore_hub.api.app import create_app
-from meshcore_hub.api.dependencies import get_db_session, get_mqtt_client, get_db_manager
+from meshcore_hub.api.dependencies import (
+    get_db_session,
+    get_mqtt_client,
+    get_db_manager,
+)
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.models import (
     Advertisement,

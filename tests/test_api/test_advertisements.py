@@ -35,9 +35,7 @@ class TestListAdvertisements:
         data = response.json()
         assert len(data["items"]) == 1
 
-        response = client_no_auth.get(
-            "/api/v1/advertisements?public_key=nonexistent"
-        )
+        response = client_no_auth.get("/api/v1/advertisements?public_key=nonexistent")
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) == 0

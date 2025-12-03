@@ -5,6 +5,7 @@ Revises:
 Create Date: 2024-12-02
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -102,7 +103,9 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["receiver_node_id"], ["nodes.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["receiver_node_id"], ["nodes.id"], ondelete="SET NULL"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_messages_receiver_node_id", "messages", ["receiver_node_id"])
@@ -134,11 +137,15 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["receiver_node_id"], ["nodes.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["receiver_node_id"], ["nodes.id"], ondelete="SET NULL"
+        ),
         sa.ForeignKeyConstraint(["node_id"], ["nodes.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_advertisements_receiver_node_id", "advertisements", ["receiver_node_id"])
+    op.create_index(
+        "ix_advertisements_receiver_node_id", "advertisements", ["receiver_node_id"]
+    )
     op.create_index("ix_advertisements_node_id", "advertisements", ["node_id"])
     op.create_index("ix_advertisements_public_key", "advertisements", ["public_key"])
     op.create_index("ix_advertisements_received_at", "advertisements", ["received_at"])
@@ -168,10 +175,14 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["receiver_node_id"], ["nodes.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["receiver_node_id"], ["nodes.id"], ondelete="SET NULL"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_trace_paths_receiver_node_id", "trace_paths", ["receiver_node_id"])
+    op.create_index(
+        "ix_trace_paths_receiver_node_id", "trace_paths", ["receiver_node_id"]
+    )
     op.create_index("ix_trace_paths_initiator_tag", "trace_paths", ["initiator_tag"])
     op.create_index("ix_trace_paths_received_at", "trace_paths", ["received_at"])
 
@@ -197,7 +208,9 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["receiver_node_id"], ["nodes.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["receiver_node_id"], ["nodes.id"], ondelete="SET NULL"
+        ),
         sa.ForeignKeyConstraint(["node_id"], ["nodes.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -226,10 +239,14 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["receiver_node_id"], ["nodes.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["receiver_node_id"], ["nodes.id"], ondelete="SET NULL"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_events_log_receiver_node_id", "events_log", ["receiver_node_id"])
+    op.create_index(
+        "ix_events_log_receiver_node_id", "events_log", ["receiver_node_id"]
+    )
     op.create_index("ix_events_log_event_type", "events_log", ["event_type"])
     op.create_index("ix_events_log_received_at", "events_log", ["received_at"])
 

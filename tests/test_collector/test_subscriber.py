@@ -15,7 +15,10 @@ class TestSubscriber:
         client = MagicMock()
         client.topic_builder = MagicMock()
         client.topic_builder.all_events_topic.return_value = "meshcore/+/event/#"
-        client.topic_builder.parse_event_topic.return_value = ("a" * 64, "advertisement")
+        client.topic_builder.parse_event_topic.return_value = (
+            "a" * 64,
+            "advertisement",
+        )
         return client
 
     @pytest.fixture
@@ -47,7 +50,9 @@ class TestSubscriber:
         mock_mqtt_client.stop.assert_called_once()
         mock_mqtt_client.disconnect.assert_called_once()
 
-    def test_handle_mqtt_message_calls_handler(self, subscriber, mock_mqtt_client, db_manager):
+    def test_handle_mqtt_message_calls_handler(
+        self, subscriber, mock_mqtt_client, db_manager
+    ):
         """Test that MQTT messages are routed to handlers."""
         handler = MagicMock()
         subscriber.register_handler("advertisement", handler)

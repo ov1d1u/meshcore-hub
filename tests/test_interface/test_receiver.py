@@ -24,7 +24,9 @@ class TestReceiver:
         """Create a receiver instance."""
         return Receiver(mock_device, mock_mqtt_client)
 
-    def test_start_connects_device_and_mqtt(self, receiver, mock_device, mock_mqtt_client):
+    def test_start_connects_device_and_mqtt(
+        self, receiver, mock_device, mock_mqtt_client
+    ):
         """Test that start connects to device and MQTT."""
         receiver.start()
 
@@ -32,7 +34,9 @@ class TestReceiver:
         mock_mqtt_client.connect.assert_called_once()
         mock_mqtt_client.start_background.assert_called_once()
 
-    def test_stop_disconnects_device_and_mqtt(self, receiver, mock_device, mock_mqtt_client):
+    def test_stop_disconnects_device_and_mqtt(
+        self, receiver, mock_device, mock_mqtt_client
+    ):
         """Test that stop disconnects device and MQTT."""
         receiver.start()
         receiver.stop()
@@ -53,6 +57,7 @@ class TestReceiver:
 
         # Allow time for event processing
         import time
+
         time.sleep(0.1)
 
         # Verify MQTT publish was called

@@ -25,7 +25,9 @@ class TestSender:
         """Create a sender instance."""
         return Sender(mock_device, mock_mqtt_client)
 
-    def test_start_connects_device_and_mqtt(self, sender, mock_device, mock_mqtt_client):
+    def test_start_connects_device_and_mqtt(
+        self, sender, mock_device, mock_mqtt_client
+    ):
         """Test that start connects to device and MQTT."""
         sender.start()
 
@@ -34,7 +36,9 @@ class TestSender:
         mock_mqtt_client.start_background.assert_called_once()
         mock_mqtt_client.subscribe.assert_called_once()
 
-    def test_stop_disconnects_device_and_mqtt(self, sender, mock_device, mock_mqtt_client):
+    def test_stop_disconnects_device_and_mqtt(
+        self, sender, mock_device, mock_mqtt_client
+    ):
         """Test that stop disconnects device and MQTT."""
         sender.start()
         sender.stop()
@@ -60,7 +64,9 @@ class TestSender:
         # Verify message was sent (device is mocked, so just check no error)
         assert mock_device.is_connected
 
-    def test_handle_send_channel_msg_command(self, sender, mock_device, mock_mqtt_client):
+    def test_handle_send_channel_msg_command(
+        self, sender, mock_device, mock_mqtt_client
+    ):
         """Test handling send_channel_msg command."""
         mock_mqtt_client.topic_builder.parse_command_topic.return_value = (
             "abc123",

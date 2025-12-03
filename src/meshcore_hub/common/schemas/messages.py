@@ -17,20 +17,12 @@ class MessageRead(BaseModel):
     pubkey_prefix: Optional[str] = Field(
         default=None, description="Sender's public key prefix (12 chars)"
     )
-    channel_idx: Optional[int] = Field(
-        default=None, description="Channel index"
-    )
+    channel_idx: Optional[int] = Field(default=None, description="Channel index")
     text: str = Field(..., description="Message content")
     path_len: Optional[int] = Field(default=None, description="Number of hops")
-    txt_type: Optional[int] = Field(
-        default=None, description="Message type indicator"
-    )
-    signature: Optional[str] = Field(
-        default=None, description="Message signature"
-    )
-    snr: Optional[float] = Field(
-        default=None, description="Signal-to-noise ratio"
-    )
+    txt_type: Optional[int] = Field(default=None, description="Message type indicator")
+    signature: Optional[str] = Field(default=None, description="Message signature")
+    snr: Optional[float] = Field(default=None, description="Signal-to-noise ratio")
     sender_timestamp: Optional[datetime] = Field(
         default=None, description="Sender's timestamp"
     )
@@ -88,9 +80,7 @@ class AdvertisementRead(BaseModel):
     receiver_node_id: Optional[str] = Field(
         default=None, description="Receiving interface node UUID"
     )
-    node_id: Optional[str] = Field(
-        default=None, description="Advertised node UUID"
-    )
+    node_id: Optional[str] = Field(default=None, description="Advertised node UUID")
     public_key: str = Field(..., description="Advertised public key")
     name: Optional[str] = Field(default=None, description="Advertised name")
     adv_type: Optional[str] = Field(default=None, description="Node type")
@@ -152,9 +142,7 @@ class TelemetryRead(BaseModel):
     receiver_node_id: Optional[str] = Field(
         default=None, description="Receiving interface node UUID"
     )
-    node_id: Optional[str] = Field(
-        default=None, description="Reporting node UUID"
-    )
+    node_id: Optional[str] = Field(default=None, description="Reporting node UUID")
     node_public_key: str = Field(..., description="Reporting node public key")
     parsed_data: Optional[dict] = Field(
         default=None, description="Decoded sensor readings"

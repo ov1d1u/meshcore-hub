@@ -33,9 +33,7 @@ class TestListTelemetry:
         data = response.json()
         assert len(data["items"]) == 1
 
-        response = client_no_auth.get(
-            "/api/v1/telemetry?node_public_key=nonexistent"
-        )
+        response = client_no_auth.get("/api/v1/telemetry?node_public_key=nonexistent")
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) == 0

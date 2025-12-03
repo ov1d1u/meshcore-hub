@@ -172,9 +172,11 @@ class MockMeshCoreDevice(BaseMeshCoreDevice):
             self._dispatch_event(
                 EventType.SEND_CONFIRMED,
                 {
-                    "destination_public_key": destination
-                    if len(destination) == 64
-                    else destination + "0" * (64 - len(destination)),
+                    "destination_public_key": (
+                        destination
+                        if len(destination) == 64
+                        else destination + "0" * (64 - len(destination))
+                    ),
                     "round_trip_ms": int(delay * 1000),
                 },
             )

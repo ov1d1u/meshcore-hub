@@ -38,6 +38,7 @@ def create_database_engine(
 
     # Enable foreign keys for SQLite
     if database_url.startswith("sqlite"):
+
         @event.listens_for(engine, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):  # type: ignore
             cursor = dbapi_connection.cursor()
@@ -171,9 +172,7 @@ def get_database() -> DatabaseManager:
         RuntimeError: If database not initialized
     """
     if _db_manager is None:
-        raise RuntimeError(
-            "Database not initialized. Call init_database() first."
-        )
+        raise RuntimeError("Database not initialized. Call init_database() first.")
     return _db_manager
 
 

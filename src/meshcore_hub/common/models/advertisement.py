@@ -59,9 +59,7 @@ class Advertisement(Base, UUIDMixin, TimestampMixin):
         nullable=False,
     )
 
-    __table_args__ = (
-        Index("ix_advertisements_received_at", "received_at"),
-    )
+    __table_args__ = (Index("ix_advertisements_received_at", "received_at"),)
 
     def __repr__(self) -> str:
         return f"<Advertisement(id={self.id}, public_key={self.public_key[:12]}..., name={self.name})>"

@@ -272,8 +272,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             from meshcore.serial_cx import SerialConnection
         except ImportError:
             logger.error(
-                "meshcore library not installed. "
-                "Install with: pip install meshcore"
+                "meshcore library not installed. " "Install with: pip install meshcore"
             )
             return False
 
@@ -352,11 +351,16 @@ class MeshCoreDevice(BaseMeshCoreDevice):
         }
 
         for mc_event_type, our_event_type in event_map.items():
+
             async def callback(event, et=our_event_type):
                 # Convert event to dict and dispatch
                 # Use event.payload for the full data (text, etc.)
                 # event.attributes only contains filtering fields
-                payload = dict(event.payload) if hasattr(event, 'payload') and isinstance(event.payload, dict) else {}
+                payload = (
+                    dict(event.payload)
+                    if hasattr(event, "payload") and isinstance(event.payload, dict)
+                    else {}
+                )
                 self._dispatch_event(et, payload)
 
             sub = self._mc.subscribe(mc_event_type, callback)
@@ -394,6 +398,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             return False
 
         try:
+
             async def _send():
                 await self._mc.commands.send_msg(destination, text)
 
@@ -416,6 +421,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             return False
 
         try:
+
             async def _send():
                 await self._mc.commands.send_chan_msg(channel_idx, text)
 
@@ -433,6 +439,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             return False
 
         try:
+
             async def _send():
                 await self._mc.commands.send_advert(flood=flood)
 
@@ -450,6 +457,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             return False
 
         try:
+
             async def _request():
                 await self._mc.commands.send_statusreq(target)
 
@@ -467,6 +475,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             return False
 
         try:
+
             async def _request():
                 await self._mc.commands.send_telemetry_req(target)
 
@@ -484,6 +493,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             return False
 
         try:
+
             async def _set_time():
                 await self._mc.commands.set_time(timestamp)
 
@@ -501,6 +511,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             return False
 
         try:
+
             async def _start_fetching():
                 await self._mc.start_auto_message_fetching()
 
@@ -560,6 +571,7 @@ def create_device(
 
     if mock:
         from meshcore_hub.interface.mock_device import MockMeshCoreDevice
+
         return MockMeshCoreDevice(config)
 
     return MeshCoreDevice(config)

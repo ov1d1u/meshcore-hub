@@ -151,7 +151,9 @@ class MQTTClient:
         """Handle connection callback."""
         if reason_code == 0:
             self._connected = True
-            logger.info(f"Connected to MQTT broker at {self.config.host}:{self.config.port}")
+            logger.info(
+                f"Connected to MQTT broker at {self.config.host}:{self.config.port}"
+            )
             # Resubscribe to topics on reconnect
             for topic in self._message_handlers.keys():
                 self._client.subscribe(topic)
@@ -221,7 +223,9 @@ class MQTTClient:
 
     def connect(self) -> None:
         """Connect to the MQTT broker."""
-        logger.info(f"Connecting to MQTT broker at {self.config.host}:{self.config.port}")
+        logger.info(
+            f"Connecting to MQTT broker at {self.config.host}:{self.config.port}"
+        )
         self._client.connect(
             self.config.host,
             self.config.port,

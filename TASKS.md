@@ -786,4 +786,3 @@ This document tracks implementation progress for the MeshCore Hub project. Each 
 | 2025-12-03 | 3 | Phase 3: Collector | MQTT subscriber, event handlers, CLI, tests (webhook pending) |
 | 2025-12-03 | 4 | Phase 4: API | FastAPI app, auth, all routes, CLI, tests (108 passed, 9 pre-existing failures) |
 | 2025-12-03 | 5 | Phase 5: Web Dashboard | FastAPI + Jinja2, Tailwind/DaisyUI, Leaflet map, all pages, CLI (tests pending) |
-

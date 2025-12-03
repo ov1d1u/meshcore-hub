@@ -55,9 +55,9 @@ class Telemetry(Base, UUIDMixin, TimestampMixin):
         nullable=False,
     )
 
-    __table_args__ = (
-        Index("ix_telemetry_received_at", "received_at"),
-    )
+    __table_args__ = (Index("ix_telemetry_received_at", "received_at"),)
 
     def __repr__(self) -> str:
-        return f"<Telemetry(id={self.id}, node_public_key={self.node_public_key[:12]}...)>"
+        return (
+            f"<Telemetry(id={self.id}, node_public_key={self.node_public_key[:12]}...)>"
+        )

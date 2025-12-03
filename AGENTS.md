@@ -2,6 +2,20 @@
 
 This document provides context and guidelines for AI coding assistants working on the MeshCore Hub project.
 
+## Agent Rules
+
+* You MUST use Python (version in `.python-version` file)
+* You MUST activate a Python virtual environment in the `venv` directory or create one if it does not exist:
+  - `ls ./venv` to check if it exists
+  - `python -m venv .venv` to create it
+* You MUST always activate the virtual environment before running any commands
+  - `source .venv/bin/activate`
+* You MUST install all project dependencies using `pip install -e ".[dev]"` command`
+* You MUST install `pre-commit` for quality checks
+* Before commiting:
+  - Run tests with `pytest` to ensure recent changes haven't broken anything
+  - Run `pre-commit run --all-files` to perform all quality checks
+
 ## Project Overview
 
 MeshCore Hub is a Python 3.11+ monorepo for managing and orchestrating MeshCore mesh networks. It consists of five main components:

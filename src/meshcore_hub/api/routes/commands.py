@@ -92,7 +92,9 @@ async def send_channel_message(
         mqtt.stop()
         mqtt.disconnect()
 
-        logger.info(f"Published send_channel_msg command to channel {command.channel_idx}")
+        logger.info(
+            f"Published send_channel_msg command to channel {command.channel_idx}"
+        )
 
         return CommandResponse(
             success=True,

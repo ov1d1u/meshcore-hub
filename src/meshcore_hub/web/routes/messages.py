@@ -54,15 +54,17 @@ async def messages_list(
     # Calculate pagination
     total_pages = (total + limit - 1) // limit if total > 0 else 1
 
-    context.update({
-        "messages": messages,
-        "total": total,
-        "page": page,
-        "limit": limit,
-        "total_pages": total_pages,
-        "message_type": message_type or "",
-        "channel_idx": channel_idx,
-        "search": search or "",
-    })
+    context.update(
+        {
+            "messages": messages,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "total_pages": total_pages,
+            "message_type": message_type or "",
+            "channel_idx": channel_idx,
+            "search": search or "",
+        }
+    )
 
     return templates.TemplateResponse("messages.html", context)

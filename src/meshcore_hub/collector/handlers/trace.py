@@ -72,6 +72,4 @@ def handle_trace_data(
         )
         session.add(trace_path)
 
-    logger.info(
-        f"Stored trace data: tag={initiator_tag}, hops={hop_count}"
-    )
+    logger.info(f"Stored trace data: tag={initiator_tag}, hops={hop_count}")

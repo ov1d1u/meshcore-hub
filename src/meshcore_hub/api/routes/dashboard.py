@@ -25,31 +25,35 @@ async def get_stats(
     yesterday = now - timedelta(days=1)
 
     # Total nodes
-    total_nodes = session.execute(
-        select(func.count()).select_from(Node)
-    ).scalar() or 0
+    total_nodes = session.execute(select(func.count()).select_from(Node)).scalar() or 0
 
     # Active nodes (last 24h)
-    active_nodes = session.execute(
-        select(func.count()).select_from(Node).where(Node.last_seen >= yesterday)
-    ).scalar() or 0
+    active_nodes = (
+        session.execute(
+            select(func.count()).select_from(Node).where(Node.last_seen >= yesterday)
+        ).scalar()
+        or 0
+    )
 
     # Total messages
-    total_messages = session.execute(
-        select(func.count()).select_from(Message)
-    ).scalar() or 0
+    total_messages = (
+        session.execute(select(func.count()).select_from(Message)).scalar() or 0
+    )
 
     # Messages today
-    messages_today = session.execute(
-        select(func.count())
-        .select_from(Message)
-        .where(Message.received_at >= today_start)
-    ).scalar() or 0
+    messages_today = (
+        session.execute(
+            select(func.count())
+            .select_from(Message)
+            .where(Message.received_at >= today_start)
+        ).scalar()
+        or 0
+    )
 
     # Total advertisements
-    total_advertisements = session.execute(
-        select(func.count()).select_from(Advertisement)
-    ).scalar() or 0
+    total_advertisements = (
+        session.execute(select(func.count()).select_from(Advertisement)).scalar() or 0
+    )
 
     # Channel message counts
     channel_counts_query = (
@@ -84,33 +88,41 @@ async def dashboard(
     yesterday = now - timedelta(days=1)
 
     # Get stats
-    total_nodes = session.execute(
-        select(func.count()).select_from(Node)
-    ).scalar() or 0
+    total_nodes = session.execute(select(func.count()).select_from(Node)).scalar() or 0
 
-    active_nodes = session.execute(
-        select(func.count()).select_from(Node).where(Node.last_seen >= yesterday)
-    ).scalar() or 0
+    active_nodes = (
+        session.execute(
+            select(func.count()).select_from(Node).where(Node.last_seen >= yesterday)
+        ).scalar()
+        or 0
+    )
 
-    total_messages = session.execute(
-        select(func.count()).select_from(Message)
-    ).scalar() or 0
+    total_messages = (
+        session.execute(select(func.count()).select_from(Message)).scalar() or 0
+    )
 
-    messages_today = session.execute(
-        select(func.count())
-        .select_from(Message)
-        .where(Message.received_at >= today_start)
-    ).scalar() or 0
+    messages_today = (
+        session.execute(
+            select(func.count())
+            .select_from(Message)
+            .where(Message.received_at >= today_start)
+        ).scalar()
+        or 0
+    )
 
     # Get recent nodes
-    recent_nodes = session.execute(
-        select(Node).order_by(Node.last_seen.desc()).limit(10)
-    ).scalars().all()
+    recent_nodes = (
+        session.execute(select(Node).order_by(Node.last_seen.desc()).limit(10))
+        .scalars()
+        .all()
+    )
 
     # Get recent messages
-    recent_messages = session.execute(
-        select(Message).order_by(Message.received_at.desc()).limit(10)
-    ).scalars().all()
+    recent_messages = (
+        session.execute(select(Message).order_by(Message.received_at.desc()).limit(10))
+        .scalars()
+        .all()
+    )
 
     # Build HTML
     html = f"""

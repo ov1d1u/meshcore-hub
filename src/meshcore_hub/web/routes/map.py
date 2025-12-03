@@ -53,14 +53,16 @@ async def map_data(request: Request) -> JSONResponse:
                             pass
 
                 if lat is not None and lon is not None:
-                    nodes_with_location.append({
-                        "public_key": node.get("public_key"),
-                        "name": node.get("name") or node.get("public_key", "")[:12],
-                        "adv_type": node.get("adv_type"),
-                        "lat": lat,
-                        "lon": lon,
-                        "last_seen": node.get("last_seen"),
-                    })
+                    nodes_with_location.append(
+                        {
+                            "public_key": node.get("public_key"),
+                            "name": node.get("name") or node.get("public_key", "")[:12],
+                            "adv_type": node.get("adv_type"),
+                            "lat": lat,
+                            "lon": lon,
+                            "last_seen": node.get("last_seen"),
+                        }
+                    )
 
     except Exception as e:
         logger.warning(f"Failed to fetch nodes for map: {e}")
@@ -68,10 +70,12 @@ async def map_data(request: Request) -> JSONResponse:
     # Get network center location
     network_location = request.app.state.network_location
 
-    return JSONResponse({
-        "nodes": nodes_with_location,
-        "center": {
-            "lat": network_location[0],
-            "lon": network_location[1],
-        },
-    })
+    return JSONResponse(
+        {
+            "nodes": nodes_with_location,
+            "center": {
+                "lat": network_location[0],
+                "lon": network_location[1],
+            },
+        }
+    )
