@@ -1,6 +1,7 @@
 """Tests for the nodes page routes."""
 
-import pytest
+from typing import Any
+
 from fastapi.testclient import TestClient
 
 from tests.test_web.conftest import MockHttpClient
@@ -104,7 +105,7 @@ class TestNodesPageAPIErrors:
     """Tests for nodes pages handling API errors."""
 
     def test_nodes_handles_api_error(
-        self, web_app: any, mock_http_client: MockHttpClient
+        self, web_app: Any, mock_http_client: MockHttpClient
     ) -> None:
         """Test that nodes page handles API errors gracefully."""
         mock_http_client.set_response(
@@ -119,7 +120,7 @@ class TestNodesPageAPIErrors:
         assert response.status_code == 200
 
     def test_node_detail_handles_not_found(
-        self, web_app: any, mock_http_client: MockHttpClient
+        self, web_app: Any, mock_http_client: MockHttpClient
     ) -> None:
         """Test that node detail page handles 404 from API."""
         mock_http_client.set_response(

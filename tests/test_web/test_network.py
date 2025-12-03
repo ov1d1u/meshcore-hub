@@ -1,6 +1,7 @@
 """Tests for the network overview page route."""
 
-import pytest
+from typing import Any
+
 from fastapi.testclient import TestClient
 
 from tests.test_web.conftest import MockHttpClient
@@ -51,7 +52,7 @@ class TestNetworkPageAPIErrors:
     """Tests for network page handling API errors."""
 
     def test_network_handles_api_error(
-        self, web_app: any, mock_http_client: MockHttpClient
+        self, web_app: Any, mock_http_client: MockHttpClient
     ) -> None:
         """Test that network page handles API errors gracefully."""
         # Set error response for stats endpoint
@@ -67,7 +68,7 @@ class TestNetworkPageAPIErrors:
         assert response.status_code == 200
 
     def test_network_handles_api_not_found(
-        self, web_app: any, mock_http_client: MockHttpClient
+        self, web_app: Any, mock_http_client: MockHttpClient
     ) -> None:
         """Test that network page handles API 404 gracefully."""
         mock_http_client.set_response(

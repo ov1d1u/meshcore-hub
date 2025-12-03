@@ -4,7 +4,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 
 from meshcore_hub.web.routes.members import load_members
@@ -68,9 +67,7 @@ class TestLoadMembers:
             {"name": "Bob", "callsign": "W2XYZ"},
         ]
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(members_data, f)
             f.flush()
             path = f.name
@@ -92,9 +89,7 @@ class TestLoadMembers:
             ]
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(members_data, f)
             f.flush()
             path = f.name
@@ -109,9 +104,7 @@ class TestLoadMembers:
 
     def test_load_members_invalid_json(self) -> None:
         """Test load_members with invalid JSON returns empty list."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("not valid json {")
             f.flush()
             path = f.name
@@ -126,9 +119,7 @@ class TestLoadMembers:
         """Test load_members with dict but no members key returns empty list."""
         data = {"other_key": "value"}
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
             f.flush()
             path = f.name

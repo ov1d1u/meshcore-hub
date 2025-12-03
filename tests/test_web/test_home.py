@@ -1,6 +1,5 @@
 """Tests for the home page route."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 

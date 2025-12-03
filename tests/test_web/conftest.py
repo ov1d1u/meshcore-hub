@@ -4,7 +4,7 @@ import json
 import tempfile
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -261,9 +261,7 @@ def members_file() -> Any:
         ]
     }
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".json", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(members_data, f)
         f.flush()
         yield f.name
@@ -273,9 +271,7 @@ def members_file() -> Any:
 
 
 @pytest.fixture
-def web_app_with_members(
-    mock_http_client: MockHttpClient, members_file: str
-) -> Any:
+def web_app_with_members(mock_http_client: MockHttpClient, members_file: str) -> Any:
     """Create a web app with a members file configured."""
     app = create_app(
         api_url="http://localhost:8000",

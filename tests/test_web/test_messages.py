@@ -1,6 +1,7 @@
 """Tests for the messages page route."""
 
-import pytest
+from typing import Any
+
 from fastapi.testclient import TestClient
 
 from tests.test_web.conftest import MockHttpClient
@@ -84,7 +85,7 @@ class TestMessagesPageAPIErrors:
     """Tests for messages page handling API errors."""
 
     def test_messages_handles_api_error(
-        self, web_app: any, mock_http_client: MockHttpClient
+        self, web_app: Any, mock_http_client: MockHttpClient
     ) -> None:
         """Test that messages page handles API errors gracefully."""
         mock_http_client.set_response(
@@ -99,7 +100,7 @@ class TestMessagesPageAPIErrors:
         assert response.status_code == 200
 
     def test_messages_handles_api_not_found(
-        self, web_app: any, mock_http_client: MockHttpClient
+        self, web_app: Any, mock_http_client: MockHttpClient
     ) -> None:
         """Test that messages page handles API 404 gracefully."""
         mock_http_client.set_response(

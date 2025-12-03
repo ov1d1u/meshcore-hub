@@ -1,6 +1,7 @@
 """Tests for the map page routes."""
 
-import pytest
+from typing import Any
+
 from fastapi.testclient import TestClient
 
 from tests.test_web.conftest import MockHttpClient
@@ -89,7 +90,7 @@ class TestMapDataAPIErrors:
     """Tests for map data handling API errors."""
 
     def test_map_data_handles_api_error(
-        self, web_app: any, mock_http_client: MockHttpClient
+        self, web_app: Any, mock_http_client: MockHttpClient
     ) -> None:
         """Test that map data handles API errors gracefully."""
         mock_http_client.set_response(
@@ -111,7 +112,7 @@ class TestMapDataFiltering:
     """Tests for map data location filtering."""
 
     def test_map_data_filters_invalid_lat(
-        self, web_app: any, mock_http_client: MockHttpClient
+        self, web_app: Any, mock_http_client: MockHttpClient
     ) -> None:
         """Test that map data filters nodes with invalid latitude."""
         mock_http_client.set_response(
@@ -143,7 +144,7 @@ class TestMapDataFiltering:
         assert len(data["nodes"]) == 0
 
     def test_map_data_filters_missing_lon(
-        self, web_app: any, mock_http_client: MockHttpClient
+        self, web_app: Any, mock_http_client: MockHttpClient
     ) -> None:
         """Test that map data filters nodes with missing longitude."""
         mock_http_client.set_response(
