@@ -602,15 +602,15 @@ This document tracks implementation progress for the MeshCore Hub project. Each 
 
 ### 5.11 Web Tests
 
-- [ ] Create `tests/test_web/conftest.py`:
-  - [ ] Test client fixture
-  - [ ] Mock API responses
-- [ ] Create `tests/test_web/test_home.py`
-- [ ] Create `tests/test_web/test_members.py`
-- [ ] Create `tests/test_web/test_network.py`
-- [ ] Create `tests/test_web/test_nodes.py`
-- [ ] Create `tests/test_web/test_map.py`
-- [ ] Create `tests/test_web/test_messages.py`
+- [x] Create `tests/test_web/conftest.py`:
+  - [x] Test client fixture
+  - [x] Mock API responses
+- [x] Create `tests/test_web/test_home.py`
+- [x] Create `tests/test_web/test_members.py`
+- [x] Create `tests/test_web/test_network.py`
+- [x] Create `tests/test_web/test_nodes.py`
+- [x] Create `tests/test_web/test_map.py`
+- [x] Create `tests/test_web/test_messages.py`
 
 ---
 
@@ -740,9 +740,9 @@ This document tracks implementation progress for the MeshCore Hub project. Each 
 | Phase 2: Interface | 35 | 35 | 100% |
 | Phase 3: Collector | 27 | 20 | 74% |
 | Phase 4: API | 44 | 44 | 100% |
-| Phase 5: Web Dashboard | 40 | 33 | 83% |
+| Phase 5: Web Dashboard | 40 | 40 | 100% |
 | Phase 6: Docker & Deployment | 28 | 0 | 0% |
-| **Total** | **221** | **179** | **81%** |
+| **Total** | **221** | **186** | **84%** |
 
 ---
 
