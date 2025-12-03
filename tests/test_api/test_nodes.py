@@ -1,7 +1,5 @@
 """Tests for node API routes."""
 
-import pytest
-
 
 class TestListNodes:
     """Tests for GET /nodes endpoint."""

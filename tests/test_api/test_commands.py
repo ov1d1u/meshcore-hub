@@ -1,7 +1,5 @@
 """Tests for command API routes."""
 
-import pytest
-
 
 class TestSendMessage:
     """Tests for POST /commands/send-message endpoint."""

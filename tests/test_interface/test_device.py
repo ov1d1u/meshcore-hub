@@ -1,7 +1,5 @@
 """Tests for device abstraction."""
 
-import pytest
-
 from meshcore_hub.interface.device import (
     DeviceConfig,
     EventType,

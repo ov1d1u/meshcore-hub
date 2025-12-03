@@ -3,8 +3,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from meshcore_hub.interface.device import DeviceConfig, EventType
-from meshcore_hub.interface.mock_device import MockDeviceConfig, MockMeshCoreDevice
 from meshcore_hub.interface.sender import Sender, create_sender
 
 
@@ -107,7 +105,7 @@ class TestCreateSender:
 
     def test_creates_sender_with_mock_device(self):
         """Test creating sender with mock device."""
-        with patch("meshcore_hub.interface.sender.MQTTClient") as MockMQTT:
+        with patch("meshcore_hub.interface.sender.MQTTClient"):
             sender = create_sender(mock=True)
 
             assert sender is not None
@@ -116,16 +114,16 @@ class TestCreateSender:
 
     def test_creates_sender_with_custom_mqtt_config(self):
         """Test creating sender with custom MQTT configuration."""
-        with patch("meshcore_hub.interface.sender.MQTTClient") as MockMQTT:
-            sender = create_sender(
+        with patch("meshcore_hub.interface.sender.MQTTClient") as mock_mqtt:
+            create_sender(
                 mock=True,
                 mqtt_host="mqtt.example.com",
                 mqtt_port=8883,
                 mqtt_prefix="custom",
             )
 
-            MockMQTT.assert_called_once()
-            config = MockMQTT.call_args[0][0]
+            mock_mqtt.assert_called_once()
+            config = mock_mqtt.call_args[0][0]
             assert config.host == "mqtt.example.com"
             assert config.port == 8883
             assert config.prefix == "custom"

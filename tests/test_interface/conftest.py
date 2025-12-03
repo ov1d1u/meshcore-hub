@@ -1,8 +1,10 @@
 """Fixtures for interface component tests."""
 
+from collections.abc import Generator
+
 import pytest
 
-from meshcore_hub.interface.device import DeviceConfig, EventType
+from meshcore_hub.interface.device import DeviceConfig
 from meshcore_hub.interface.mock_device import MockDeviceConfig, MockMeshCoreDevice
 
 
@@ -27,7 +29,9 @@ def mock_device_config() -> MockDeviceConfig:
 
 
 @pytest.fixture
-def mock_device(device_config, mock_device_config) -> MockMeshCoreDevice:
+def mock_device(
+    device_config: DeviceConfig, mock_device_config: MockDeviceConfig
+) -> Generator[MockMeshCoreDevice, None, None]:
     """Create a mock device instance for testing."""
     device = MockMeshCoreDevice(device_config, mock_device_config)
     yield device

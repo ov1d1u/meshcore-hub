@@ -6,6 +6,7 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from meshcore_hub import __version__
 from meshcore_hub.common.database import DatabaseManager
@@ -115,7 +116,7 @@ def create_app(
         try:
             db = get_db_manager()
             with db.session_scope() as session:
-                session.execute("SELECT 1")
+                session.execute(text("SELECT 1"))
             return {"status": "ready", "database": "connected"}
         except Exception as e:
             return {"status": "not_ready", "database": str(e)}

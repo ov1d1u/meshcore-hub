@@ -106,8 +106,24 @@ plugins = ["pydantic.mypy"]
 module = [
     "paho.*",
     "uvicorn.*",
+    "alembic.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "tests.*",
+    "conftest",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    "alembic.env",
+    "alembic.versions.*",
+]
+ignore_errors = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"

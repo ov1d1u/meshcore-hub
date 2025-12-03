@@ -158,7 +158,6 @@ class MockMeshCoreDevice(BaseMeshCoreDevice):
             logger.warning("Simulated send failure")
             return False
 
-        ts = timestamp or int(time.time())
         logger.info(f"Mock: Sending message to {destination[:12]}...: {text[:20]}...")
 
         # Simulate send confirmation after delay
@@ -199,7 +198,6 @@ class MockMeshCoreDevice(BaseMeshCoreDevice):
             logger.warning("Simulated send failure")
             return False
 
-        ts = timestamp or int(time.time())
         logger.info(f"Mock: Sending message to channel {channel_idx}: {text[:20]}...")
 
         return True

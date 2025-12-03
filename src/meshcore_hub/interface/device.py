@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
@@ -261,9 +260,9 @@ class MeshCoreDevice(BaseMeshCoreDevice):
         """
         super().__init__(config)
         self._running = False
-        self._mc = None
-        self._loop = None
-        self._subscriptions = []
+        self._mc: Any = None
+        self._loop: Any = None
+        self._subscriptions: list[Any] = []
 
     def connect(self) -> bool:
         """Connect to the MeshCore device."""
@@ -309,7 +308,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
                 if self_info:
                     self._public_key = self_info.get("public_key")
                     if self._public_key:
-                        logger.info(f"Retrieved device public key from self_info")
+                        logger.info("Retrieved device public key from self_info")
                     else:
                         logger.warning(
                             "Device self_info missing public_key field. "
@@ -352,7 +351,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         for mc_event_type, our_event_type in event_map.items():
 
-            async def callback(event, et=our_event_type):
+            async def callback(event: Any, et: EventType = our_event_type) -> None:
                 # Convert event to dict and dispatch
                 # Use event.payload for the full data (text, etc.)
                 # event.attributes only contains filtering fields
@@ -399,7 +398,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
 
-            async def _send():
+            async def _send() -> None:
                 await self._mc.commands.send_msg(destination, text)
 
             self._loop.run_until_complete(_send())
@@ -422,7 +421,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
 
-            async def _send():
+            async def _send() -> None:
                 await self._mc.commands.send_chan_msg(channel_idx, text)
 
             self._loop.run_until_complete(_send())
@@ -440,7 +439,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
 
-            async def _send():
+            async def _send() -> None:
                 await self._mc.commands.send_advert(flood=flood)
 
             self._loop.run_until_complete(_send())
@@ -458,7 +457,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
 
-            async def _request():
+            async def _request() -> None:
                 await self._mc.commands.send_statusreq(target)
 
             self._loop.run_until_complete(_request())
@@ -476,7 +475,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
 
-            async def _request():
+            async def _request() -> None:
                 await self._mc.commands.send_telemetry_req(target)
 
             self._loop.run_until_complete(_request())
@@ -494,7 +493,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
 
-            async def _set_time():
+            async def _set_time() -> None:
                 await self._mc.commands.set_time(timestamp)
 
             self._loop.run_until_complete(_set_time())
@@ -512,7 +511,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         try:
 
-            async def _start_fetching():
+            async def _start_fetching() -> None:
                 await self._mc.start_auto_message_fetching()
 
             self._loop.run_until_complete(_start_fetching())
@@ -531,7 +530,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
         self._setup_event_subscriptions()
 
         # Run the async event loop
-        async def _run_loop():
+        async def _run_loop() -> None:
             while self._running and self._connected:
                 await asyncio.sleep(0.1)
 

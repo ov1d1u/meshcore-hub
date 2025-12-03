@@ -1,6 +1,5 @@
 """Tests for advertisement handler."""
 
-import pytest
 from sqlalchemy import select
 
 from meshcore_hub.common.models import Advertisement, Node

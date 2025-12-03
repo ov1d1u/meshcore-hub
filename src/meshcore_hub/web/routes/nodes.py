@@ -28,7 +28,7 @@ async def nodes_list(
     offset = (page - 1) * limit
 
     # Build query params
-    params = {"limit": limit, "offset": offset}
+    params: dict[str, int | str] = {"limit": limit, "offset": offset}
     if search:
         params["search"] = search
     if adv_type:

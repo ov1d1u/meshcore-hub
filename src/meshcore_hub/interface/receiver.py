@@ -15,7 +15,6 @@ from typing import Any, Optional
 from meshcore_hub.common.mqtt import MQTTClient, MQTTConfig
 from meshcore_hub.interface.device import (
     BaseMeshCoreDevice,
-    DeviceConfig,
     EventType,
     create_device,
 )

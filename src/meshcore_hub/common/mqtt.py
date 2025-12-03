@@ -124,7 +124,7 @@ class MQTTClient:
         self.config = config
         self.topic_builder = TopicBuilder(config.prefix)
         self._client = mqtt.Client(
-            callback_api_version=CallbackAPIVersion.VERSION2,
+            callback_api_version=CallbackAPIVersion.VERSION2,  # type: ignore[call-arg]
             client_id=config.client_id,
             clean_session=config.clean_session,
         )
@@ -211,7 +211,7 @@ class MQTTClient:
         pattern_parts = pattern.split("/")
         topic_parts = topic.split("/")
 
-        for i, (p, t) in enumerate(zip(pattern_parts, topic_parts)):
+        for _i, (p, t) in enumerate(zip(pattern_parts, topic_parts)):
             if p == "#":
                 return True
             if p != "+" and p != t:

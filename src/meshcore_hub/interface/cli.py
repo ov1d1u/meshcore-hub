@@ -2,7 +2,6 @@
 
 import click
 
-from meshcore_hub.common.config import InterfaceMode
 from meshcore_hub.common.logging import configure_logging
 
 

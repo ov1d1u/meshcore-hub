@@ -1,11 +1,8 @@
 """Fixtures for collector component tests."""
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 from meshcore_hub.common.database import DatabaseManager
-from meshcore_hub.common.models import Base
 
 
 @pytest.fixture
