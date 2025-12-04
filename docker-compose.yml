@@ -138,8 +138,8 @@ services:
       mqtt:
         condition: service_healthy
     volumes:
-      # Mount data directory (contains collector/meshcore.db)
       - ${DATA_HOME:-./data}:/data
+      - ${SEED_HOME:-./seed}:/seed
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - MQTT_HOST=${MQTT_HOST:-mqtt}
@@ -148,6 +148,7 @@ services:
       - MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - MQTT_PREFIX=${MQTT_PREFIX:-meshcore}
       - DATA_HOME=/data
+      - SEED_HOME=/seed
       # Explicitly unset to use DATA_HOME-based default path
       - DATABASE_URL=
       # Webhook configuration
