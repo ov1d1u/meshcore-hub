@@ -74,7 +74,8 @@ class Receiver:
     def _initialize_device(self) -> None:
         """Initialize device after connection.
 
-        Sets the hardware clock, sends a local advertisement, and starts message fetching.
+        Sets the hardware clock, sends a local advertisement, starts message fetching,
+        and syncs the contact database.
         """
         # Set device time to current Unix timestamp
         current_time = int(time.time())
@@ -94,6 +95,12 @@ class Receiver:
             logger.info("Started automatic message fetching")
         else:
             logger.warning("Failed to start automatic message fetching")
+
+        # Fetch contact database to sync known nodes
+        if self.device.get_contacts():
+            logger.info("Requested contact database sync")
+        else:
+            logger.warning("Failed to request contact database")
 
     def _handle_event(self, event_type: EventType, payload: dict[str, Any]) -> None:
         """Handle device event and publish to MQTT.
