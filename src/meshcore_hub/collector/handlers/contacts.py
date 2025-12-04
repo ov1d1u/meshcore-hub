@@ -11,6 +11,14 @@ from meshcore_hub.common.models import Node
 
 logger = logging.getLogger(__name__)
 
+# Map numeric node type to string representation
+NODE_TYPE_MAP = {
+    0: "none",
+    1: "chat",
+    2: "repeater",
+    3: "room",
+}
+
 
 def handle_contacts(
     public_key: str,
@@ -25,7 +33,7 @@ def handle_contacts(
     Args:
         public_key: Receiver node's public key (from MQTT topic)
         event_type: Event type name
-        payload: Contacts payload
+        payload: Contacts payload (array of contact objects from device)
         db: Database manager
     """
     contacts = payload.get("contacts", [])
@@ -43,16 +51,24 @@ def handle_contacts(
             if not contact_key:
                 continue
 
-            name = contact.get("name")
-            node_type = contact.get("node_type")
+            # Device uses 'adv_name' for the advertised name
+            name = contact.get("adv_name") or contact.get("name")
+
+            # Device uses numeric 'type' field, convert to string
+            raw_type = contact.get("type")
+            if raw_type is not None:
+                node_type = NODE_TYPE_MAP.get(raw_type, str(raw_type))
+            else:
+                node_type = contact.get("node_type")
 
             # Find or create node
             node_query = select(Node).where(Node.public_key == contact_key)
             node = session.execute(node_query).scalar_one_or_none()
 
             if node:
-                # Update existing node
-                if name and not node.name:
+                # Update existing node - always update name if we have one
+                if name and name != node.name:
+                    logger.debug(f"Updating node {contact_key[:12]}... name: {name}")
                     node.name = name
                 if node_type and not node.adv_type:
                     node.adv_type = node_type
@@ -69,6 +85,7 @@ def handle_contacts(
                 )
                 session.add(node)
                 created_count += 1
+                logger.debug(f"Created node {contact_key[:12]}... name: {name}")
 
     logger.info(
         f"Processed contacts sync: {created_count} new, {updated_count} updated"
