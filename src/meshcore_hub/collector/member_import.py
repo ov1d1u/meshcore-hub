@@ -73,9 +73,7 @@ def load_members_file(file_path: str | Path) -> list[dict[str, Any]]:
         if not isinstance(members_list, list):
             raise ValueError("'members' key must contain a list")
     else:
-        raise ValueError(
-            "Members file must be a list or an object with 'members' key"
-        )
+        raise ValueError("Members file must be a list or an object with 'members' key")
 
     # Validate each member
     validated: list[dict[str, Any]] = []
