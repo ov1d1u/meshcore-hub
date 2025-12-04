@@ -19,7 +19,7 @@ def register_all_handlers(subscriber: "Subscriber") -> None:
     )
     from meshcore_hub.collector.handlers.trace import handle_trace_data
     from meshcore_hub.collector.handlers.telemetry import handle_telemetry
-    from meshcore_hub.collector.handlers.contacts import handle_contacts
+    from meshcore_hub.collector.handlers.contacts import handle_contact
     from meshcore_hub.collector.handlers.event_log import handle_event_log
 
     # Persisted events with specific handlers
@@ -28,7 +28,7 @@ def register_all_handlers(subscriber: "Subscriber") -> None:
     subscriber.register_handler("channel_msg_recv", handle_channel_message)
     subscriber.register_handler("trace_data", handle_trace_data)
     subscriber.register_handler("telemetry_response", handle_telemetry)
-    subscriber.register_handler("contacts", handle_contacts)
+    subscriber.register_handler("contact", handle_contact)  # Individual contact events
 
     # Informational events (logged only)
     subscriber.register_handler("send_confirmed", handle_event_log)

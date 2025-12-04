@@ -157,7 +157,16 @@ class TelemetryResponseEvent(BaseModel):
 
 
 class ContactInfo(BaseModel):
-    """Schema for a single contact in CONTACTS event."""
+    """Schema for a single contact in CONTACTS event.
+
+    Device payload fields:
+    - public_key: Node's 64-char hex public key
+    - adv_name: Node's advertised name (device field)
+    - type: Numeric node type (0=none, 1=chat, 2=repeater, 3=room)
+    - flags: Capability flags
+    - last_advert: Unix timestamp of last advertisement
+    - adv_lat, adv_lon: GPS coordinates (if available)
+    """
 
     public_key: str = Field(
         ...,
@@ -165,14 +174,40 @@ class ContactInfo(BaseModel):
         max_length=64,
         description="Node's full public key",
     )
+    adv_name: Optional[str] = Field(
+        default=None,
+        max_length=255,
+        description="Node's advertised name (from device)",
+    )
+    type: Optional[int] = Field(
+        default=None,
+        description="Numeric node type: 0=none, 1=chat, 2=repeater, 3=room",
+    )
+    flags: Optional[int] = Field(
+        default=None,
+        description="Capability/status flags bitmask",
+    )
+    last_advert: Optional[int] = Field(
+        default=None,
+        description="Unix timestamp of last advertisement",
+    )
+    adv_lat: Optional[float] = Field(
+        default=None,
+        description="GPS latitude (if available)",
+    )
+    adv_lon: Optional[float] = Field(
+        default=None,
+        description="GPS longitude (if available)",
+    )
+    # Legacy field names for backwards compatibility
     name: Optional[str] = Field(
         default=None,
         max_length=255,
-        description="Node name/alias",
+        description="Node name/alias (legacy, prefer adv_name)",
     )
     node_type: Optional[str] = Field(
         default=None,
-        description="Node type: chat, repeater, room, none",
+        description="Node type string (legacy, prefer type)",
     )
 
 

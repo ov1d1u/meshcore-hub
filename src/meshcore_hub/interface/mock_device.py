@@ -280,6 +280,33 @@ class MockMeshCoreDevice(BaseMeshCoreDevice):
         logger.info("Mock: Started automatic message fetching")
         return True
 
+    def get_contacts(self) -> bool:
+        """Fetch contacts from mock device contact database."""
+        if not self._connected:
+            logger.error("Cannot get contacts: not connected")
+            return False
+
+        logger.info("Mock: Requesting contacts from device")
+
+        # Generate CONTACTS event with all configured mock nodes
+        def send_contacts() -> None:
+            time.sleep(0.2)
+            contacts = [
+                {
+                    "public_key": node.public_key,
+                    "name": node.name,
+                    "node_type": node.adv_type,
+                }
+                for node in self.mock_config.nodes
+            ]
+            self._dispatch_event(
+                EventType.CONTACTS,
+                {"contacts": contacts},
+            )
+
+        threading.Thread(target=send_contacts, daemon=True).start()
+        return True
+
     def run(self) -> None:
         """Run the mock device event loop."""
         self._running = True

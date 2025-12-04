@@ -176,6 +176,17 @@ class BaseMeshCoreDevice(ABC):
         pass
 
     @abstractmethod
+    def get_contacts(self) -> bool:
+        """Fetch contacts from device contact database.
+
+        Triggers a CONTACTS event with all stored contacts from the device.
+
+        Returns:
+            True if request was sent successfully
+        """
+        pass
+
+    @abstractmethod
     def run(self) -> None:
         """Run the device event loop (blocking)."""
         pass
@@ -322,6 +333,10 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
             self._connected = True
             logger.info(f"Connected to MeshCore device, public_key: {self._public_key}")
+
+            # Set up event subscriptions so events can be received immediately
+            self._setup_event_subscriptions()
+
             return True
 
         except Exception as e:
@@ -521,13 +536,28 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             logger.error(f"Failed to start message fetching: {e}")
             return False
 
+    def get_contacts(self) -> bool:
+        """Fetch contacts from device contact database."""
+        if not self._connected or not self._mc:
+            logger.error("Cannot get contacts: not connected")
+            return False
+
+        try:
+
+            async def _get_contacts() -> None:
+                await self._mc.commands.get_contacts()
+
+            self._loop.run_until_complete(_get_contacts())
+            logger.info("Requested contacts from device")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to get contacts: {e}")
+            return False
+
     def run(self) -> None:
         """Run the device event loop."""
         self._running = True
         logger.info("Starting device event loop")
-
-        # Set up event subscriptions
-        self._setup_event_subscriptions()
 
         # Run the async event loop
         async def _run_loop() -> None:

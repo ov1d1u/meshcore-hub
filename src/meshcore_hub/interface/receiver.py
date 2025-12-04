@@ -74,7 +74,8 @@ class Receiver:
     def _initialize_device(self) -> None:
         """Initialize device after connection.
 
-        Sets the hardware clock, sends a local advertisement, and starts message fetching.
+        Sets the hardware clock, sends a local advertisement, starts message fetching,
+        and syncs the contact database.
         """
         # Set device time to current Unix timestamp
         current_time = int(time.time())
@@ -95,6 +96,12 @@ class Receiver:
         else:
             logger.warning("Failed to start automatic message fetching")
 
+        # Fetch contact database to sync known nodes
+        if self.device.get_contacts():
+            logger.info("Requested contact database sync")
+        else:
+            logger.warning("Failed to request contact database")
+
     def _handle_event(self, event_type: EventType, payload: dict[str, Any]) -> None:
         """Handle device event and publish to MQTT.
 
@@ -110,6 +117,11 @@ class Receiver:
             # Convert event type to MQTT topic name
             event_name = event_type.value
 
+            # Special handling for CONTACTS: split into individual messages
+            if event_type == EventType.CONTACTS:
+                self._publish_contacts(payload)
+                return
+
             # Publish to MQTT
             self.mqtt.publish_event(
                 self.device.public_key,
@@ -121,6 +133,49 @@ class Receiver:
 
         except Exception as e:
             logger.error(f"Failed to publish event to MQTT: {e}")
+
+    def _publish_contacts(self, payload: dict[str, Any]) -> None:
+        """Publish each contact as a separate MQTT message.
+
+        The device returns contacts as a dict keyed by public_key.
+        We split this into individual 'contact' events for cleaner processing.
+
+        Args:
+            payload: Dict of contacts keyed by public_key
+        """
+        if not self.device.public_key:
+            logger.warning("Cannot publish contacts: device public key not available")
+            return
+
+        # Handle both formats:
+        # - Dict keyed by public_key (real device)
+        # - Dict with "contacts" array (mock device)
+        if "contacts" in payload:
+            contacts = payload["contacts"]
+        else:
+            contacts = list(payload.values())
+
+        if not contacts:
+            logger.debug("Empty contacts list received")
+            return
+
+        device_key = self.device.public_key  # Capture for type narrowing
+        count = 0
+        for contact in contacts:
+            if not isinstance(contact, dict):
+                continue
+
+            try:
+                self.mqtt.publish_event(
+                    device_key,
+                    "contact",  # Use singular 'contact' for individual events
+                    contact,
+                )
+                count += 1
+            except Exception as e:
+                logger.error(f"Failed to publish contact event: {e}")
+
+        logger.info(f"Published {count} contact events to MQTT")
 
     def start(self) -> None:
         """Start the receiver."""
