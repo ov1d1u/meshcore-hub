@@ -103,6 +103,7 @@
                             <th>Time</th>
                             <th>Type</th>
                             <th>Name</th>
+                            <th>Receiver</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -111,6 +112,13 @@
                             <td class="text-xs">{{ adv.received_at[:19].replace('T', ' ') if adv.received_at else '-' }}</td>
                             <td>{{ adv.adv_type or '-' }}</td>
                             <td>{{ adv.name or '-' }}</td>
+                            <td class="text-xs">
+                                {% if adv.receiver_public_key %}
+                                <span class="font-mono" title="{{ adv.receiver_public_key }}">{{ adv.receiver_public_key[:8] }}...</span>
+                                {% else %}
+                                <span class="opacity-50">-</span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -133,6 +141,7 @@
                         <tr>
                             <th>Time</th>
                             <th>Data</th>
+                            <th>Receiver</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -144,6 +153,13 @@
                                 {{ tel.parsed_data | tojson }}
                                 {% else %}
                                 -
+                                {% endif %}
+                            </td>
+                            <td class="text-xs">
+                                {% if tel.receiver_public_key %}
+                                <span class="font-mono" title="{{ tel.receiver_public_key }}">{{ tel.receiver_public_key[:8] }}...</span>
+                                {% else %}
+                                <span class="opacity-50">-</span>
                                 {% endif %}
                             </td>
                         </tr>

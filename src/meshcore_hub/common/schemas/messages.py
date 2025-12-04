@@ -13,9 +13,15 @@ class MessageRead(BaseModel):
     receiver_node_id: Optional[str] = Field(
         default=None, description="Receiving interface node UUID"
     )
+    receiver_public_key: Optional[str] = Field(
+        default=None, description="Receiving interface node public key"
+    )
     message_type: str = Field(..., description="Message type (contact, channel)")
     pubkey_prefix: Optional[str] = Field(
         default=None, description="Sender's public key prefix (12 chars)"
+    )
+    sender_name: Optional[str] = Field(
+        default=None, description="Sender's advertised node name"
     )
     sender_friendly_name: Optional[str] = Field(
         default=None, description="Sender's friendly name from node tags"
@@ -83,6 +89,9 @@ class AdvertisementRead(BaseModel):
     receiver_node_id: Optional[str] = Field(
         default=None, description="Receiving interface node UUID"
     )
+    receiver_public_key: Optional[str] = Field(
+        default=None, description="Receiving interface node public key"
+    )
     node_id: Optional[str] = Field(default=None, description="Advertised node UUID")
     public_key: str = Field(..., description="Advertised public key")
     name: Optional[str] = Field(default=None, description="Advertised name")
@@ -110,6 +119,9 @@ class TracePathRead(BaseModel):
     id: str = Field(..., description="Trace path UUID")
     receiver_node_id: Optional[str] = Field(
         default=None, description="Receiving interface node UUID"
+    )
+    receiver_public_key: Optional[str] = Field(
+        default=None, description="Receiving interface node public key"
     )
     initiator_tag: int = Field(..., description="Trace identifier")
     path_len: Optional[int] = Field(default=None, description="Path length")
@@ -144,6 +156,9 @@ class TelemetryRead(BaseModel):
     id: str = Field(..., description="Telemetry UUID")
     receiver_node_id: Optional[str] = Field(
         default=None, description="Receiving interface node UUID"
+    )
+    receiver_public_key: Optional[str] = Field(
+        default=None, description="Receiving interface node public key"
     )
     node_id: Optional[str] = Field(default=None, description="Reporting node UUID")
     node_public_key: str = Field(..., description="Reporting node public key")

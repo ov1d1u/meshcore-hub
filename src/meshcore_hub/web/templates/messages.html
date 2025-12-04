@@ -57,6 +57,7 @@
                 <th>Type</th>
                 <th>From/Channel</th>
                 <th>Message</th>
+                <th>Receiver</th>
                 <th>SNR</th>
                 <th>Hops</th>
             </tr>
@@ -78,8 +79,8 @@
                     {% if msg.message_type == 'channel' %}
                     <span class="font-mono">CH{{ msg.channel_idx }}</span>
                     {% else %}
-                        {% if msg.sender_friendly_name %}
-                        <span class="font-medium">{{ msg.sender_friendly_name }}</span>
+                        {% if msg.sender_friendly_name or msg.sender_name %}
+                        <span class="font-medium">{{ msg.sender_friendly_name or msg.sender_name }}</span>
                         {% else %}
                         <span class="font-mono text-xs">{{ (msg.pubkey_prefix or '-')[:12] }}</span>
                         {% endif %}
@@ -87,6 +88,13 @@
                 </td>
                 <td class="truncate-cell" title="{{ msg.text }}">
                     {{ msg.text or '-' }}
+                </td>
+                <td class="text-xs">
+                    {% if msg.receiver_public_key %}
+                    <span class="font-mono" title="{{ msg.receiver_public_key }}">{{ msg.receiver_public_key[:8] }}...</span>
+                    {% else %}
+                    <span class="opacity-50">-</span>
+                    {% endif %}
                 </td>
                 <td class="text-center">
                     {% if msg.snr is not none %}
@@ -105,7 +113,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="text-center py-8 opacity-70">No messages found.</td>
+                <td colspan="7" class="text-center py-8 opacity-70">No messages found.</td>
             </tr>
             {% endfor %}
         </tbody>
