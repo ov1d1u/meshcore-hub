@@ -16,22 +16,6 @@
     .leaflet-popup-tip {
         background: oklch(var(--b1));
     }
-    .marker-chat {
-        background-color: oklch(var(--p));
-    }
-    .marker-repeater {
-        background-color: oklch(var(--s));
-    }
-    .marker-room {
-        background-color: oklch(var(--a));
-    }
-    .marker-default {
-        background-color: oklch(var(--n));
-    }
-    .marker-infra {
-        border: 3px solid gold !important;
-        box-shadow: 0 0 8px gold, 0 2px 4px rgba(0,0,0,0.3) !important;
-    }
 </style>
 {% endblock %}
 
@@ -89,23 +73,23 @@
 <div class="mt-4 flex flex-wrap gap-4 items-center text-sm">
     <span class="opacity-70">Legend:</span>
     <div class="flex items-center gap-1">
-        <div class="w-3 h-3 rounded-full marker-chat"></div>
+        <div class="w-3 h-3 rounded-full" style="background-color: oklch(var(--p));"></div>
         <span>Chat</span>
     </div>
     <div class="flex items-center gap-1">
-        <div class="w-3 h-3 rounded-full marker-repeater"></div>
+        <div class="w-3 h-3 rounded-full" style="background-color: oklch(var(--s));"></div>
         <span>Repeater</span>
     </div>
     <div class="flex items-center gap-1">
-        <div class="w-3 h-3 rounded-full marker-room"></div>
+        <div class="w-3 h-3 rounded-full" style="background-color: oklch(var(--a));"></div>
         <span>Room</span>
     </div>
     <div class="flex items-center gap-1">
-        <div class="w-3 h-3 rounded-full marker-default"></div>
+        <div class="w-3 h-3 rounded-full" style="background-color: oklch(var(--n));"></div>
         <span>Other</span>
     </div>
     <div class="flex items-center gap-1">
-        <div class="w-3 h-3 rounded-full marker-default marker-infra"></div>
+        <div class="w-3 h-3 rounded-full" style="background-color: oklch(var(--n)); border: 2px solid gold; box-shadow: 0 0 4px gold;"></div>
         <span>Infrastructure</span>
     </div>
 </div>
@@ -131,23 +115,23 @@
     let markers = [];
     let mapCenter = { lat: {{ network_location[0] }}, lon: {{ network_location[1] }} };
 
-    // Get marker color class based on node type
-    function getMarkerClass(node) {
-        let baseClass = 'marker-default';
-        if (node.adv_type === 'chat') baseClass = 'marker-chat';
-        else if (node.adv_type === 'repeater') baseClass = 'marker-repeater';
-        else if (node.adv_type === 'room') baseClass = 'marker-room';
-
-        if (node.is_infra) baseClass += ' marker-infra';
-        return baseClass;
+    // Get marker color based on node type
+    function getMarkerColor(node) {
+        if (node.adv_type === 'chat') return 'oklch(var(--p))';
+        if (node.adv_type === 'repeater') return 'oklch(var(--s))';
+        if (node.adv_type === 'room') return 'oklch(var(--a))';
+        return 'oklch(var(--n))';
     }
 
     // Create marker icon for a node
     function createNodeIcon(node) {
-        const markerClass = getMarkerClass(node);
+        const color = getMarkerColor(node);
+        const infraStyle = node.is_infra
+            ? 'border: 3px solid gold; box-shadow: 0 0 8px gold, 0 2px 4px rgba(0,0,0,0.3);'
+            : 'border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);';
         return L.divIcon({
             className: 'custom-div-icon',
-            html: `<div class="${markerClass}" style="width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+            html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; ${infraStyle}"></div>`,
             iconSize: [12, 12],
             iconAnchor: [6, 6]
         });
@@ -191,8 +175,8 @@
         markers = [];
     }
 
-    // Apply filters and update map
-    function applyFilters() {
+    // Core filter logic - returns filtered nodes and updates markers
+    function applyFiltersCore() {
         const typeFilter = document.getElementById('filter-type').value;
         const ownerFilter = document.getElementById('filter-owner').value;
         const infraOnly = document.getElementById('filter-infra').checked;
@@ -236,6 +220,13 @@
             filteredEl.classList.remove('hidden');
         }
 
+        return filteredNodes;
+    }
+
+    // Apply filters and recenter map on filtered nodes
+    function applyFilters() {
+        const filteredNodes = applyFiltersCore();
+
         // Fit bounds if we have filtered nodes
         if (filteredNodes.length > 0) {
             const bounds = L.latLngBounds(filteredNodes.map(n => [n.lat, n.lon]));
@@ -243,6 +234,11 @@
         } else if (mapCenter.lat !== 0 || mapCenter.lon !== 0) {
             map.setView([mapCenter.lat, mapCenter.lon], 10);
         }
+    }
+
+    // Apply filters without recentering (for initial load after manual center)
+    function applyFiltersNoRecenter() {
+        applyFiltersCore();
     }
 
     // Populate owner filter dropdown
@@ -299,8 +295,14 @@
             // Populate owner filter
             populateOwnerFilter();
 
-            // Initial display
-            applyFilters();
+            // Initial display - center map on nodes if available
+            if (allNodes.length > 0) {
+                const bounds = L.latLngBounds(allNodes.map(n => [n.lat, n.lon]));
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+
+            // Apply filters (won't re-center since we just did above)
+            applyFiltersNoRecenter();
         })
         .catch(error => {
             console.error('Error loading map data:', error);
