@@ -243,6 +243,12 @@ class WebSettings(CommonSettings):
     network_contact_discord: Optional[str] = Field(
         default=None, description="Discord server link"
     )
+    network_contact_github: Optional[str] = Field(
+        default=None, description="GitHub repository URL"
+    )
+    network_welcome_text: Optional[str] = Field(
+        default=None, description="Welcome text for homepage"
+    )
 
     @property
     def web_data_dir(self) -> str:

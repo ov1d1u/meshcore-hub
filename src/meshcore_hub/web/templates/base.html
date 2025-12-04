@@ -105,7 +105,11 @@
                 {% endif %}
                 {% if network_contact_email and network_contact_discord %} | {% endif %}
                 {% if network_contact_discord %}
-                <span>Discord: {{ network_contact_discord }}</span>
+                <a href="{{ network_contact_discord }}" target="_blank" rel="noopener noreferrer" class="link link-hover">Discord</a>
+                {% endif %}
+                {% if (network_contact_email or network_contact_discord) and network_contact_github %} | {% endif %}
+                {% if network_contact_github %}
+                <a href="{{ network_contact_github }}" target="_blank" rel="noopener noreferrer" class="link link-hover">GitHub</a>
                 {% endif %}
             </p>
             <p class="text-xs opacity-50 mt-2">Powered by MeshCore Hub v{{ version }}</p>

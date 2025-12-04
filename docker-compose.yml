@@ -241,6 +241,8 @@ services:
       - NETWORK_RADIO_CONFIG=${NETWORK_RADIO_CONFIG:-}
       - NETWORK_CONTACT_EMAIL=${NETWORK_CONTACT_EMAIL:-}
       - NETWORK_CONTACT_DISCORD=${NETWORK_CONTACT_DISCORD:-}
+      - NETWORK_CONTACT_GITHUB=${NETWORK_CONTACT_GITHUB:-}
+      - NETWORK_WELCOME_TEXT=${NETWORK_WELCOME_TEXT:-}
     command: ["web"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
