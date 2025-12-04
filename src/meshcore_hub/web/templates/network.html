@@ -90,6 +90,7 @@
                     <thead>
                         <tr>
                             <th>Node</th>
+                            <th>Type</th>
                             <th class="text-right">Received</th>
                         </tr>
                     </thead>
@@ -102,6 +103,19 @@
                                 </a>
                                 {% if ad.friendly_name or ad.name %}
                                 <div class="text-xs opacity-50 font-mono">{{ ad.public_key[:12] }}...</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ad.adv_type == 'chat' %}
+                                <span class="badge badge-primary badge-xs">chat</span>
+                                {% elif ad.adv_type == 'repeater' %}
+                                <span class="badge badge-secondary badge-xs">repeater</span>
+                                {% elif ad.adv_type == 'room' %}
+                                <span class="badge badge-accent badge-xs">room</span>
+                                {% elif ad.adv_type %}
+                                <span class="badge badge-ghost badge-xs">{{ ad.adv_type }}</span>
+                                {% else %}
+                                <span class="badge badge-ghost badge-xs">-</span>
                                 {% endif %}
                             </td>
                             <td class="text-right text-sm opacity-70">{{ ad.received_at.split('T')[1][:8] if ad.received_at else '-' }}</td>

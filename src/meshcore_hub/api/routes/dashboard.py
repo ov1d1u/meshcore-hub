@@ -74,18 +74,21 @@ async def get_stats(
         .all()
     )
 
-    # Get node names and friendly_name tags for the advertised nodes
+    # Get node names, adv_types, and friendly_name tags for the advertised nodes
     ad_public_keys = [ad.public_key for ad in recent_ads]
     node_names: dict[str, str] = {}
+    node_adv_types: dict[str, str] = {}
     friendly_names: dict[str, str] = {}
     if ad_public_keys:
-        # Get node names from Node table
-        node_name_query = select(Node.public_key, Node.name).where(
+        # Get node names and adv_types from Node table
+        node_query = select(Node.public_key, Node.name, Node.adv_type).where(
             Node.public_key.in_(ad_public_keys)
         )
-        for public_key, name in session.execute(node_name_query).all():
+        for public_key, name, adv_type in session.execute(node_query).all():
             if name:
                 node_names[public_key] = name
+            if adv_type:
+                node_adv_types[public_key] = adv_type
 
         # Get friendly_name tags
         friendly_name_query = (
@@ -102,7 +105,7 @@ async def get_stats(
             public_key=ad.public_key,
             name=ad.name or node_names.get(ad.public_key),
             friendly_name=friendly_names.get(ad.public_key),
-            adv_type=ad.adv_type,
+            adv_type=ad.adv_type or node_adv_types.get(ad.public_key),
             received_at=ad.received_at,
         )
         for ad in recent_ads
