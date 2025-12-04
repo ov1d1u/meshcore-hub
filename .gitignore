@@ -32,7 +32,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 uv.lock
-/docker-compose.yml
 
 
 # PyInstaller
