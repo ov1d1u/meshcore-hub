@@ -5,10 +5,11 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
+from sqlalchemy.orm import aliased
 
 from meshcore_hub.api.auth import RequireRead
 from meshcore_hub.api.dependencies import DbSession
-from meshcore_hub.common.models import TracePath
+from meshcore_hub.common.models import Node, TracePath
 from meshcore_hub.common.schemas.messages import TracePathList, TracePathRead
 
 router = APIRouter()
@@ -18,14 +19,25 @@ router = APIRouter()
 async def list_trace_paths(
     _: RequireRead,
     session: DbSession,
+    receiver_public_key: Optional[str] = Query(
+        None, description="Filter by receiver node public key"
+    ),
     since: Optional[datetime] = Query(None, description="Start timestamp"),
     until: Optional[datetime] = Query(None, description="End timestamp"),
     limit: int = Query(50, ge=1, le=100, description="Page size"),
     offset: int = Query(0, ge=0, description="Page offset"),
 ) -> TracePathList:
     """List trace paths with filtering and pagination."""
-    # Build query
-    query = select(TracePath)
+    # Alias for receiver node join
+    ReceiverNode = aliased(Node)
+
+    # Build query with receiver node join
+    query = select(TracePath, ReceiverNode.public_key.label("receiver_pk")).outerjoin(
+        ReceiverNode, TracePath.receiver_node_id == ReceiverNode.id
+    )
+
+    if receiver_public_key:
+        query = query.where(ReceiverNode.public_key == receiver_public_key)
 
     if since:
         query = query.where(TracePath.received_at >= since)
@@ -41,10 +53,29 @@ async def list_trace_paths(
     query = query.order_by(TracePath.received_at.desc()).offset(offset).limit(limit)
 
     # Execute
-    trace_paths = session.execute(query).scalars().all()
+    results = session.execute(query).all()
+
+    # Build response with receiver_public_key
+    items = []
+    for tp, receiver_pk in results:
+        data = {
+            "id": tp.id,
+            "receiver_node_id": tp.receiver_node_id,
+            "receiver_public_key": receiver_pk,
+            "initiator_tag": tp.initiator_tag,
+            "path_len": tp.path_len,
+            "flags": tp.flags,
+            "auth": tp.auth,
+            "path_hashes": tp.path_hashes,
+            "snr_values": tp.snr_values,
+            "hop_count": tp.hop_count,
+            "received_at": tp.received_at,
+            "created_at": tp.created_at,
+        }
+        items.append(TracePathRead(**data))
 
     return TracePathList(
-        items=[TracePathRead.model_validate(t) for t in trace_paths],
+        items=items,
         total=total,
         limit=limit,
         offset=offset,
@@ -58,10 +89,30 @@ async def get_trace_path(
     trace_path_id: str,
 ) -> TracePathRead:
     """Get a single trace path by ID."""
-    query = select(TracePath).where(TracePath.id == trace_path_id)
-    trace_path = session.execute(query).scalar_one_or_none()
+    ReceiverNode = aliased(Node)
+    query = (
+        select(TracePath, ReceiverNode.public_key.label("receiver_pk"))
+        .outerjoin(ReceiverNode, TracePath.receiver_node_id == ReceiverNode.id)
+        .where(TracePath.id == trace_path_id)
+    )
+    result = session.execute(query).one_or_none()
 
-    if not trace_path:
+    if not result:
         raise HTTPException(status_code=404, detail="Trace path not found")
 
-    return TracePathRead.model_validate(trace_path)
+    tp, receiver_pk = result
+    data = {
+        "id": tp.id,
+        "receiver_node_id": tp.receiver_node_id,
+        "receiver_public_key": receiver_pk,
+        "initiator_tag": tp.initiator_tag,
+        "path_len": tp.path_len,
+        "flags": tp.flags,
+        "auth": tp.auth,
+        "path_hashes": tp.path_hashes,
+        "snr_values": tp.snr_values,
+        "hop_count": tp.hop_count,
+        "received_at": tp.received_at,
+        "created_at": tp.created_at,
+    }
+    return TracePathRead(**data)

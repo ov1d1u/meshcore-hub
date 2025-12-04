@@ -5,6 +5,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
+from sqlalchemy.orm import aliased
 
 from meshcore_hub.api.auth import RequireRead
 from meshcore_hub.api.dependencies import DbSession
@@ -21,6 +22,9 @@ async def list_messages(
     message_type: Optional[str] = Query(None, description="Filter by message type"),
     pubkey_prefix: Optional[str] = Query(None, description="Filter by sender prefix"),
     channel_idx: Optional[int] = Query(None, description="Filter by channel"),
+    receiver_public_key: Optional[str] = Query(
+        None, description="Filter by receiver node public key"
+    ),
     since: Optional[datetime] = Query(None, description="Start timestamp"),
     until: Optional[datetime] = Query(None, description="End timestamp"),
     search: Optional[str] = Query(None, description="Search in message text"),
@@ -28,8 +32,13 @@ async def list_messages(
     offset: int = Query(0, ge=0, description="Page offset"),
 ) -> MessageList:
     """List messages with filtering and pagination."""
-    # Build query
-    query = select(Message)
+    # Alias for receiver node join
+    ReceiverNode = aliased(Node)
+
+    # Build query with receiver node join
+    query = select(Message, ReceiverNode.public_key.label("receiver_pk")).outerjoin(
+        ReceiverNode, Message.receiver_node_id == ReceiverNode.id
+    )
 
     if message_type:
         query = query.where(Message.message_type == message_type)
@@ -39,6 +48,9 @@ async def list_messages(
 
     if channel_idx is not None:
         query = query.where(Message.channel_idx == channel_idx)
+
+    if receiver_public_key:
+        query = query.where(ReceiverNode.public_key == receiver_public_key)
 
     if since:
         query = query.where(Message.received_at >= since)
@@ -57,14 +69,24 @@ async def list_messages(
     query = query.order_by(Message.received_at.desc()).offset(offset).limit(limit)
 
     # Execute
-    messages = session.execute(query).scalars().all()
+    results = session.execute(query).all()
 
-    # Look up friendly_names for senders with pubkey_prefix
-    pubkey_prefixes = [m.pubkey_prefix for m in messages if m.pubkey_prefix]
+    # Look up sender names and friendly_names for senders with pubkey_prefix
+    pubkey_prefixes = [r[0].pubkey_prefix for r in results if r[0].pubkey_prefix]
+    sender_names: dict[str, str] = {}
     friendly_names: dict[str, str] = {}
     if pubkey_prefixes:
         # Find nodes whose public_key starts with any of these prefixes
         for prefix in set(pubkey_prefixes):
+            # Get node name
+            node_query = select(Node.public_key, Node.name).where(
+                Node.public_key.startswith(prefix)
+            )
+            for public_key, name in session.execute(node_query).all():
+                if name:
+                    sender_names[public_key[:12]] = name
+
+            # Get friendly_name tag
             friendly_name_query = (
                 select(Node.public_key, NodeTag.value)
                 .join(NodeTag, Node.id == NodeTag.node_id)
@@ -72,17 +94,20 @@ async def list_messages(
                 .where(NodeTag.key == "friendly_name")
             )
             for public_key, value in session.execute(friendly_name_query).all():
-                # Map the prefix to the friendly_name
                 friendly_names[public_key[:12]] = value
 
-    # Build response with friendly_names
+    # Build response with sender info and receiver_public_key
     items = []
-    for m in messages:
+    for m, receiver_pk in results:
         msg_dict = {
             "id": m.id,
             "receiver_node_id": m.receiver_node_id,
+            "receiver_public_key": receiver_pk,
             "message_type": m.message_type,
             "pubkey_prefix": m.pubkey_prefix,
+            "sender_name": (
+                sender_names.get(m.pubkey_prefix) if m.pubkey_prefix else None
+            ),
             "sender_friendly_name": (
                 friendly_names.get(m.pubkey_prefix) if m.pubkey_prefix else None
             ),
@@ -113,10 +138,32 @@ async def get_message(
     message_id: str,
 ) -> MessageRead:
     """Get a single message by ID."""
-    query = select(Message).where(Message.id == message_id)
-    message = session.execute(query).scalar_one_or_none()
+    ReceiverNode = aliased(Node)
+    query = (
+        select(Message, ReceiverNode.public_key.label("receiver_pk"))
+        .outerjoin(ReceiverNode, Message.receiver_node_id == ReceiverNode.id)
+        .where(Message.id == message_id)
+    )
+    result = session.execute(query).one_or_none()
 
-    if not message:
+    if not result:
         raise HTTPException(status_code=404, detail="Message not found")
 
-    return MessageRead.model_validate(message)
+    message, receiver_pk = result
+    data = {
+        "id": message.id,
+        "receiver_node_id": message.receiver_node_id,
+        "receiver_public_key": receiver_pk,
+        "message_type": message.message_type,
+        "pubkey_prefix": message.pubkey_prefix,
+        "channel_idx": message.channel_idx,
+        "text": message.text,
+        "path_len": message.path_len,
+        "txt_type": message.txt_type,
+        "signature": message.signature,
+        "snr": message.snr,
+        "sender_timestamp": message.sender_timestamp,
+        "received_at": message.received_at,
+        "created_at": message.created_at,
+    }
+    return MessageRead(**data)

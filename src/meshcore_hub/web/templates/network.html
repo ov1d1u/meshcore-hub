@@ -97,7 +97,9 @@
                         {% for ad in stats.recent_advertisements %}
                         <tr>
                             <td>
-                                <div class="font-medium">{{ ad.friendly_name or ad.name or ad.public_key[:12] + '...' }}</div>
+                                <a href="/nodes/{{ ad.public_key }}" class="link link-hover">
+                                    <div class="font-medium">{{ ad.friendly_name or ad.name or ad.public_key[:12] + '...' }}</div>
+                                </a>
                                 {% if ad.friendly_name or ad.name %}
                                 <div class="text-xs opacity-50 font-mono">{{ ad.public_key[:12] }}...</div>
                                 {% endif %}
