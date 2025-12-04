@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from meshcore_hub import __version__
+from meshcore_hub.common.schemas import RadioConfig
 
 logger = logging.getLogger(__name__)
 
@@ -134,12 +135,17 @@ def get_templates(request: Request) -> Jinja2Templates:
 
 def get_network_context(request: Request) -> dict:
     """Get network configuration context for templates."""
+    # Parse radio config from comma-delimited string
+    radio_config = RadioConfig.from_config_string(
+        request.app.state.network_radio_config
+    )
+
     return {
         "network_name": request.app.state.network_name,
         "network_city": request.app.state.network_city,
         "network_country": request.app.state.network_country,
         "network_location": request.app.state.network_location,
-        "network_radio_config": request.app.state.network_radio_config,
+        "network_radio_config": radio_config,
         "network_contact_email": request.app.state.network_contact_email,
         "network_contact_discord": request.app.state.network_contact_discord,
         "version": __version__,

@@ -50,10 +50,42 @@
             </h2>
             <div class="space-y-2">
                 {% if network_radio_config %}
+                {% if network_radio_config.profile %}
                 <div class="flex justify-between">
-                    <span class="opacity-70">Radio Config:</span>
-                    <span class="font-mono">{{ network_radio_config }}</span>
+                    <span class="opacity-70">Profile:</span>
+                    <span class="font-mono">{{ network_radio_config.profile }}</span>
                 </div>
+                {% endif %}
+                {% if network_radio_config.frequency %}
+                <div class="flex justify-between">
+                    <span class="opacity-70">Frequency:</span>
+                    <span class="font-mono">{{ network_radio_config.frequency }}</span>
+                </div>
+                {% endif %}
+                {% if network_radio_config.spreading_factor %}
+                <div class="flex justify-between">
+                    <span class="opacity-70">Spreading Factor:</span>
+                    <span class="font-mono">{{ network_radio_config.spreading_factor }}</span>
+                </div>
+                {% endif %}
+                {% if network_radio_config.bandwidth %}
+                <div class="flex justify-between">
+                    <span class="opacity-70">Bandwidth:</span>
+                    <span class="font-mono">{{ network_radio_config.bandwidth }}</span>
+                </div>
+                {% endif %}
+                {% if network_radio_config.coding_rate %}
+                <div class="flex justify-between">
+                    <span class="opacity-70">Coding Rate:</span>
+                    <span class="font-mono">{{ network_radio_config.coding_rate }}</span>
+                </div>
+                {% endif %}
+                {% if network_radio_config.tx_power %}
+                <div class="flex justify-between">
+                    <span class="opacity-70">TX Power:</span>
+                    <span class="font-mono">{{ network_radio_config.tx_power }}</span>
+                </div>
+                {% endif %}
                 {% endif %}
                 {% if network_location and network_location != (0.0, 0.0) %}
                 <div class="flex justify-between">

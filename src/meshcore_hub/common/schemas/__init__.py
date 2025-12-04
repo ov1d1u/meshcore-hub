@@ -35,6 +35,9 @@ from meshcore_hub.common.schemas.members import (
     MemberRead,
     MemberList,
 )
+from meshcore_hub.common.schemas.network import (
+    RadioConfig,
+)
 
 __all__ = [
     # Events
@@ -67,4 +70,6 @@ __all__ = [
     "MemberUpdate",
     "MemberRead",
     "MemberList",
+    # Network
+    "RadioConfig",
 ]
