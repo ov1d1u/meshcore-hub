@@ -333,6 +333,10 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
             self._connected = True
             logger.info(f"Connected to MeshCore device, public_key: {self._public_key}")
+
+            # Set up event subscriptions so events can be received immediately
+            self._setup_event_subscriptions()
+
             return True
 
         except Exception as e:
@@ -554,9 +558,6 @@ class MeshCoreDevice(BaseMeshCoreDevice):
         """Run the device event loop."""
         self._running = True
         logger.info("Starting device event loop")
-
-        # Set up event subscriptions
-        self._setup_event_subscriptions()
 
         # Run the async event loop
         async def _run_loop() -> None:
