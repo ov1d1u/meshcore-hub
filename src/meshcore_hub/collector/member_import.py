@@ -9,9 +9,26 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 
 from meshcore_hub.common.database import DatabaseManager
-from meshcore_hub.common.models import Member
+from meshcore_hub.common.models import Member, MemberNode
 
 logger = logging.getLogger(__name__)
+
+
+class NodeData(BaseModel):
+    """Schema for a node entry in the member import file."""
+
+    public_key: str = Field(..., min_length=64, max_length=64)
+    node_role: Optional[str] = Field(default=None, max_length=50)
+
+    @field_validator("public_key")
+    @classmethod
+    def validate_public_key(cls, v: str) -> str:
+        """Validate and normalize public key."""
+        if len(v) != 64:
+            raise ValueError(f"public_key must be 64 characters, got {len(v)}")
+        if not all(c in "0123456789abcdefABCDEF" for c in v):
+            raise ValueError("public_key must be a valid hex string")
+        return v.lower()
 
 
 class MemberData(BaseModel):
@@ -22,19 +39,7 @@ class MemberData(BaseModel):
     role: Optional[str] = Field(default=None, max_length=100)
     description: Optional[str] = Field(default=None)
     contact: Optional[str] = Field(default=None, max_length=255)
-    public_key: Optional[str] = Field(default=None)
-
-    @field_validator("public_key")
-    @classmethod
-    def validate_public_key(cls, v: Optional[str]) -> Optional[str]:
-        """Validate and normalize public key if provided."""
-        if v is None:
-            return None
-        if len(v) != 64:
-            raise ValueError(f"public_key must be 64 characters, got {len(v)}")
-        if not all(c in "0123456789abcdefABCDEF" for c in v):
-            raise ValueError("public_key must be a valid hex string")
-        return v.lower()
+    nodes: Optional[list[NodeData]] = Field(default=None)
 
 
 def load_members_file(file_path: str | Path) -> list[dict[str, Any]]:
@@ -45,14 +50,18 @@ def load_members_file(file_path: str | Path) -> list[dict[str, Any]]:
 
         - name: Member 1
           callsign: M1
-        - name: Member 2
-          callsign: M2
+          nodes:
+            - public_key: abc123...
+              node_role: chat
 
     2. Object with "members" key:
 
         members:
           - name: Member 1
             callsign: M1
+            nodes:
+              - public_key: abc123...
+                node_role: chat
 
     Args:
         file_path: Path to the members YAML file
@@ -107,7 +116,8 @@ def import_members(
     """Import members from a YAML file into the database.
 
     Performs upsert operations based on name - existing members are updated,
-    new members are created.
+    new members are created. Nodes are synced (existing nodes removed and
+    replaced with new ones from the file).
 
     Args:
         file_path: Path to the members YAML file
@@ -155,8 +165,20 @@ def import_members(
                         existing.description = member_data["description"]
                     if member_data.get("contact") is not None:
                         existing.contact = member_data["contact"]
-                    if member_data.get("public_key") is not None:
-                        existing.public_key = member_data["public_key"]
+
+                    # Sync nodes if provided
+                    if member_data.get("nodes") is not None:
+                        # Remove existing nodes
+                        existing.nodes.clear()
+
+                        # Add new nodes
+                        for node_data in member_data["nodes"]:
+                            node = MemberNode(
+                                member_id=existing.id,
+                                public_key=node_data["public_key"],
+                                node_role=node_data.get("node_role"),
+                            )
+                            existing.nodes.append(node)
 
                     stats["updated"] += 1
                     logger.debug(f"Updated member: {name}")
@@ -168,9 +190,20 @@ def import_members(
                         role=member_data.get("role"),
                         description=member_data.get("description"),
                         contact=member_data.get("contact"),
-                        public_key=member_data.get("public_key"),
                     )
                     session.add(new_member)
+                    session.flush()  # Get the ID for the member
+
+                    # Add nodes if provided
+                    if member_data.get("nodes"):
+                        for node_data in member_data["nodes"]:
+                            node = MemberNode(
+                                member_id=new_member.id,
+                                public_key=node_data["public_key"],
+                                node_role=node_data.get("node_role"),
+                            )
+                            session.add(node)
+
                     stats["created"] += 1
                     logger.debug(f"Created member: {name}")
 

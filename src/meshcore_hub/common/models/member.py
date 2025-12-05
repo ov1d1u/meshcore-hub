@@ -1,17 +1,21 @@
 """Member model for network member information."""
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from meshcore_hub.common.models.base import Base, TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from meshcore_hub.common.models.member_node import MemberNode
 
 
 class Member(Base, UUIDMixin, TimestampMixin):
     """Member model for network member information.
 
     Stores information about network members/operators.
+    Members can have multiple associated nodes (chat, repeater, etc.).
 
     Attributes:
         id: UUID primary key
@@ -20,7 +24,7 @@ class Member(Base, UUIDMixin, TimestampMixin):
         role: Member's role in the network (optional)
         description: Additional description (optional)
         contact: Contact information (optional)
-        public_key: Associated node public key (optional, 64-char hex)
+        nodes: List of associated MemberNode records
         created_at: Record creation timestamp
         updated_at: Record update timestamp
     """
@@ -47,10 +51,11 @@ class Member(Base, UUIDMixin, TimestampMixin):
         String(255),
         nullable=True,
     )
-    public_key: Mapped[Optional[str]] = mapped_column(
-        String(64),
-        nullable=True,
-        index=True,
+
+    # Relationship to member nodes
+    nodes: Mapped[list["MemberNode"]] = relationship(
+        back_populates="member",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:

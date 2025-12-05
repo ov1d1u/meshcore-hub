@@ -6,6 +6,35 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class MemberNodeCreate(BaseModel):
+    """Schema for creating a member node association."""
+
+    public_key: str = Field(
+        ...,
+        min_length=64,
+        max_length=64,
+        pattern=r"^[0-9a-fA-F]{64}$",
+        description="Node's public key (64-char hex)",
+    )
+    node_role: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="Role of the node (e.g., 'chat', 'repeater')",
+    )
+
+
+class MemberNodeRead(BaseModel):
+    """Schema for reading a member node association."""
+
+    public_key: str = Field(..., description="Node's public key")
+    node_role: Optional[str] = Field(default=None, description="Role of the node")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    class Config:
+        from_attributes = True
+
+
 class MemberCreate(BaseModel):
     """Schema for creating a member."""
 
@@ -34,12 +63,9 @@ class MemberCreate(BaseModel):
         max_length=255,
         description="Contact information",
     )
-    public_key: Optional[str] = Field(
+    nodes: Optional[list[MemberNodeCreate]] = Field(
         default=None,
-        min_length=64,
-        max_length=64,
-        pattern=r"^[0-9a-fA-F]{64}$",
-        description="Associated node public key (64-char hex)",
+        description="List of associated nodes",
     )
 
 
@@ -71,26 +97,22 @@ class MemberUpdate(BaseModel):
         max_length=255,
         description="Contact information",
     )
-    public_key: Optional[str] = Field(
+    nodes: Optional[list[MemberNodeCreate]] = Field(
         default=None,
-        min_length=64,
-        max_length=64,
-        pattern=r"^[0-9a-fA-F]{64}$",
-        description="Associated node public key (64-char hex)",
+        description="List of associated nodes (replaces existing nodes)",
     )
 
 
 class MemberRead(BaseModel):
     """Schema for reading a member."""
 
+    id: str = Field(..., description="Member UUID")
     name: str = Field(..., description="Member's display name")
     callsign: Optional[str] = Field(default=None, description="Amateur radio callsign")
     role: Optional[str] = Field(default=None, description="Member's role")
     description: Optional[str] = Field(default=None, description="Description")
     contact: Optional[str] = Field(default=None, description="Contact information")
-    public_key: Optional[str] = Field(
-        default=None, description="Associated node public key"
-    )
+    nodes: list[MemberNodeRead] = Field(default=[], description="Associated nodes")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

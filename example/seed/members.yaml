@@ -1,6 +1,16 @@
 # Example members seed file
+# Each member can have multiple nodes with different roles (chat, repeater, etc.)
 members:
   - name: Example Member
     callsign: N0CALL
     role: Network Operator
-    description: Example member entry
+    description: Example member entry with multiple nodes
+    nodes:
+      - public_key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        node_role: chat
+      - public_key: fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210
+        node_role: repeater
+  - name: Simple Member
+    callsign: N0CALL2
+    role: Observer
+    description: Member without any nodes

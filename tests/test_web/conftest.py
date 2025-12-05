@@ -315,7 +315,14 @@ def mock_http_client_with_members() -> MockHttpClient:
                     "role": "Admin",
                     "description": None,
                     "contact": "alice@example.com",
-                    "public_key": None,
+                    "nodes": [
+                        {
+                            "public_key": "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+                            "node_role": "chat",
+                            "created_at": "2024-01-01T00:00:00Z",
+                            "updated_at": "2024-01-01T00:00:00Z",
+                        }
+                    ],
                     "created_at": "2024-01-01T00:00:00Z",
                     "updated_at": "2024-01-01T00:00:00Z",
                 },
@@ -326,7 +333,7 @@ def mock_http_client_with_members() -> MockHttpClient:
                     "role": "Member",
                     "description": None,
                     "contact": None,
-                    "public_key": None,
+                    "nodes": [],
                     "created_at": "2024-01-01T00:00:00Z",
                     "updated_at": "2024-01-01T00:00:00Z",
                 },
