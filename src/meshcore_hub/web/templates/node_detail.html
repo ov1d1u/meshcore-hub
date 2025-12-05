@@ -102,19 +102,36 @@
                         <tr>
                             <th>Time</th>
                             <th>Type</th>
-                            <th>Name</th>
-                            <th>Receiver</th>
+                            <th>Received By</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for adv in advertisements %}
                         <tr>
-                            <td class="text-xs">{{ adv.received_at[:19].replace('T', ' ') if adv.received_at else '-' }}</td>
-                            <td>{{ adv.adv_type or '-' }}</td>
-                            <td>{{ adv.name or '-' }}</td>
-                            <td class="text-xs">
+                            <td class="text-xs whitespace-nowrap">{{ adv.received_at[:19].replace('T', ' ') if adv.received_at else '-' }}</td>
+                            <td>
+                                {% if adv.adv_type and adv.adv_type|lower == 'chat' %}
+                                <span title="Chat">💬</span>
+                                {% elif adv.adv_type and adv.adv_type|lower == 'repeater' %}
+                                <span title="Repeater">📡</span>
+                                {% elif adv.adv_type and adv.adv_type|lower == 'room' %}
+                                <span title="Room">🪧</span>
+                                {% elif adv.adv_type %}
+                                <span title="{{ adv.adv_type }}">📍</span>
+                                {% else %}
+                                <span class="opacity-50">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
                                 {% if adv.received_by %}
-                                <span class="font-mono" title="{{ adv.received_by }}">{{ adv.received_by[:8] }}...</span>
+                                <a href="/nodes/{{ adv.received_by }}" class="link link-hover">
+                                    {% if adv.receiver_friendly_name or adv.receiver_name %}
+                                    <div class="font-medium text-sm">{{ adv.receiver_friendly_name or adv.receiver_name }}</div>
+                                    <div class="text-xs font-mono opacity-70">{{ adv.received_by[:16] }}...</div>
+                                    {% else %}
+                                    <span class="font-mono text-xs">{{ adv.received_by[:16] }}...</span>
+                                    {% endif %}
+                                </a>
                                 {% else %}
                                 <span class="opacity-50">-</span>
                                 {% endif %}
@@ -141,13 +158,13 @@
                         <tr>
                             <th>Time</th>
                             <th>Data</th>
-                            <th>Receiver</th>
+                            <th>Received By</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for tel in telemetry %}
                         <tr>
-                            <td class="text-xs">{{ tel.received_at[:19].replace('T', ' ') if tel.received_at else '-' }}</td>
+                            <td class="text-xs whitespace-nowrap">{{ tel.received_at[:19].replace('T', ' ') if tel.received_at else '-' }}</td>
                             <td class="text-xs font-mono">
                                 {% if tel.parsed_data %}
                                 {{ tel.parsed_data | tojson }}
@@ -155,9 +172,16 @@
                                 -
                                 {% endif %}
                             </td>
-                            <td class="text-xs">
+                            <td>
                                 {% if tel.received_by %}
-                                <span class="font-mono" title="{{ tel.received_by }}">{{ tel.received_by[:8] }}...</span>
+                                <a href="/nodes/{{ tel.received_by }}" class="link link-hover">
+                                    {% if tel.receiver_friendly_name or tel.receiver_name %}
+                                    <div class="font-medium text-sm">{{ tel.receiver_friendly_name or tel.receiver_name }}</div>
+                                    <div class="text-xs font-mono opacity-70">{{ tel.received_by[:16] }}...</div>
+                                    {% else %}
+                                    <span class="font-mono text-xs">{{ tel.received_by[:16] }}...</span>
+                                    {% endif %}
+                                </a>
                                 {% else %}
                                 <span class="opacity-50">-</span>
                                 {% endif %}
