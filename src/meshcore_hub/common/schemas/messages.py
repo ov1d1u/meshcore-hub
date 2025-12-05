@@ -187,6 +187,20 @@ class RecentAdvertisement(BaseModel):
     received_at: datetime = Field(..., description="When received")
 
 
+class ChannelMessage(BaseModel):
+    """Schema for a channel message summary."""
+
+    text: str = Field(..., description="Message text")
+    sender_name: Optional[str] = Field(default=None, description="Sender name")
+    sender_friendly_name: Optional[str] = Field(
+        default=None, description="Sender friendly name"
+    )
+    pubkey_prefix: Optional[str] = Field(
+        default=None, description="Sender public key prefix"
+    )
+    received_at: datetime = Field(..., description="When received")
+
+
 class DashboardStats(BaseModel):
     """Schema for dashboard statistics."""
 
@@ -204,4 +218,8 @@ class DashboardStats(BaseModel):
     channel_message_counts: dict[int, int] = Field(
         default_factory=dict,
         description="Message count per channel",
+    )
+    channel_messages: dict[int, list[ChannelMessage]] = Field(
+        default_factory=dict,
+        description="Recent messages per channel (up to 5 each)",
     )

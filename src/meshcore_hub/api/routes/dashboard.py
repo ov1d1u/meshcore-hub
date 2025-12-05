@@ -9,7 +9,11 @@ from sqlalchemy import func, select
 from meshcore_hub.api.auth import RequireRead
 from meshcore_hub.api.dependencies import DbSession
 from meshcore_hub.common.models import Advertisement, Message, Node, NodeTag
-from meshcore_hub.common.schemas.messages import DashboardStats, RecentAdvertisement
+from meshcore_hub.common.schemas.messages import (
+    ChannelMessage,
+    DashboardStats,
+    RecentAdvertisement,
+)
 
 router = APIRouter()
 
@@ -123,6 +127,55 @@ async def get_stats(
         int(channel): int(count) for channel, count in channel_results
     }
 
+    # Get latest 5 messages for each channel that has messages
+    channel_messages: dict[int, list[ChannelMessage]] = {}
+    for channel_idx, _ in channel_results:
+        messages_query = (
+            select(Message)
+            .where(Message.message_type == "channel")
+            .where(Message.channel_idx == channel_idx)
+            .order_by(Message.received_at.desc())
+            .limit(5)
+        )
+        channel_msgs = session.execute(messages_query).scalars().all()
+
+        # Look up sender names for these messages
+        msg_prefixes = [m.pubkey_prefix for m in channel_msgs if m.pubkey_prefix]
+        msg_sender_names: dict[str, str] = {}
+        msg_friendly_names: dict[str, str] = {}
+        if msg_prefixes:
+            for prefix in set(msg_prefixes):
+                sender_node_query = select(Node.public_key, Node.name).where(
+                    Node.public_key.startswith(prefix)
+                )
+                for public_key, name in session.execute(sender_node_query).all():
+                    if name:
+                        msg_sender_names[public_key[:12]] = name
+
+                sender_friendly_query = (
+                    select(Node.public_key, NodeTag.value)
+                    .join(NodeTag, Node.id == NodeTag.node_id)
+                    .where(Node.public_key.startswith(prefix))
+                    .where(NodeTag.key == "friendly_name")
+                )
+                for public_key, value in session.execute(sender_friendly_query).all():
+                    msg_friendly_names[public_key[:12]] = value
+
+        channel_messages[int(channel_idx)] = [
+            ChannelMessage(
+                text=m.text,
+                sender_name=(
+                    msg_sender_names.get(m.pubkey_prefix) if m.pubkey_prefix else None
+                ),
+                sender_friendly_name=(
+                    msg_friendly_names.get(m.pubkey_prefix) if m.pubkey_prefix else None
+                ),
+                pubkey_prefix=m.pubkey_prefix,
+                received_at=m.received_at,
+            )
+            for m in channel_msgs
+        ]
+
     return DashboardStats(
         total_nodes=total_nodes,
         active_nodes=active_nodes,
@@ -132,6 +185,7 @@ async def get_stats(
         advertisements_24h=advertisements_24h,
         recent_advertisements=recent_advertisements,
         channel_message_counts=channel_message_counts,
+        channel_messages=channel_messages,
     )
 
 
