@@ -2,10 +2,11 @@
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 
 from meshcore_hub.api.auth import RequireAdmin, RequireRead
 from meshcore_hub.api.dependencies import DbSession
-from meshcore_hub.common.models import Member
+from meshcore_hub.common.models import Member, MemberNode
 from meshcore_hub.common.schemas.members import (
     MemberCreate,
     MemberList,
@@ -28,8 +29,14 @@ async def list_members(
     count_query = select(func.count()).select_from(Member)
     total = session.execute(count_query).scalar() or 0
 
-    # Get members
-    query = select(Member).order_by(Member.name).limit(limit).offset(offset)
+    # Get members with nodes eagerly loaded
+    query = (
+        select(Member)
+        .options(selectinload(Member.nodes))
+        .order_by(Member.name)
+        .limit(limit)
+        .offset(offset)
+    )
     members = session.execute(query).scalars().all()
 
     return MemberList(
@@ -47,7 +54,9 @@ async def get_member(
     member_id: str,
 ) -> MemberRead:
     """Get a specific member by ID."""
-    query = select(Member).where(Member.id == member_id)
+    query = (
+        select(Member).options(selectinload(Member.nodes)).where(Member.id == member_id)
+    )
     member = session.execute(query).scalar_one_or_none()
 
     if not member:
@@ -63,9 +72,6 @@ async def create_member(
     member: MemberCreate,
 ) -> MemberRead:
     """Create a new member."""
-    # Normalize public_key to lowercase if provided
-    public_key = member.public_key.lower() if member.public_key else None
-
     # Create member
     new_member = Member(
         name=member.name,
@@ -73,9 +79,20 @@ async def create_member(
         role=member.role,
         description=member.description,
         contact=member.contact,
-        public_key=public_key,
     )
     session.add(new_member)
+    session.flush()  # Get the ID for the member
+
+    # Add nodes if provided
+    if member.nodes:
+        for node_data in member.nodes:
+            node = MemberNode(
+                member_id=new_member.id,
+                public_key=node_data.public_key.lower(),
+                node_role=node_data.node_role,
+            )
+            session.add(node)
+
     session.commit()
     session.refresh(new_member)
 
@@ -90,7 +107,9 @@ async def update_member(
     member: MemberUpdate,
 ) -> MemberRead:
     """Update a member."""
-    query = select(Member).where(Member.id == member_id)
+    query = (
+        select(Member).options(selectinload(Member.nodes)).where(Member.id == member_id)
+    )
     existing = session.execute(query).scalar_one_or_none()
 
     if not existing:
@@ -107,8 +126,20 @@ async def update_member(
         existing.description = member.description
     if member.contact is not None:
         existing.contact = member.contact
-    if member.public_key is not None:
-        existing.public_key = member.public_key.lower()
+
+    # Update nodes if provided (replaces existing nodes)
+    if member.nodes is not None:
+        # Clear existing nodes
+        existing.nodes.clear()
+
+        # Add new nodes
+        for node_data in member.nodes:
+            node = MemberNode(
+                member_id=existing.id,
+                public_key=node_data.public_key.lower(),
+                node_role=node_data.node_role,
+            )
+            existing.nodes.append(node)
 
     session.commit()
     session.refresh(existing)
