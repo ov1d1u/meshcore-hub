@@ -85,9 +85,7 @@
                         {% endif %}
                     {% endif %}
                 </td>
-                <td class="whitespace-pre-wrap break-words max-w-md">
-                    {{ msg.text or '-' }}
-                </td>
+                <td class="break-words max-w-md" style="white-space: pre-wrap;">{{ msg.text or '-' }}</td>
                 <td class="text-xs whitespace-nowrap">
                     {% if msg.received_by %}
                     <span class="font-mono" title="{{ msg.received_by }}">{{ msg.received_by[:8] }}...</span>
