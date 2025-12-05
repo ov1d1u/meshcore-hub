@@ -9,10 +9,6 @@ from pydantic import BaseModel, Field
 class MessageRead(BaseModel):
     """Schema for reading a message."""
 
-    id: str = Field(..., description="Message UUID")
-    receiver_node_id: Optional[str] = Field(
-        default=None, description="Receiving interface node UUID"
-    )
     receiver_public_key: Optional[str] = Field(
         default=None, description="Receiving interface node public key"
     )
@@ -85,14 +81,9 @@ class MessageFilters(BaseModel):
 class AdvertisementRead(BaseModel):
     """Schema for reading an advertisement."""
 
-    id: str = Field(..., description="Advertisement UUID")
-    receiver_node_id: Optional[str] = Field(
-        default=None, description="Receiving interface node UUID"
-    )
     receiver_public_key: Optional[str] = Field(
         default=None, description="Receiving interface node public key"
     )
-    node_id: Optional[str] = Field(default=None, description="Advertised node UUID")
     public_key: str = Field(..., description="Advertised public key")
     name: Optional[str] = Field(default=None, description="Advertised name")
     adv_type: Optional[str] = Field(default=None, description="Node type")
@@ -116,10 +107,6 @@ class AdvertisementList(BaseModel):
 class TracePathRead(BaseModel):
     """Schema for reading a trace path."""
 
-    id: str = Field(..., description="Trace path UUID")
-    receiver_node_id: Optional[str] = Field(
-        default=None, description="Receiving interface node UUID"
-    )
     receiver_public_key: Optional[str] = Field(
         default=None, description="Receiving interface node public key"
     )
@@ -153,14 +140,9 @@ class TracePathList(BaseModel):
 class TelemetryRead(BaseModel):
     """Schema for reading a telemetry record."""
 
-    id: str = Field(..., description="Telemetry UUID")
-    receiver_node_id: Optional[str] = Field(
-        default=None, description="Receiving interface node UUID"
-    )
     receiver_public_key: Optional[str] = Field(
         default=None, description="Receiving interface node public key"
     )
-    node_id: Optional[str] = Field(default=None, description="Reporting node UUID")
     node_public_key: str = Field(..., description="Reporting node public key")
     parsed_data: Optional[dict] = Field(
         default=None, description="Decoded sensor readings"
