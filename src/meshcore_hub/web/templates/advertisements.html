@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}{{ network_name }} - Advertisements{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-3xl font-bold">Advertisements</h1>
+    <span class="badge badge-lg">{{ total }} total</span>
+</div>
+
+{% if api_error %}
+<div class="alert alert-warning mb-6">
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    <span>Could not fetch data from API: {{ api_error }}</span>
+</div>
+{% endif %}
+
+<!-- Filters -->
+<div class="card bg-base-100 shadow mb-6">
+    <div class="card-body py-4">
+        <form method="GET" action="/advertisements" class="flex gap-4 flex-wrap items-end">
+            <div class="form-control">
+                <label class="label py-1">
+                    <span class="label-text">Public Key</span>
+                </label>
+                <input type="text" name="public_key" value="{{ public_key }}" placeholder="Filter by public key..." class="input input-bordered input-sm w-80" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            <a href="/advertisements" class="btn btn-ghost btn-sm">Clear</a>
+        </form>
+    </div>
+</div>
+
+<!-- Advertisements Table -->
+<div class="overflow-x-auto bg-base-100 rounded-box shadow">
+    <table class="table table-zebra">
+        <thead>
+            <tr>
+                <th>Node</th>
+                <th>Type</th>
+                <th>Received By</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ad in advertisements %}
+            <tr class="hover">
+                <td>
+                    <a href="/nodes/{{ ad.public_key }}" class="link link-hover">
+                        {% if ad.node_friendly_name or ad.node_name or ad.name %}
+                        <div class="font-medium">{{ ad.node_friendly_name or ad.node_name or ad.name }}</div>
+                        <div class="text-xs font-mono opacity-70">{{ ad.public_key[:16] }}...</div>
+                        {% else %}
+                        <span class="font-mono text-sm">{{ ad.public_key[:16] }}...</span>
+                        {% endif %}
+                    </a>
+                </td>
+                <td>
+                    {% if ad.adv_type and ad.adv_type|lower == 'chat' %}
+                    <span title="Chat">💬</span>
+                    {% elif ad.adv_type and ad.adv_type|lower == 'repeater' %}
+                    <span title="Repeater">📡</span>
+                    {% elif ad.adv_type and ad.adv_type|lower == 'room' %}
+                    <span title="Room">🪧</span>
+                    {% elif ad.adv_type %}
+                    <span title="{{ ad.adv_type }}">📍</span>
+                    {% else %}
+                    <span class="opacity-50">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ad.received_by %}
+                    <a href="/nodes/{{ ad.received_by }}" class="link link-hover">
+                        {% if ad.receiver_friendly_name or ad.receiver_name %}
+                        <div class="font-medium">{{ ad.receiver_friendly_name or ad.receiver_name }}</div>
+                        <div class="text-xs font-mono opacity-70">{{ ad.received_by[:16] }}...</div>
+                        {% else %}
+                        <span class="font-mono text-sm">{{ ad.received_by[:16] }}...</span>
+                        {% endif %}
+                    </a>
+                    {% else %}
+                    <span class="opacity-50">-</span>
+                    {% endif %}
+                </td>
+                <td class="text-sm whitespace-nowrap">
+                    {{ ad.received_at[:19].replace('T', ' ') if ad.received_at else '-' }}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="text-center py-8 opacity-70">No advertisements found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<div class="flex justify-center mt-6">
+    <div class="join">
+        {% if page > 1 %}
+        <a href="?page={{ page - 1 }}&public_key={{ public_key }}&limit={{ limit }}" class="join-item btn btn-sm">Previous</a>
+        {% else %}
+        <button class="join-item btn btn-sm btn-disabled">Previous</button>
+        {% endif %}
+
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <button class="join-item btn btn-sm btn-active">{{ p }}</button>
+            {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+            <a href="?page={{ p }}&public_key={{ public_key }}&limit={{ limit }}" class="join-item btn btn-sm">{{ p }}</a>
+            {% elif p == 2 or p == total_pages - 1 %}
+            <button class="join-item btn btn-sm btn-disabled">...</button>
+            {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}&public_key={{ public_key }}&limit={{ limit }}" class="join-item btn btn-sm">Next</a>
+        {% else %}
+        <button class="join-item btn btn-sm btn-disabled">Next</button>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

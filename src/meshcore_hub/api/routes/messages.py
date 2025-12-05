@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, selectinload
 
 from meshcore_hub.api.auth import RequireRead
 from meshcore_hub.api.dependencies import DbSession
@@ -13,6 +13,16 @@ from meshcore_hub.common.models import Message, Node, NodeTag
 from meshcore_hub.common.schemas.messages import MessageList, MessageRead
 
 router = APIRouter()
+
+
+def _get_friendly_name(node: Optional[Node]) -> Optional[str]:
+    """Extract friendly_name tag from a node's tags."""
+    if not node or not node.tags:
+        return None
+    for tag in node.tags:
+        if tag.key == "friendly_name":
+            return tag.value
+    return None
 
 
 @router.get("", response_model=MessageList)
@@ -36,9 +46,12 @@ async def list_messages(
     ReceiverNode = aliased(Node)
 
     # Build query with receiver node join
-    query = select(Message, ReceiverNode.public_key.label("receiver_pk")).outerjoin(
-        ReceiverNode, Message.receiver_node_id == ReceiverNode.id
-    )
+    query = select(
+        Message,
+        ReceiverNode.public_key.label("receiver_pk"),
+        ReceiverNode.name.label("receiver_name"),
+        ReceiverNode.id.label("receiver_id"),
+    ).outerjoin(ReceiverNode, Message.receiver_node_id == ReceiverNode.id)
 
     if message_type:
         query = query.where(Message.message_type == message_type)
@@ -96,13 +109,39 @@ async def list_messages(
             for public_key, value in session.execute(friendly_name_query).all():
                 friendly_names[public_key[:12]] = value
 
+    # Collect receiver node IDs to fetch tags
+    receiver_ids = set()
+    for row in results:
+        if row.receiver_id:
+            receiver_ids.add(row.receiver_id)
+
+    # Fetch receiver nodes with tags
+    receivers_by_id: dict[str, Node] = {}
+    if receiver_ids:
+        receivers_query = (
+            select(Node)
+            .where(Node.id.in_(receiver_ids))
+            .options(selectinload(Node.tags))
+        )
+        receivers = session.execute(receivers_query).scalars().all()
+        receivers_by_id = {n.id: n for n in receivers}
+
     # Build response with sender info and received_by
     items = []
-    for m, receiver_pk in results:
+    for row in results:
+        m = row[0]
+        receiver_pk = row.receiver_pk
+        receiver_name = row.receiver_name
+        receiver_node = (
+            receivers_by_id.get(row.receiver_id) if row.receiver_id else None
+        )
+
         msg_dict = {
             "id": m.id,
             "receiver_node_id": m.receiver_node_id,
             "received_by": receiver_pk,
+            "receiver_name": receiver_name,
+            "receiver_friendly_name": _get_friendly_name(receiver_node),
             "message_type": m.message_type,
             "pubkey_prefix": m.pubkey_prefix,
             "sender_name": (

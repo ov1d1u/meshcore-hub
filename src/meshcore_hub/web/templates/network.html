@@ -130,39 +130,37 @@
         </div>
     </div>
 
-    <!-- Channel Stats -->
+    <!-- Channel Messages -->
+    {% if stats.channel_messages %}
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
             <h2 class="card-title">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
                 </svg>
-                Channel Messages
+                Recent Channel Messages
             </h2>
-            {% if stats.channel_message_counts %}
-            <div class="overflow-x-auto">
-                <table class="table table-compact w-full">
-                    <thead>
-                        <tr>
-                            <th>Channel</th>
-                            <th class="text-right">Count</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for channel, count in stats.channel_message_counts.items() %}
-                        <tr>
-                            <td>Channel {{ channel }}</td>
-                            <td class="text-right font-mono">{{ count }}</td>
-                        </tr>
+            <div class="space-y-4">
+                {% for channel, messages in stats.channel_messages.items() %}
+                <div>
+                    <h3 class="font-semibold text-sm mb-2 flex items-center gap-2">
+                        <span class="badge badge-info badge-sm">CH{{ channel }}</span>
+                        Channel {{ channel }}
+                    </h3>
+                    <div class="space-y-1 pl-2 border-l-2 border-base-300">
+                        {% for msg in messages %}
+                        <div class="text-sm">
+                            <span class="text-xs opacity-50">{{ msg.received_at.split('T')[1][:5] if msg.received_at else '' }}</span>
+                            <span class="break-words" style="white-space: pre-wrap;">{{ msg.text }}</span>
+                        </div>
                         {% endfor %}
-                    </tbody>
-                </table>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-            {% else %}
-            <p class="text-sm opacity-70">No channel messages recorded yet.</p>
-            {% endif %}
         </div>
     </div>
+    {% endif %}
 </div>
 
 <!-- Quick Actions -->

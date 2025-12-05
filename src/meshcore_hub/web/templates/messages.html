@@ -53,21 +53,17 @@
     <table class="table table-zebra">
         <thead>
             <tr>
-                <th>Time</th>
                 <th>Type</th>
+                <th>Time</th>
                 <th>From/Channel</th>
                 <th>Message</th>
                 <th>Receiver</th>
                 <th>SNR</th>
-                <th>Hops</th>
             </tr>
         </thead>
         <tbody>
             {% for msg in messages %}
-            <tr class="hover">
-                <td class="text-xs whitespace-nowrap">
-                    {{ msg.received_at[:19].replace('T', ' ') if msg.received_at else '-' }}
-                </td>
+            <tr class="hover align-top">
                 <td>
                     {% if msg.message_type == 'channel' %}
                     <span class="badge badge-info badge-sm">Channel</span>
@@ -75,7 +71,10 @@
                     <span class="badge badge-success badge-sm">Direct</span>
                     {% endif %}
                 </td>
-                <td class="text-sm">
+                <td class="text-sm whitespace-nowrap">
+                    {{ msg.received_at[:19].replace('T', ' ') if msg.received_at else '-' }}
+                </td>
+                <td class="text-sm whitespace-nowrap">
                     {% if msg.message_type == 'channel' %}
                     <span class="font-mono">CH{{ msg.channel_idx }}</span>
                     {% else %}
@@ -86,26 +85,24 @@
                         {% endif %}
                     {% endif %}
                 </td>
-                <td class="truncate-cell" title="{{ msg.text }}">
-                    {{ msg.text or '-' }}
-                </td>
-                <td class="text-xs">
+                <td class="break-words max-w-md" style="white-space: pre-wrap;">{{ msg.text or '-' }}</td>
+                <td>
                     {% if msg.received_by %}
-                    <span class="font-mono" title="{{ msg.received_by }}">{{ msg.received_by[:8] }}...</span>
+                    <a href="/nodes/{{ msg.received_by }}" class="link link-hover">
+                        {% if msg.receiver_friendly_name or msg.receiver_name %}
+                        <div class="font-medium">{{ msg.receiver_friendly_name or msg.receiver_name }}</div>
+                        <div class="text-xs font-mono opacity-70">{{ msg.received_by[:16] }}...</div>
+                        {% else %}
+                        <span class="font-mono text-sm">{{ msg.received_by[:16] }}...</span>
+                        {% endif %}
+                    </a>
                     {% else %}
                     <span class="opacity-50">-</span>
                     {% endif %}
                 </td>
-                <td class="text-center">
+                <td class="text-center whitespace-nowrap">
                     {% if msg.snr is not none %}
                     <span class="badge badge-ghost badge-sm">{{ "%.1f"|format(msg.snr) }}</span>
-                    {% else %}
-                    -
-                    {% endif %}
-                </td>
-                <td class="text-center">
-                    {% if msg.hops is not none %}
-                    <span class="badge badge-ghost badge-sm">{{ msg.hops }}</span>
                     {% else %}
                     -
                     {% endif %}
@@ -113,7 +110,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="7" class="text-center py-8 opacity-70">No messages found.</td>
+                <td colspan="6" class="text-center py-8 opacity-70">No messages found.</td>
             </tr>
             {% endfor %}
         </tbody>
