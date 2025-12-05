@@ -12,6 +12,10 @@ class MessageRead(BaseModel):
     received_by: Optional[str] = Field(
         default=None, description="Receiving interface node public key"
     )
+    receiver_name: Optional[str] = Field(default=None, description="Receiver node name")
+    receiver_friendly_name: Optional[str] = Field(
+        default=None, description="Receiver friendly name from tags"
+    )
     message_type: str = Field(..., description="Message type (contact, channel)")
     pubkey_prefix: Optional[str] = Field(
         default=None, description="Sender's public key prefix (12 chars)"
