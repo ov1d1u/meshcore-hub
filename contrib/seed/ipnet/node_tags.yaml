@@ -172,6 +172,14 @@ e790b73b2d6e377dd0f575c847f3ef42232f610eb9a19af57083fc4f647309ac:
   elevation: 37
   role: infra
 
+ebb16e6c328b3f2fa5bc46a8c3efc8e9ad1960ee49a76dfa85abddbf7911e2ca:
+  friendly_name: IP3 Integration 1
+  node_id: ip3-int01.ipnt.uk
+  member_id: markab
+  area: IP3
+  location_description: Morland Road Allotments
+  role: infra
+
 # IP4 Area Nodes
 d3c20d962f7384c111fbafad6fbc1c1dc0e5c3ce802fb3ee11020e8d8207ed3a:
   friendly_name: IP4 Repeater 1
