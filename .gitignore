@@ -218,3 +218,4 @@ __marimo__/
 # MeshCore Hub specific
 *.db
 meshcore.db
+src/meshcore_hub/_version.py

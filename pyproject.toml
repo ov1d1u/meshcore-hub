@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=68.0", "wheel", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "meshcore-hub"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Python monorepo for managing and orchestrating MeshCore mesh networks"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
@@ -67,6 +67,9 @@ Homepage = "https://github.com/ipnet-mesh/meshcore-hub"
 Documentation = "https://github.com/ipnet-mesh/meshcore-hub#readme"
 Repository = "https://github.com/ipnet-mesh/meshcore-hub"
 Issues = "https://github.com/ipnet-mesh/meshcore-hub/issues"
+
+[tool.setuptools_scm]
+version_file = "src/meshcore_hub/_version.py"
 
 [tool.setuptools.packages.find]
 where = ["src"]
