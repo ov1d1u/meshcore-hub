@@ -49,6 +49,10 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha
 
+      - name: Get version from Git
+        id: version
+        run: echo "version=$(git describe --tags --always --dirty)" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -58,12 +62,15 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            SETUPTOOLS_SCM_PRETEND_VERSION=${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Test Docker image
         if: github.event_name == 'pull_request'
         run: |
-          docker build -t meshcore-hub-test -f Dockerfile .
+          VERSION=$(git describe --tags --always --dirty)
+          docker build -t meshcore-hub-test --build-arg SETUPTOOLS_SCM_PRETEND_VERSION=$VERSION -f Dockerfile .
           docker run --rm meshcore-hub-test --version
           docker run --rm meshcore-hub-test --help

@@ -21,6 +21,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Build argument for version (set via CI or manually)
+ARG SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0+docker
+
 # Copy project files
 WORKDIR /app
 COPY pyproject.toml README.md ./
@@ -28,9 +31,9 @@ COPY src/ ./src/
 COPY alembic/ ./alembic/
 COPY alembic.ini ./
 
-# Install the package
+# Install the package with version from build arg
 RUN pip install --upgrade pip && \
-    pip install .
+    SETUPTOOLS_SCM_PRETEND_VERSION=${SETUPTOOLS_SCM_PRETEND_VERSION} pip install .
 
 # =============================================================================
 # Stage 2: Runtime - Final production image
