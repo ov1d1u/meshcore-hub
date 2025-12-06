@@ -1,16 +1,13 @@
 services:
   # ==========================================================================
-  # MQTT Broker - Eclipse Mosquitto
-  # Included in all profiles that need it (receiver, sender, core, mock)
+  # MQTT Broker - Eclipse Mosquitto (optional, use --profile mqtt)
+  # Most users will connect to an external MQTT broker instead
   # ==========================================================================
   mqtt:
     image: eclipse-mosquitto:2
     container_name: meshcore-mqtt
     profiles:
-      - receiver
-      - sender
-      - core
-      - mock
+      - mqtt
     restart: unless-stopped
     ports:
       - "${MQTT_EXTERNAL_PORT:-1883}:1883"
@@ -38,9 +35,6 @@ services:
     profiles:
       - receiver
     restart: unless-stopped
-    depends_on:
-      mqtt:
-        condition: service_healthy
     devices:
       - "${SERIAL_PORT:-/dev/ttyUSB0}:${SERIAL_PORT:-/dev/ttyUSB0}"
     user: root  # Required for device access
@@ -74,9 +68,6 @@ services:
     profiles:
       - sender
     restart: unless-stopped
-    depends_on:
-      mqtt:
-        condition: service_healthy
     devices:
       - "${SERIAL_PORT_SENDER:-/dev/ttyUSB1}:${SERIAL_PORT_SENDER:-/dev/ttyUSB1}"
     user: root  # Required for device access
@@ -110,9 +101,6 @@ services:
     profiles:
       - mock
     restart: unless-stopped
-    depends_on:
-      mqtt:
-        condition: service_healthy
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - MQTT_HOST=${MQTT_HOST:-mqtt}
@@ -142,9 +130,6 @@ services:
     profiles:
       - core
     restart: unless-stopped
-    depends_on:
-      mqtt:
-        condition: service_healthy
     volumes:
       - ${DATA_HOME:-./data}:/data
       - ${SEED_HOME:-./seed}:/seed
@@ -192,8 +177,6 @@ services:
       - core
     restart: unless-stopped
     depends_on:
-      mqtt:
-        condition: service_healthy
       collector:
         condition: service_started
     ports:

@@ -82,8 +82,8 @@ cd meshcore-hub
 cp .env.example .env
 # Edit .env: set SERIAL_PORT to your device (e.g., /dev/ttyUSB0 or /dev/ttyACM0)
 
-# Start the entire stack including the interface receiver
-docker compose --profile core --profile receiver up -d
+# Start the entire stack with local MQTT broker
+docker compose --profile mqtt --profile core --profile receiver up -d
 
 # View the web dashboard
 open http://localhost:8080
@@ -136,7 +136,10 @@ docker compose --profile receiver up -d
 
 **On the central server (VPS/cloud):**
 ```bash
-# Run the core infrastructure (no interface needed)
+# Run the core infrastructure with local MQTT broker
+docker compose --profile mqtt --profile core up -d
+
+# Or connect to an existing MQTT broker (set MQTT_HOST in .env)
 docker compose --profile core up -d
 ```
 
@@ -154,12 +157,15 @@ Docker Compose uses **profiles** to select which services to run:
 
 | Profile | Services | Use Case |
 |---------|----------|----------|
-| `core` | mqtt, collector, api, web | Central server infrastructure |
-| `receiver` | mqtt, interface-receiver | Receiver node (events to MQTT) |
-| `sender` | mqtt, interface-sender | Sender node (MQTT to device) |
-| `mock` | mqtt, interface-mock-receiver | Testing without hardware |
+| `core` | collector, api, web | Central server infrastructure |
+| `receiver` | interface-receiver | Receiver node (events to MQTT) |
+| `sender` | interface-sender | Sender node (MQTT to device) |
+| `mqtt` | mosquitto broker | Local MQTT broker (optional) |
+| `mock` | interface-mock-receiver | Testing without hardware |
 | `migrate` | db-migrate | One-time database migration |
 | `seed` | seed | One-time seed data import |
+
+**Note:** Most deployments connect to an external MQTT broker. Add `--profile mqtt` only if you need a local broker.
 
 ```bash
 # Clone the repository
@@ -176,10 +182,13 @@ docker compose --profile migrate run --rm db-migrate
 # Seed the database
 docker compose --profile seed run --rm seed
 
-# Start core services (mqtt, collector, api, web)
+# Start core services with local MQTT broker
+docker compose --profile mqtt --profile core up -d
+
+# Or connect to external MQTT (configure MQTT_HOST in .env)
 docker compose --profile core up -d
 
-# Or start just the receiver (for distributed setups)
+# Start just the receiver (connects to MQTT_HOST from .env)
 docker compose --profile receiver up -d
 
 # View logs
