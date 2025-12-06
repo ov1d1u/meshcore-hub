@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.hash_utils import compute_advertisement_hash
-from meshcore_hub.common.models import Advertisement, Node
+from meshcore_hub.common.models import Advertisement, Node, add_event_receiver
 
 logger = logging.getLogger(__name__)
 
@@ -51,21 +51,7 @@ def handle_advertisement(
     )
 
     with db.session_scope() as session:
-        # Check if advertisement with same hash already exists
-        existing = session.execute(
-            select(Advertisement.id).where(Advertisement.event_hash == event_hash)
-        ).scalar_one_or_none()
-
-        if existing:
-            logger.debug(f"Duplicate advertisement skipped (hash={event_hash[:8]}...)")
-            # Still update node last_seen even for duplicate advertisements
-            node_query = select(Node).where(Node.public_key == adv_public_key)
-            node = session.execute(node_query).scalar_one_or_none()
-            if node:
-                node.last_seen = now
-            return
-
-        # Find or create receiver node
+        # Find or create receiver node first (needed for both new and duplicate events)
         receiver_node = None
         if public_key:
             receiver_query = select(Node).where(Node.public_key == public_key)
@@ -79,6 +65,37 @@ def handle_advertisement(
                 )
                 session.add(receiver_node)
                 session.flush()
+            else:
+                receiver_node.last_seen = now
+
+        # Check if advertisement with same hash already exists
+        existing = session.execute(
+            select(Advertisement.id).where(Advertisement.event_hash == event_hash)
+        ).scalar_one_or_none()
+
+        if existing:
+            # Still update advertised node's last_seen even for duplicate advertisements
+            node_query = select(Node).where(Node.public_key == adv_public_key)
+            node = session.execute(node_query).scalar_one_or_none()
+            if node:
+                node.last_seen = now
+
+            # Add this receiver to the junction table
+            if receiver_node:
+                added = add_event_receiver(
+                    session=session,
+                    event_type="advertisement",
+                    event_hash=event_hash,
+                    receiver_node_id=receiver_node.id,
+                    snr=None,  # Advertisements don't have SNR
+                    received_at=now,
+                )
+                if added:
+                    logger.debug(
+                        f"Added receiver {public_key[:12]}... to advertisement "
+                        f"(hash={event_hash[:8]}...)"
+                    )
+            return
 
         # Find or create advertised node
         node_query = select(Node).where(Node.public_key == adv_public_key)
@@ -118,6 +135,17 @@ def handle_advertisement(
             event_hash=event_hash,
         )
         session.add(advertisement)
+
+        # Add first receiver to junction table
+        if receiver_node:
+            add_event_receiver(
+                session=session,
+                event_type="advertisement",
+                event_hash=event_hash,
+                receiver_node_id=receiver_node.id,
+                snr=None,
+                received_at=now,
+            )
 
     logger.info(
         f"Stored advertisement from {name or adv_public_key[:12]!r} "

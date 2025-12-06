@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.hash_utils import compute_message_hash
-from meshcore_hub.common.models import Message, Node
+from meshcore_hub.common.models import Message, Node, add_event_receiver
 
 logger = logging.getLogger(__name__)
 
@@ -95,16 +95,7 @@ def _handle_message(
     )
 
     with db.session_scope() as session:
-        # Check if message with same hash already exists
-        existing = session.execute(
-            select(Message.id).where(Message.event_hash == event_hash)
-        ).scalar_one_or_none()
-
-        if existing:
-            logger.debug(f"Duplicate message skipped (hash={event_hash[:8]}...)")
-            return
-
-        # Find receiver node
+        # Find or create receiver node first (needed for both new and duplicate events)
         receiver_node = None
         if public_key:
             receiver_query = select(Node).where(Node.public_key == public_key)
@@ -120,6 +111,29 @@ def _handle_message(
                 session.flush()
             else:
                 receiver_node.last_seen = now
+
+        # Check if message with same hash already exists
+        existing = session.execute(
+            select(Message.id).where(Message.event_hash == event_hash)
+        ).scalar_one_or_none()
+
+        if existing:
+            # Event already exists - just add this receiver to the junction table
+            if receiver_node:
+                added = add_event_receiver(
+                    session=session,
+                    event_type="message",
+                    event_hash=event_hash,
+                    receiver_node_id=receiver_node.id,
+                    snr=snr,
+                    received_at=now,
+                )
+                if added:
+                    logger.debug(
+                        f"Added receiver {public_key[:12]}... to message "
+                        f"(hash={event_hash[:8]}...)"
+                    )
+            return
 
         # Create message record
         message = Message(
@@ -137,6 +151,17 @@ def _handle_message(
             event_hash=event_hash,
         )
         session.add(message)
+
+        # Add first receiver to junction table
+        if receiver_node:
+            add_event_receiver(
+                session=session,
+                event_type="message",
+                event_hash=event_hash,
+                receiver_node_id=receiver_node.id,
+                snr=snr,
+                received_at=now,
+            )
 
     if message_type == "contact":
         logger.info(

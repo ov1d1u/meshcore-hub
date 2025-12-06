@@ -94,7 +94,7 @@ class TestComputeAdvertisementHash:
 
     def test_same_content_same_bucket_produces_same_hash(self) -> None:
         """Advertisements within the same time bucket should match."""
-        # Two times within the same 5-minute bucket
+        # Two times within the same 5-minute (300 second) bucket
         time1 = datetime(2024, 1, 15, 10, 31, 0, tzinfo=timezone.utc)
         time2 = datetime(2024, 1, 15, 10, 33, 0, tzinfo=timezone.utc)
 
@@ -104,7 +104,7 @@ class TestComputeAdvertisementHash:
             adv_type="chat",
             flags=128,
             received_at=time1,
-            bucket_minutes=5,
+            bucket_seconds=300,  # 5 minutes
         )
         hash2 = compute_advertisement_hash(
             public_key="a" * 64,
@@ -112,14 +112,14 @@ class TestComputeAdvertisementHash:
             adv_type="chat",
             flags=128,
             received_at=time2,
-            bucket_minutes=5,
+            bucket_seconds=300,  # 5 minutes
         )
 
         assert hash1 == hash2
 
     def test_different_bucket_produces_different_hash(self) -> None:
         """Advertisements in different time buckets should not match."""
-        # Two times in different 5-minute buckets
+        # Two times in different 5-minute (300 second) buckets
         time1 = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
         time2 = datetime(2024, 1, 15, 10, 36, 0, tzinfo=timezone.utc)
 
@@ -127,13 +127,13 @@ class TestComputeAdvertisementHash:
             public_key="a" * 64,
             name="Node1",
             received_at=time1,
-            bucket_minutes=5,
+            bucket_seconds=300,  # 5 minutes
         )
         hash2 = compute_advertisement_hash(
             public_key="a" * 64,
             name="Node1",
             received_at=time2,
-            bucket_minutes=5,
+            bucket_seconds=300,  # 5 minutes
         )
 
         assert hash1 != hash2
@@ -158,29 +158,29 @@ class TestComputeAdvertisementHash:
         time1 = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
         time2 = datetime(2024, 1, 15, 10, 35, 0, tzinfo=timezone.utc)
 
-        # With 5-minute bucket, these should be in different buckets
+        # With 5-minute (300s) bucket, these should be in different buckets
         hash1_5min = compute_advertisement_hash(
             public_key="a" * 64,
             received_at=time1,
-            bucket_minutes=5,
+            bucket_seconds=300,  # 5 minutes
         )
         hash2_5min = compute_advertisement_hash(
             public_key="a" * 64,
             received_at=time2,
-            bucket_minutes=5,
+            bucket_seconds=300,  # 5 minutes
         )
         assert hash1_5min != hash2_5min
 
-        # With 10-minute bucket, these should be in the same bucket
+        # With 10-minute (600s) bucket, these should be in the same bucket
         hash1_10min = compute_advertisement_hash(
             public_key="a" * 64,
             received_at=time1,
-            bucket_minutes=10,
+            bucket_seconds=600,  # 10 minutes
         )
         hash2_10min = compute_advertisement_hash(
             public_key="a" * 64,
             received_at=time2,
-            bucket_minutes=10,
+            bucket_seconds=600,  # 10 minutes
         )
         assert hash1_10min == hash2_10min
 
@@ -216,13 +216,13 @@ class TestComputeTelemetryHash:
             node_public_key="a" * 64,
             parsed_data=data,
             received_at=time1,
-            bucket_minutes=5,
+            bucket_seconds=300,  # 5 minutes
         )
         hash2 = compute_telemetry_hash(
             node_public_key="a" * 64,
             parsed_data=data,
             received_at=time2,
-            bucket_minutes=5,
+            bucket_seconds=300,  # 5 minutes
         )
 
         assert hash1 == hash2

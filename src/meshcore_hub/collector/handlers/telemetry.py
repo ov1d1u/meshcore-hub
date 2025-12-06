@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.hash_utils import compute_telemetry_hash
-from meshcore_hub.common.models import Node, Telemetry
+from meshcore_hub.common.models import Node, Telemetry, add_event_receiver
 
 logger = logging.getLogger(__name__)
 
@@ -58,18 +58,7 @@ def handle_telemetry(
     )
 
     with db.session_scope() as session:
-        # Check if telemetry with same hash already exists
-        existing = session.execute(
-            select(Telemetry.id).where(Telemetry.event_hash == event_hash)
-        ).scalar_one_or_none()
-
-        if existing:
-            logger.debug(
-                f"Duplicate telemetry skipped (node={node_public_key[:12]}...)"
-            )
-            return
-
-        # Find receiver node
+        # Find or create receiver node first (needed for both new and duplicate events)
         receiver_node = None
         if public_key:
             receiver_query = select(Node).where(Node.public_key == public_key)
@@ -85,6 +74,29 @@ def handle_telemetry(
                 session.flush()
             else:
                 receiver_node.last_seen = now
+
+        # Check if telemetry with same hash already exists
+        existing = session.execute(
+            select(Telemetry.id).where(Telemetry.event_hash == event_hash)
+        ).scalar_one_or_none()
+
+        if existing:
+            # Event already exists - just add this receiver to the junction table
+            if receiver_node:
+                added = add_event_receiver(
+                    session=session,
+                    event_type="telemetry",
+                    event_hash=event_hash,
+                    receiver_node_id=receiver_node.id,
+                    snr=None,
+                    received_at=now,
+                )
+                if added:
+                    logger.debug(
+                        f"Added receiver {public_key[:12]}... to telemetry "
+                        f"(node={node_public_key[:12]}...)"
+                    )
+            return
 
         # Find or create reporting node
         reporting_node = None
@@ -114,6 +126,17 @@ def handle_telemetry(
             event_hash=event_hash,
         )
         session.add(telemetry)
+
+        # Add first receiver to junction table
+        if receiver_node:
+            add_event_receiver(
+                session=session,
+                event_type="telemetry",
+                event_hash=event_hash,
+                receiver_node_id=receiver_node.id,
+                snr=None,
+                received_at=now,
+            )
 
     # Log telemetry values
     if parsed_data:
