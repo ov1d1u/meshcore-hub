@@ -88,7 +88,7 @@ class Receiver:
         if self.device.send_advertisement(flood=True):
             logger.info("Sent flood advertisement")
         else:
-            logger.warning("Failed to send local advertisement")
+            logger.warning("Failed to send flood advertisement")
 
         # Start automatic message fetching
         if self.device.start_message_fetching():
