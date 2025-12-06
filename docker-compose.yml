@@ -7,6 +7,7 @@ services:
     image: eclipse-mosquitto:2
     container_name: meshcore-mqtt
     profiles:
+      - all
       - mqtt
     restart: unless-stopped
     ports:
@@ -33,6 +34,7 @@ services:
       dockerfile: Dockerfile
     container_name: meshcore-interface-receiver
     profiles:
+      - all
       - receiver
     restart: unless-stopped
     devices:
@@ -66,6 +68,7 @@ services:
       dockerfile: Dockerfile
     container_name: meshcore-interface-sender
     profiles:
+      - all
       - sender
     restart: unless-stopped
     devices:
@@ -99,6 +102,7 @@ services:
       dockerfile: Dockerfile
     container_name: meshcore-interface-mock-receiver
     profiles:
+      - all
       - mock
     restart: unless-stopped
     environment:
@@ -128,6 +132,7 @@ services:
       dockerfile: Dockerfile
     container_name: meshcore-collector
     profiles:
+      - all
       - core
     restart: unless-stopped
     volumes:
@@ -174,6 +179,7 @@ services:
       dockerfile: Dockerfile
     container_name: meshcore-api
     profiles:
+      - all
       - core
     restart: unless-stopped
     depends_on:
@@ -216,6 +222,7 @@ services:
       dockerfile: Dockerfile
     container_name: meshcore-web
     profiles:
+      - all
       - core
     restart: unless-stopped
     depends_on:
@@ -255,6 +262,7 @@ services:
       dockerfile: Dockerfile
     container_name: meshcore-db-migrate
     profiles:
+      - all
       - migrate
     volumes:
       # Mount data directory (uses collector/meshcore.db)
@@ -275,6 +283,7 @@ services:
       dockerfile: Dockerfile
     container_name: meshcore-seed
     profiles:
+      - all
       - seed
     volumes:
       # Mount data directory for database (read-write)
