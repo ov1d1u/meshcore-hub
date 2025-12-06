@@ -1,8 +1,11 @@
 """Fixtures for collector component tests."""
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from meshcore_hub.common.database import DatabaseManager
+from meshcore_hub.common.models.base import Base
 
 
 @pytest.fixture
@@ -23,13 +26,26 @@ def db_session(db_manager):
 
 
 @pytest.fixture
-async def async_db_session(db_manager):
-    """Create an async database session for testing."""
-    # Create tables in async engine
-    async with db_manager.async_engine.begin() as conn:
-        await conn.run_sync(db_manager.engine.pool.echo)
-        # Tables already created by db_manager fixture with sync engine
-        # Async engine shares same database file, so tables exist
+async def async_db_session():
+    """Create an async database session for testing.
 
-    async with db_manager.async_session() as session:
+    Uses a separate in-memory database with tables created inline.
+    """
+    # Create async engine with in-memory database
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+
+    # Create tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    # Create session factory
+    async_session_maker = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    # Provide session
+    async with async_session_maker() as session:
         yield session
+
+    # Cleanup
+    await engine.dispose()

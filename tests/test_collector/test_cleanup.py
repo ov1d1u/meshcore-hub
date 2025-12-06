@@ -30,7 +30,7 @@ async def test_cleanup_old_data_dry_run(async_db_session: AsyncSession) -> None:
     old_date = datetime.now(timezone.utc) - timedelta(days=60)
     old_adv = Advertisement(
         node_id=node.id,
-        payload={},
+        public_key=node.public_key,
         created_at=old_date,
         updated_at=old_date,
     )
@@ -40,7 +40,7 @@ async def test_cleanup_old_data_dry_run(async_db_session: AsyncSession) -> None:
     recent_date = datetime.now(timezone.utc) - timedelta(days=10)
     recent_adv = Advertisement(
         node_id=node.id,
-        payload={},
+        public_key=node.public_key,
         created_at=recent_date,
         updated_at=recent_date,
     )
@@ -81,45 +81,41 @@ async def test_cleanup_old_data_live(async_db_session: AsyncSession) -> None:
 
     old_adv = Advertisement(
         node_id=node.id,
-        payload={},
+        public_key=node.public_key,
         created_at=old_date,
         updated_at=old_date,
     )
     async_db_session.add(old_adv)
 
     old_msg = Message(
-        node_id=node.id,
-        direction="recv",
+        receiver_node_id=node.id,
         message_type="channel",
         text="old message",
-        payload={},
         created_at=old_date,
         updated_at=old_date,
     )
     async_db_session.add(old_msg)
 
     old_telemetry = Telemetry(
+        receiver_node_id=node.id,
         node_id=node.id,
-        payload={},
+        node_public_key=node.public_key,
         created_at=old_date,
         updated_at=old_date,
     )
     async_db_session.add(old_telemetry)
 
     old_trace = TracePath(
-        node_id=node.id,
-        destination="c" * 64,
-        path_hashes=[],
-        payload={},
+        receiver_node_id=node.id,
+        initiator_tag="test",
         created_at=old_date,
         updated_at=old_date,
     )
     async_db_session.add(old_trace)
 
     old_event = EventLog(
-        node_id=node.id,
+        receiver_node_id=node.id,
         event_type="test_event",
-        payload={},
         created_at=old_date,
         updated_at=old_date,
     )
@@ -130,7 +126,7 @@ async def test_cleanup_old_data_live(async_db_session: AsyncSession) -> None:
 
     recent_adv = Advertisement(
         node_id=node.id,
-        payload={},
+        public_key=node.public_key,
         created_at=recent_date,
         updated_at=recent_date,
     )
@@ -186,7 +182,7 @@ async def test_cleanup_respects_retention_period(
     # 90 days old - should be deleted with 30-day retention
     very_old = Advertisement(
         node_id=node.id,
-        payload={},
+        public_key=node.public_key,
         created_at=now - timedelta(days=90),
         updated_at=now - timedelta(days=90),
     )
@@ -195,7 +191,7 @@ async def test_cleanup_respects_retention_period(
     # 40 days old - should be deleted with 30-day retention
     old = Advertisement(
         node_id=node.id,
-        payload={},
+        public_key=node.public_key,
         created_at=now - timedelta(days=40),
         updated_at=now - timedelta(days=40),
     )
@@ -204,7 +200,7 @@ async def test_cleanup_respects_retention_period(
     # 20 days old - should be kept
     recent = Advertisement(
         node_id=node.id,
-        payload={},
+        public_key=node.public_key,
         created_at=now - timedelta(days=20),
         updated_at=now - timedelta(days=20),
     )
@@ -213,7 +209,7 @@ async def test_cleanup_respects_retention_period(
     # 5 days old - should be kept
     very_recent = Advertisement(
         node_id=node.id,
-        payload={},
+        public_key=node.public_key,
         created_at=now - timedelta(days=5),
         updated_at=now - timedelta(days=5),
     )
