@@ -2,11 +2,9 @@ name: Docker
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
     tags:
       - "v*"
-  pull_request:
-    branches: [main, master]
 
 env:
   REGISTRY: ghcr.io
