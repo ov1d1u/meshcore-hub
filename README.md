@@ -320,7 +320,7 @@ All components are configured via environment variables. Create a `.env` file or
 
 #### Webhook Configuration
 
-The collector can forward events to external HTTP endpoints:
+The collector can forward certain events to external HTTP endpoints:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
