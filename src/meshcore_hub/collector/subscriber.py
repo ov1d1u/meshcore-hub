@@ -428,6 +428,7 @@ def create_subscriber(
     mqtt_username: Optional[str] = None,
     mqtt_password: Optional[str] = None,
     mqtt_prefix: str = "meshcore",
+    mqtt_tls: bool = False,
     database_url: str = "sqlite:///./meshcore.db",
     webhook_dispatcher: Optional["WebhookDispatcher"] = None,
     cleanup_enabled: bool = False,
@@ -444,6 +445,7 @@ def create_subscriber(
         mqtt_username: MQTT username
         mqtt_password: MQTT password
         mqtt_prefix: MQTT topic prefix
+        mqtt_tls: Enable TLS/SSL for MQTT connection
         database_url: Database connection URL
         webhook_dispatcher: Optional webhook dispatcher for event forwarding
         cleanup_enabled: Enable automatic event data cleanup
@@ -464,6 +466,7 @@ def create_subscriber(
         password=mqtt_password,
         prefix=mqtt_prefix,
         client_id=f"meshcore-collector-{unique_id}",
+        tls=mqtt_tls,
     )
     mqtt_client = MQTTClient(mqtt_config)
 
@@ -496,6 +499,7 @@ def run_collector(
     mqtt_username: Optional[str] = None,
     mqtt_password: Optional[str] = None,
     mqtt_prefix: str = "meshcore",
+    mqtt_tls: bool = False,
     database_url: str = "sqlite:///./meshcore.db",
     webhook_dispatcher: Optional["WebhookDispatcher"] = None,
     cleanup_enabled: bool = False,
@@ -512,6 +516,7 @@ def run_collector(
         mqtt_username: MQTT username
         mqtt_password: MQTT password
         mqtt_prefix: MQTT topic prefix
+        mqtt_tls: Enable TLS/SSL for MQTT connection
         database_url: Database connection URL
         webhook_dispatcher: Optional webhook dispatcher for event forwarding
         cleanup_enabled: Enable automatic event data cleanup
@@ -526,6 +531,7 @@ def run_collector(
         mqtt_username=mqtt_username,
         mqtt_password=mqtt_password,
         mqtt_prefix=mqtt_prefix,
+        mqtt_tls=mqtt_tls,
         database_url=database_url,
         webhook_dispatcher=webhook_dispatcher,
         cleanup_enabled=cleanup_enabled,
