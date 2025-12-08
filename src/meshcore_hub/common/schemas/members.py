@@ -6,44 +6,19 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-class MemberNodeCreate(BaseModel):
-    """Schema for creating a member node association."""
-
-    public_key: str = Field(
-        ...,
-        min_length=64,
-        max_length=64,
-        pattern=r"^[0-9a-fA-F]{64}$",
-        description="Node's public key (64-char hex)",
-    )
-    node_role: Optional[str] = Field(
-        default=None,
-        max_length=50,
-        description="Role of the node (e.g., 'chat', 'repeater')",
-    )
-
-
-class MemberNodeRead(BaseModel):
-    """Schema for reading a member node association."""
-
-    public_key: str = Field(..., description="Node's public key")
-    node_role: Optional[str] = Field(default=None, description="Role of the node")
-    created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
-    # Node details (populated from nodes table if available)
-    node_name: Optional[str] = Field(default=None, description="Node's name from DB")
-    node_adv_type: Optional[str] = Field(
-        default=None, description="Node's advertisement type"
-    )
-    tag_name: Optional[str] = Field(default=None, description="Node's name tag")
-
-    class Config:
-        from_attributes = True
-
-
 class MemberCreate(BaseModel):
-    """Schema for creating a member."""
+    """Schema for creating a member.
 
+    Note: Nodes are associated with members via a 'member_id' tag on the node,
+    not through this schema.
+    """
+
+    member_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Unique member identifier (e.g., 'walshie86')",
+    )
     name: str = Field(
         ...,
         min_length=1,
@@ -69,15 +44,21 @@ class MemberCreate(BaseModel):
         max_length=255,
         description="Contact information",
     )
-    nodes: Optional[list[MemberNodeCreate]] = Field(
-        default=None,
-        description="List of associated nodes",
-    )
 
 
 class MemberUpdate(BaseModel):
-    """Schema for updating a member."""
+    """Schema for updating a member.
 
+    Note: Nodes are associated with members via a 'member_id' tag on the node,
+    not through this schema.
+    """
+
+    member_id: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+        description="Unique member identifier (e.g., 'walshie86')",
+    )
     name: Optional[str] = Field(
         default=None,
         min_length=1,
@@ -103,22 +84,22 @@ class MemberUpdate(BaseModel):
         max_length=255,
         description="Contact information",
     )
-    nodes: Optional[list[MemberNodeCreate]] = Field(
-        default=None,
-        description="List of associated nodes (replaces existing nodes)",
-    )
 
 
 class MemberRead(BaseModel):
-    """Schema for reading a member."""
+    """Schema for reading a member.
+
+    Note: Nodes are associated with members via a 'member_id' tag on the node.
+    To find nodes for a member, query nodes with a 'member_id' tag matching this member.
+    """
 
     id: str = Field(..., description="Member UUID")
+    member_id: str = Field(..., description="Unique member identifier")
     name: str = Field(..., description="Member's display name")
     callsign: Optional[str] = Field(default=None, description="Amateur radio callsign")
     role: Optional[str] = Field(default=None, description="Member's role")
     description: Optional[str] = Field(default=None, description="Description")
     contact: Optional[str] = Field(default=None, description="Contact information")
-    nodes: list[MemberNodeRead] = Field(default=[], description="Associated nodes")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

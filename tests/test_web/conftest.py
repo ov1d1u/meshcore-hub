@@ -302,6 +302,7 @@ def client(web_app: Any, mock_http_client: MockHttpClient) -> TestClient:
 def mock_http_client_with_members() -> MockHttpClient:
     """Create a mock HTTP client with members data."""
     client = MockHttpClient()
+    # Mock the members API response (no nodes in the response anymore)
     client.set_response(
         "GET",
         "/api/v1/members",
@@ -310,39 +311,69 @@ def mock_http_client_with_members() -> MockHttpClient:
             "items": [
                 {
                     "id": "member-1",
+                    "member_id": "alice",
                     "name": "Alice",
                     "callsign": "W1ABC",
                     "role": "Admin",
                     "description": None,
                     "contact": "alice@example.com",
-                    "nodes": [
-                        {
-                            "public_key": "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
-                            "node_role": "chat",
-                            "created_at": "2024-01-01T00:00:00Z",
-                            "updated_at": "2024-01-01T00:00:00Z",
-                            "node_name": "Alice's Node",
-                            "node_adv_type": "chat",
-                            "friendly_name": "Alice Chat",
-                        }
-                    ],
                     "created_at": "2024-01-01T00:00:00Z",
                     "updated_at": "2024-01-01T00:00:00Z",
                 },
                 {
                     "id": "member-2",
+                    "member_id": "bob",
                     "name": "Bob",
                     "callsign": "W2XYZ",
                     "role": "Member",
                     "description": None,
                     "contact": None,
-                    "nodes": [],
                     "created_at": "2024-01-01T00:00:00Z",
                     "updated_at": "2024-01-01T00:00:00Z",
                 },
             ],
             "total": 2,
             "limit": 100,
+            "offset": 0,
+        },
+    )
+    # Mock the nodes API response with has_tag filter
+    # This will be called to get nodes with member_id tags
+    client.set_response(
+        "GET",
+        "/api/v1/nodes",
+        200,
+        {
+            "items": [
+                {
+                    "public_key": "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+                    "name": "Alice's Node",
+                    "adv_type": "chat",
+                    "flags": None,
+                    "first_seen": "2024-01-01T00:00:00Z",
+                    "last_seen": "2024-01-01T00:00:00Z",
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                    "tags": [
+                        {
+                            "key": "member_id",
+                            "value": "alice",
+                            "value_type": "string",
+                            "created_at": "2024-01-01T00:00:00Z",
+                            "updated_at": "2024-01-01T00:00:00Z",
+                        },
+                        {
+                            "key": "name",
+                            "value": "Alice Chat",
+                            "value_type": "string",
+                            "created_at": "2024-01-01T00:00:00Z",
+                            "updated_at": "2024-01-01T00:00:00Z",
+                        },
+                    ],
+                }
+            ],
+            "total": 1,
+            "limit": 500,
             "offset": 0,
         },
     )

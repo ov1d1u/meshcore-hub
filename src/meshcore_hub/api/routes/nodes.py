@@ -3,11 +3,12 @@
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import selectinload
 
 from meshcore_hub.api.auth import RequireRead
 from meshcore_hub.api.dependencies import DbSession
-from meshcore_hub.common.models import Node
+from meshcore_hub.common.models import Node, NodeTag
 from meshcore_hub.common.schemas.nodes import NodeList, NodeRead
 
 router = APIRouter()
@@ -17,18 +18,31 @@ router = APIRouter()
 async def list_nodes(
     _: RequireRead,
     session: DbSession,
-    search: Optional[str] = Query(None, description="Search in name or public key"),
+    search: Optional[str] = Query(
+        None, description="Search in name tag, node name, or public key"
+    ),
     adv_type: Optional[str] = Query(None, description="Filter by advertisement type"),
     limit: int = Query(50, ge=1, le=500, description="Page size"),
     offset: int = Query(0, ge=0, description="Page offset"),
 ) -> NodeList:
     """List all nodes with pagination and filtering."""
-    # Build query
-    query = select(Node)
+    # Build base query with tags loaded
+    query = select(Node).options(selectinload(Node.tags))
 
     if search:
+        # Search in public key, node name, or name tag
+        # For name tag search, we need to join with NodeTag
+        search_pattern = f"%{search}%"
         query = query.where(
-            (Node.name.ilike(f"%{search}%")) | (Node.public_key.ilike(f"%{search}%"))
+            or_(
+                Node.public_key.ilike(search_pattern),
+                Node.name.ilike(search_pattern),
+                Node.id.in_(
+                    select(NodeTag.node_id).where(
+                        NodeTag.key == "name", NodeTag.value.ilike(search_pattern)
+                    )
+                ),
+            )
         )
 
     if adv_type:
@@ -38,7 +52,7 @@ async def list_nodes(
     count_query = select(func.count()).select_from(query.subquery())
     total = session.execute(count_query).scalar() or 0
 
-    # Apply pagination
+    # Apply pagination and ordering
     query = query.order_by(Node.last_seen.desc()).offset(offset).limit(limit)
 
     # Execute
