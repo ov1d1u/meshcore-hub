@@ -31,6 +31,7 @@ async def get_stats(
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     yesterday = now - timedelta(days=1)
+    seven_days_ago = now - timedelta(days=7)
 
     # Total nodes
     total_nodes = session.execute(select(func.count()).select_from(Node)).scalar() or 0
@@ -69,6 +70,26 @@ async def get_stats(
             select(func.count())
             .select_from(Advertisement)
             .where(Advertisement.received_at >= yesterday)
+        ).scalar()
+        or 0
+    )
+
+    # Advertisements in last 7 days
+    advertisements_7d = (
+        session.execute(
+            select(func.count())
+            .select_from(Advertisement)
+            .where(Advertisement.received_at >= seven_days_ago)
+        ).scalar()
+        or 0
+    )
+
+    # Messages in last 7 days
+    messages_7d = (
+        session.execute(
+            select(func.count())
+            .select_from(Message)
+            .where(Message.received_at >= seven_days_ago)
         ).scalar()
         or 0
     )
@@ -185,8 +206,10 @@ async def get_stats(
         active_nodes=active_nodes,
         total_messages=total_messages,
         messages_today=messages_today,
+        messages_7d=messages_7d,
         total_advertisements=total_advertisements,
         advertisements_24h=advertisements_24h,
+        advertisements_7d=advertisements_7d,
         recent_advertisements=recent_advertisements,
         channel_message_counts=channel_message_counts,
         channel_messages=channel_messages,

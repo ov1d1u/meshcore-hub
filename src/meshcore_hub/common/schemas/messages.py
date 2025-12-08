@@ -239,9 +239,13 @@ class DashboardStats(BaseModel):
     active_nodes: int = Field(..., description="Nodes active in last 24h")
     total_messages: int = Field(..., description="Total number of messages")
     messages_today: int = Field(..., description="Messages received today")
+    messages_7d: int = Field(default=0, description="Messages received in last 7 days")
     total_advertisements: int = Field(..., description="Total advertisements")
     advertisements_24h: int = Field(
         default=0, description="Advertisements received in last 24h"
+    )
+    advertisements_7d: int = Field(
+        default=0, description="Advertisements received in last 7 days"
     )
     recent_advertisements: list[RecentAdvertisement] = Field(
         default_factory=list, description="Last 10 advertisements"

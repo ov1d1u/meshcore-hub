@@ -22,8 +22,63 @@
 </div>
 {% endif %}
 
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <!-- Total Nodes -->
+    <div class="stat bg-base-100 rounded-box shadow">
+        <div class="stat-figure text-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+        </div>
+        <div class="stat-title">Total Nodes</div>
+        <div class="stat-value text-primary">{{ stats.total_nodes }}</div>
+        <div class="stat-desc">All discovered nodes</div>
+    </div>
+
+    <!-- Advertisements (7 days) -->
+    <div class="stat bg-base-100 rounded-box shadow">
+        <div class="stat-figure text-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+        </div>
+        <div class="stat-title">Advertisements</div>
+        <div class="stat-value text-secondary">{{ stats.advertisements_7d }}</div>
+        <div class="stat-desc">Last 7 days</div>
+    </div>
+
+    <!-- Messages (7 days) -->
+    <div class="stat bg-base-100 rounded-box shadow">
+        <div class="stat-figure text-accent">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+        </div>
+        <div class="stat-title">Messages</div>
+        <div class="stat-value text-accent">{{ stats.messages_7d }}</div>
+        <div class="stat-desc">Last 7 days</div>
+    </div>
+</div>
+
 <!-- Activity Charts -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Node Count Chart -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-base">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Total Nodes
+            </h2>
+            <p class="text-xs opacity-70">Over time (last 7 days)</p>
+            <div class="h-32">
+                <canvas id="nodeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Advertisements Chart -->
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
@@ -52,22 +107,6 @@
             <p class="text-xs opacity-70">Per day (last 7 days)</p>
             <div class="h-32">
                 <canvas id="messageChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Node Count Chart -->
-    <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-            <h2 class="card-title text-base">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                Total Nodes
-            </h2>
-            <p class="text-xs opacity-70">Over time (last 7 days)</p>
-            <div class="h-32">
-                <canvas id="nodeChart"></canvas>
             </div>
         </div>
     </div>
@@ -163,27 +202,6 @@
     {% endif %}
 </div>
 
-<!-- Quick Actions -->
-<div class="flex gap-4 mt-8 flex-wrap">
-    <a href="/nodes" class="btn btn-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-        </svg>
-        Browse Nodes
-    </a>
-    <a href="/messages" class="btn btn-secondary">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-        </svg>
-        View Messages
-    </a>
-    <a href="/map" class="btn btn-accent">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-        </svg>
-        View Map
-    </a>
-</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -232,7 +250,7 @@
         });
     }
 
-    // Advertisements chart
+    // Advertisements chart (secondary color - pink/magenta)
     const advertCtx = document.getElementById('advertChart');
     if (advertCtx && advertData.data && advertData.data.length > 0) {
         new Chart(advertCtx, {
@@ -242,8 +260,8 @@
                 datasets: [{
                     label: 'Advertisements',
                     data: advertData.data.map(d => d.count),
-                    borderColor: 'oklch(0.7 0.15 250)',
-                    backgroundColor: 'oklch(0.7 0.15 250 / 0.1)',
+                    borderColor: 'oklch(0.7 0.17 330)',
+                    backgroundColor: 'oklch(0.7 0.17 330 / 0.1)',
                     fill: true,
                     tension: 0.3,
                     pointRadius: 2,
@@ -254,7 +272,7 @@
         });
     }
 
-    // Messages chart
+    // Messages chart (accent color - teal/cyan)
     const messageCtx = document.getElementById('messageChart');
     if (messageCtx && messageData.data && messageData.data.length > 0) {
         new Chart(messageCtx, {
@@ -264,8 +282,8 @@
                 datasets: [{
                     label: 'Messages',
                     data: messageData.data.map(d => d.count),
-                    borderColor: 'oklch(0.7 0.15 160)',
-                    backgroundColor: 'oklch(0.7 0.15 160 / 0.1)',
+                    borderColor: 'oklch(0.75 0.18 180)',
+                    backgroundColor: 'oklch(0.75 0.18 180 / 0.1)',
                     fill: true,
                     tension: 0.3,
                     pointRadius: 2,
@@ -276,7 +294,7 @@
         });
     }
 
-    // Node count chart
+    // Node count chart (primary color - purple/blue)
     const nodeCtx = document.getElementById('nodeChart');
     if (nodeCtx && nodeData.data && nodeData.data.length > 0) {
         new Chart(nodeCtx, {
@@ -286,8 +304,8 @@
                 datasets: [{
                     label: 'Total Nodes',
                     data: nodeData.data.map(d => d.count),
-                    borderColor: 'oklch(0.7 0.15 30)',
-                    backgroundColor: 'oklch(0.7 0.15 30 / 0.1)',
+                    borderColor: 'oklch(0.65 0.24 265)',
+                    backgroundColor: 'oklch(0.65 0.24 265 / 0.1)',
                     fill: true,
                     tension: 0.3,
                     pointRadius: 2,

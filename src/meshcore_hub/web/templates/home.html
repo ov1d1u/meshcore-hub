@@ -19,25 +19,25 @@
             </p>
             {% endif %}
             <div class="flex gap-4 justify-center flex-wrap">
-                <a href="/network" class="btn btn-primary">
+                <a href="/network" class="btn btn-neutral">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                     Dashboard
                 </a>
-                <a href="/nodes" class="btn btn-secondary">
+                <a href="/nodes" class="btn btn-primary">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                     Nodes
                 </a>
-                <a href="/advertisements" class="btn btn-accent">
+                <a href="/advertisements" class="btn btn-secondary">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
                     </svg>
                     Advertisements
                 </a>
-                <a href="/messages" class="btn btn-info">
+                <a href="/messages" class="btn btn-accent">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                     </svg>
@@ -49,7 +49,7 @@
 </div>
 
 <!-- Stats Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
     <!-- Total Nodes -->
     <div class="stat bg-base-100 rounded-box shadow">
         <div class="stat-figure text-primary">
@@ -62,7 +62,7 @@
         <div class="stat-desc">All discovered nodes</div>
     </div>
 
-    <!-- Advertisements (24h) -->
+    <!-- Advertisements (7 days) -->
     <div class="stat bg-base-100 rounded-box shadow">
         <div class="stat-figure text-secondary">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -70,32 +70,20 @@
             </svg>
         </div>
         <div class="stat-title">Advertisements</div>
-        <div class="stat-value text-secondary">{{ stats.advertisements_24h }}</div>
-        <div class="stat-desc">Received in last 24 hours</div>
+        <div class="stat-value text-secondary">{{ stats.advertisements_7d }}</div>
+        <div class="stat-desc">Last 7 days</div>
     </div>
 
-    <!-- Total Messages -->
+    <!-- Messages (7 days) -->
     <div class="stat bg-base-100 rounded-box shadow">
         <div class="stat-figure text-accent">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
         </div>
-        <div class="stat-title">Total Messages</div>
-        <div class="stat-value text-accent">{{ stats.total_messages }}</div>
-        <div class="stat-desc">All time</div>
-    </div>
-
-    <!-- Messages Today -->
-    <div class="stat bg-base-100 rounded-box shadow">
-        <div class="stat-figure text-info">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        </div>
-        <div class="stat-title">Messages Today</div>
-        <div class="stat-value text-info">{{ stats.messages_today }}</div>
-        <div class="stat-desc">Last 24 hours</div>
+        <div class="stat-title">Messages</div>
+        <div class="stat-value text-accent">{{ stats.messages_7d }}</div>
+        <div class="stat-desc">Last 7 days</div>
     </div>
 </div>
 
@@ -239,8 +227,8 @@
                 datasets: [{
                     label: 'Advertisements',
                     data: counts,
-                    borderColor: 'oklch(0.7 0.15 250)',
-                    backgroundColor: 'oklch(0.7 0.15 250 / 0.1)',
+                    borderColor: 'oklch(0.7 0.17 330)',
+                    backgroundColor: 'oklch(0.7 0.17 330 / 0.1)',
                     fill: true,
                     tension: 0.3,
                     pointRadius: 2,
