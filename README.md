@@ -17,41 +17,33 @@ MeshCore Hub provides a complete solution for monitoring, collecting, and intera
 
 ## Architecture
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│    MeshCore     │     │    MeshCore     │     │    MeshCore     │
-│    Device 1     │     │    Device 2     │     │    Device 3     │
-└────────┬────────┘     └────────┬────────┘     └────────┬────────┘
-         │                       │                       │
-         │ Serial/USB            │ Serial/USB            │ Serial/USB
-         │                       │                       │
-┌────────▼────────┐     ┌────────▼────────┐     ┌────────▼────────┐
-│   Interface     │     │   Interface     │     │   Interface     │
-│   (RECEIVER)    │     │   (RECEIVER)    │     │   (SENDER)      │
-└────────┬────────┘     └────────┬────────┘     └────────▲────────┘
-         │                       │                       │
-         │ Publish               │ Publish               │ Subscribe
-         │                       │                       │
-         └───────────┬───────────┴───────────────────────┘
-                     │
-              ┌──────▼──────┐
-              │    MQTT     │
-              │   Broker    │
-              └──────┬──────┘
-                     │
-              ┌──────▼──────┐
-              │  Collector  │
-              └──────┬──────┘
-                     │
-              ┌──────▼──────┐
-              │  Database   │
-              └──────┬──────┘
-                     │
-         ┌───────────┴───────────┐
-         │                       │
-  ┌──────▼──────┐       ┌───────▼───────┐
-  │     API     │◄──────│ Web Dashboard │
-  └─────────────┘       └───────────────┘
+```mermaid
+flowchart TB
+    subgraph Devices["MeshCore Devices"]
+        D1["MeshCore Device 1"]
+        D2["MeshCore Device 2"]
+        D3["MeshCore Device 3"]
+    end
+
+    subgraph Interfaces["Interface Layer"]
+        I1["Interface (RECEIVER)"]
+        I2["Interface (RECEIVER)"]
+        I3["Interface (SENDER)"]
+    end
+
+    D1 -->|Serial/USB| I1
+    D2 -->|Serial/USB| I2
+    D3 -->|Serial/USB| I3
+
+    I1 -->|Publish| MQTT
+    I2 -->|Publish| MQTT
+    MQTT -->|Subscribe| I3
+
+    MQTT["MQTT Broker"]
+    MQTT --> Collector
+    Collector --> Database
+    Database --> API
+    API <--- Web["Web Dashboard"]
 ```
 
 ## Features
@@ -97,33 +89,25 @@ This starts all services: MQTT broker, collector, API, web dashboard, and the in
 
 For larger deployments, you can separate receiver nodes from the central infrastructure. This allows multiple community members to contribute receiver coverage while hosting the backend centrally.
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Community Members                             │
-│                                                                      │
-│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐             │
-│  │ Raspberry Pi │   │ Raspberry Pi │   │   Any Linux  │             │
-│  │ + MeshCore   │   │ + MeshCore   │   │  + MeshCore  │             │
-│  │   Device     │   │   Device     │   │    Device    │             │
-│  └──────┬───────┘   └──────┬───────┘   └──────┬───────┘             │
-│         │                  │                  │                      │
-│         │ receiver profile only               │                      │
-│         └──────────────────┼──────────────────┘                      │
-│                            │                                         │
-│                     MQTT (port 1883)                                 │
-│                            │                                         │
-└────────────────────────────┼─────────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    Community VPS / Server                            │
-│                                                                      │
-│  ┌──────────┐   ┌───────────┐   ┌─────────┐   ┌──────────────┐      │
-│  │   MQTT   │──▶│ Collector │──▶│   API   │◀──│ Web Dashboard│      │
-│  │  Broker  │   │           │   │         │   │   (public)   │      │
-│  └──────────┘   └───────────┘   └─────────┘   └──────────────┘      │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Community["Community Members"]
+        R1["Raspberry Pi + MeshCore"]
+        R2["Raspberry Pi + MeshCore"]
+        R3["Any Linux + MeshCore"]
+    end
+
+    subgraph Server["Community VPS / Server"]
+        MQTT["MQTT Broker"]
+        Collector
+        API
+        Web["Web Dashboard (public)"]
+
+        MQTT --> Collector --> API
+        API <--- Web
+    end
+
+    R1 & R2 & R3 -->|"receiver profile only\nMQTT (port 1883)"| MQTT
 ```
 
 **On each receiver node (Raspberry Pi, etc.):**
