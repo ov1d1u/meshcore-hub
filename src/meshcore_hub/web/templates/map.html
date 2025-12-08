@@ -52,12 +52,6 @@
                     <!-- Populated dynamically -->
                 </select>
             </div>
-            <div class="form-control">
-                <label class="label cursor-pointer gap-2 py-1">
-                    <span class="label-text">Infrastructure Only</span>
-                    <input type="checkbox" id="filter-infra" class="checkbox checkbox-sm checkbox-primary" />
-                </label>
-            </div>
             <button id="clear-filters" class="btn btn-ghost btn-sm">Clear Filters</button>
         </div>
     </div>
@@ -88,14 +82,10 @@
         <span class="text-lg">📍</span>
         <span>Other</span>
     </div>
-    <div class="flex items-center gap-1">
-        <span class="text-lg" style="filter: drop-shadow(0 0 4px gold);">📡</span>
-        <span>Infrastructure (gold glow)</span>
-    </div>
 </div>
 
 <div class="mt-2 text-sm opacity-70">
-    <p>Nodes are placed on the map based on their <code>lat</code> and <code>lon</code> tags. Infrastructure nodes are tagged with <code>role: infra</code>.</p>
+    <p>Nodes are placed on the map based on their <code>lat</code> and <code>lon</code> tags.</p>
 </div>
 {% endblock %}
 
@@ -120,23 +110,7 @@
         return type ? type.toLowerCase() : null;
     }
 
-    // Format relative time (e.g., "2m", "1h", "2d")
-    function formatRelativeTime(lastSeenStr) {
-        if (!lastSeenStr) return null;
-
-        const lastSeen = new Date(lastSeenStr);
-        const now = new Date();
-        const diffMs = now - lastSeen;
-        const diffSec = Math.floor(diffMs / 1000);
-        const diffMin = Math.floor(diffSec / 60);
-        const diffHour = Math.floor(diffMin / 60);
-        const diffDay = Math.floor(diffHour / 24);
-
-        if (diffDay > 0) return `${diffDay}d`;
-        if (diffHour > 0) return `${diffHour}h`;
-        if (diffMin > 0) return `${diffMin}m`;
-        return '<1m';
-    }
+    // formatRelativeTime is provided by /static/js/utils.js
 
     // Get emoji marker based on node type
     function getNodeEmoji(node) {
@@ -159,14 +133,13 @@
     // Create marker icon for a node
     function createNodeIcon(node) {
         const emoji = getNodeEmoji(node);
-        const infraGlow = node.is_infra ? 'filter: drop-shadow(0 0 4px gold);' : '';
         const displayName = node.name || '';
         const relativeTime = formatRelativeTime(node.last_seen);
         const timeDisplay = relativeTime ? ` (${relativeTime})` : '';
         return L.divIcon({
             className: 'custom-div-icon',
             html: `<div style="display: flex; align-items: center; gap: 2px;">
-                <span style="font-size: 24px; ${infraGlow} text-shadow: 0 0 3px #1a237e, 0 0 6px #1a237e, 0 1px 2px rgba(0,0,0,0.7);">${emoji}</span>
+                <span style="font-size: 24px; text-shadow: 0 0 3px #1a237e, 0 0 6px #1a237e, 0 1px 2px rgba(0,0,0,0.7);">${emoji}</span>
                 <span style="font-size: 10px; font-weight: bold; color: #000; background: rgba(255,255,255,0.9); padding: 1px 4px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);">${displayName}${timeDisplay}</span>
             </div>`,
             iconSize: [82, 28],
@@ -186,8 +159,7 @@
 
         let roleHtml = '';
         if (node.role) {
-            const roleClass = node.is_infra ? 'badge-warning' : 'badge-ghost';
-            roleHtml = `<p><span class="opacity-70">Role:</span> <span class="badge badge-xs ${roleClass}">${node.role}</span></p>`;
+            roleHtml = `<p><span class="opacity-70">Role:</span> <span class="badge badge-xs badge-ghost">${node.role}</span></p>`;
         }
 
         const emoji = getNodeEmoji(node);
@@ -219,15 +191,11 @@
     function applyFiltersCore() {
         const typeFilter = document.getElementById('filter-type').value;
         const ownerFilter = document.getElementById('filter-owner').value;
-        const infraOnly = document.getElementById('filter-infra').checked;
 
         // Filter nodes
         const filteredNodes = allNodes.filter(node => {
             // Type filter (case-insensitive)
             if (typeFilter && normalizeType(node.adv_type) !== typeFilter) return false;
-
-            // Infrastructure filter
-            if (infraOnly && !node.is_infra) return false;
 
             // Owner filter
             if (ownerFilter) {
@@ -314,14 +282,12 @@
     function clearFilters() {
         document.getElementById('filter-type').value = '';
         document.getElementById('filter-owner').value = '';
-        document.getElementById('filter-infra').checked = false;
         applyFilters();
     }
 
     // Event listeners for filters
     document.getElementById('filter-type').addEventListener('change', applyFilters);
     document.getElementById('filter-owner').addEventListener('change', applyFilters);
-    document.getElementById('filter-infra').addEventListener('change', applyFilters);
     document.getElementById('clear-filters').addEventListener('click', clearFilters);
 
     // Fetch and display nodes
