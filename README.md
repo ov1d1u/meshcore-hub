@@ -44,6 +44,14 @@ flowchart TB
     Collector --> Database
     Database --> API
     API <--- Web["Web Dashboard"]
+
+    style Devices fill:#e1f5fe,stroke:#0288d1
+    style Interfaces fill:#fff3e0,stroke:#f57c00
+    style MQTT fill:#f3e5f5,stroke:#7b1fa2
+    style Collector fill:#e8f5e9,stroke:#388e3c
+    style Database fill:#fce4ec,stroke:#c2185b
+    style API fill:#e3f2fd,stroke:#1976d2
+    style Web fill:#fff8e1,stroke:#ffa000
 ```
 
 ## Features
@@ -107,7 +115,16 @@ flowchart TB
         API <--- Web
     end
 
-    R1 & R2 & R3 -->|"receiver profile only\nMQTT (port 1883)"| MQTT
+    R1 -->|MQTT port 1883| MQTT
+    R2 -->|MQTT port 1883| MQTT
+    R3 -->|MQTT port 1883| MQTT
+
+    style Community fill:#e1f5fe,stroke:#0288d1
+    style Server fill:#e8f5e9,stroke:#388e3c
+    style MQTT fill:#f3e5f5,stroke:#7b1fa2
+    style Collector fill:#fff3e0,stroke:#f57c00
+    style API fill:#e3f2fd,stroke:#1976d2
+    style Web fill:#fff8e1,stroke:#ffa000
 ```
 
 **On each receiver node (Raspberry Pi, etc.):**
