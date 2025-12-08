@@ -1,16 +1,14 @@
 # Example members seed file
-# Each member can have multiple nodes with different roles (chat, repeater, etc.)
+# Note: Nodes are associated with members via a 'member_id' tag on the node.
+# Use node_tags.yaml to set member_id tags on nodes.
 members:
-  - name: Example Member
+  - member_id: example_member
+    name: Example Member
     callsign: N0CALL
     role: Network Operator
-    description: Example member entry with multiple nodes
-    nodes:
-      - public_key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-        node_role: chat
-      - public_key: fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210
-        node_role: repeater
-  - name: Simple Member
+    description: Example network operator member
+  - member_id: simple_member
+    name: Simple Member
     callsign: N0CALL2
     role: Observer
-    description: Member without any nodes
+    description: Example observer member

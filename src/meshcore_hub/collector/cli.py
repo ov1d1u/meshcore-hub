@@ -170,8 +170,8 @@ def _run_collector_service(
 ) -> None:
     """Run the collector service.
 
-    On startup, automatically seeds the database from YAML files in seed_home
-    if they exist.
+    Note: Seed data import should be done using the 'meshcore-hub collector seed'
+    command or the dedicated seed container before starting the collector service.
 
     Webhooks can be configured via environment variables:
     - WEBHOOK_ADVERTISEMENT_URL: Webhook for advertisement events
@@ -192,31 +192,6 @@ def _run_collector_service(
     click.echo(f"Seed home: {seed_home}")
     click.echo(f"MQTT: {mqtt_host}:{mqtt_port} (prefix: {prefix})")
     click.echo(f"Database: {database_url}")
-
-    # Initialize database (schema managed by Alembic migrations)
-    from meshcore_hub.common.database import DatabaseManager
-
-    db = DatabaseManager(database_url)
-
-    # Auto-seed from seed files on startup
-    click.echo("")
-    click.echo("Checking for seed files...")
-    seed_home_path = Path(seed_home)
-    node_tags_exists = (seed_home_path / "node_tags.yaml").exists()
-    members_exists = (seed_home_path / "members.yaml").exists()
-
-    if node_tags_exists or members_exists:
-        click.echo("Running seed import...")
-        _run_seed_import(
-            seed_home=seed_home,
-            db=db,
-            create_nodes=True,
-            verbose=True,
-        )
-    else:
-        click.echo(f"No seed files found in {seed_home}")
-
-    db.dispose()
 
     # Load webhook configuration from settings
     from meshcore_hub.collector.webhook import (

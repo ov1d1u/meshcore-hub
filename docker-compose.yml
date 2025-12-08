@@ -138,6 +138,9 @@ services:
       - all
       - core
     restart: unless-stopped
+    depends_on:
+      seed:
+        condition: service_completed_successfully
     volumes:
       - ${DATA_HOME:-./data}:/data
       - ${SEED_HOME:-./seed}:/seed
@@ -193,6 +196,8 @@ services:
       - core
     restart: unless-stopped
     depends_on:
+      seed:
+        condition: service_completed_successfully
       collector:
         condition: service_started
     ports:
@@ -274,7 +279,9 @@ services:
     container_name: meshcore-db-migrate
     profiles:
       - all
+      - core
       - migrate
+    restart: "no"
     volumes:
       # Mount data directory (uses collector/meshcore.db)
       - ${DATA_HOME:-./data}:/data
@@ -295,7 +302,12 @@ services:
     container_name: meshcore-seed
     profiles:
       - all
+      - core
       - seed
+    restart: "no"
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
     volumes:
       # Mount data directory for database (read-write)
       - ${DATA_HOME:-./data}:/data

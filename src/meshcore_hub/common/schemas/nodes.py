@@ -59,7 +59,9 @@ class NodeRead(BaseModel):
     adv_type: Optional[str] = Field(default=None, description="Advertisement type")
     flags: Optional[int] = Field(default=None, description="Capability flags")
     first_seen: datetime = Field(..., description="First advertisement timestamp")
-    last_seen: datetime = Field(..., description="Last activity timestamp")
+    last_seen: Optional[datetime] = Field(
+        default=None, description="Last activity timestamp"
+    )
     created_at: datetime = Field(..., description="Record creation timestamp")
     updated_at: datetime = Field(..., description="Record update timestamp")
     tags: list[NodeTagRead] = Field(default_factory=list, description="Node tags")
@@ -82,7 +84,7 @@ class NodeFilters(BaseModel):
 
     search: Optional[str] = Field(
         default=None,
-        description="Search in name or public key",
+        description="Search in name tag, node name, or public key",
     )
     adv_type: Optional[str] = Field(
         default=None,

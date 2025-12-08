@@ -5,41 +5,28 @@ from pathlib import Path
 from typing import Any, Optional
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from meshcore_hub.common.database import DatabaseManager
-from meshcore_hub.common.models import Member, MemberNode
+from meshcore_hub.common.models import Member
 
 logger = logging.getLogger(__name__)
 
 
-class NodeData(BaseModel):
-    """Schema for a node entry in the member import file."""
-
-    public_key: str = Field(..., min_length=64, max_length=64)
-    node_role: Optional[str] = Field(default=None, max_length=50)
-
-    @field_validator("public_key")
-    @classmethod
-    def validate_public_key(cls, v: str) -> str:
-        """Validate and normalize public key."""
-        if len(v) != 64:
-            raise ValueError(f"public_key must be 64 characters, got {len(v)}")
-        if not all(c in "0123456789abcdefABCDEF" for c in v):
-            raise ValueError("public_key must be a valid hex string")
-        return v.lower()
-
-
 class MemberData(BaseModel):
-    """Schema for a member entry in the import file."""
+    """Schema for a member entry in the import file.
 
+    Note: Nodes are associated with members via a 'member_id' tag on the node,
+    not through this schema.
+    """
+
+    member_id: str = Field(..., min_length=1, max_length=100)
     name: str = Field(..., min_length=1, max_length=255)
     callsign: Optional[str] = Field(default=None, max_length=20)
     role: Optional[str] = Field(default=None, max_length=100)
     description: Optional[str] = Field(default=None)
     contact: Optional[str] = Field(default=None, max_length=255)
-    nodes: Optional[list[NodeData]] = Field(default=None)
 
 
 def load_members_file(file_path: str | Path) -> list[dict[str, Any]]:
@@ -48,20 +35,16 @@ def load_members_file(file_path: str | Path) -> list[dict[str, Any]]:
     Supports two formats:
     1. List of member objects:
 
-        - name: Member 1
+        - member_id: member1
+          name: Member 1
           callsign: M1
-          nodes:
-            - public_key: abc123...
-              node_role: chat
 
     2. Object with "members" key:
 
         members:
-          - name: Member 1
+          - member_id: member1
+            name: Member 1
             callsign: M1
-            nodes:
-              - public_key: abc123...
-                node_role: chat
 
     Args:
         file_path: Path to the members YAML file
@@ -96,6 +79,8 @@ def load_members_file(file_path: str | Path) -> list[dict[str, Any]]:
     for i, member in enumerate(members_list):
         if not isinstance(member, dict):
             raise ValueError(f"Member at index {i} must be an object")
+        if "member_id" not in member:
+            raise ValueError(f"Member at index {i} must have a 'member_id' field")
         if "name" not in member:
             raise ValueError(f"Member at index {i} must have a 'name' field")
 
@@ -115,9 +100,11 @@ def import_members(
 ) -> dict[str, Any]:
     """Import members from a YAML file into the database.
 
-    Performs upsert operations based on name - existing members are updated,
-    new members are created. Nodes are synced (existing nodes removed and
-    replaced with new ones from the file).
+    Performs upsert operations based on member_id - existing members are updated,
+    new members are created.
+
+    Note: Nodes are associated with members via a 'member_id' tag on the node.
+    This import does not manage node associations.
 
     Args:
         file_path: Path to the members YAML file
@@ -149,14 +136,17 @@ def import_members(
     with db.session_scope() as session:
         for member_data in members_data:
             try:
+                member_id = member_data["member_id"]
                 name = member_data["name"]
 
-                # Find existing member by name
-                query = select(Member).where(Member.name == name)
+                # Find existing member by member_id
+                query = select(Member).where(Member.member_id == member_id)
                 existing = session.execute(query).scalar_one_or_none()
 
                 if existing:
                     # Update existing member
+                    if member_data.get("name") is not None:
+                        existing.name = member_data["name"]
                     if member_data.get("callsign") is not None:
                         existing.callsign = member_data["callsign"]
                     if member_data.get("role") is not None:
@@ -166,25 +156,12 @@ def import_members(
                     if member_data.get("contact") is not None:
                         existing.contact = member_data["contact"]
 
-                    # Sync nodes if provided
-                    if member_data.get("nodes") is not None:
-                        # Remove existing nodes
-                        existing.nodes.clear()
-
-                        # Add new nodes
-                        for node_data in member_data["nodes"]:
-                            node = MemberNode(
-                                member_id=existing.id,
-                                public_key=node_data["public_key"],
-                                node_role=node_data.get("node_role"),
-                            )
-                            existing.nodes.append(node)
-
                     stats["updated"] += 1
-                    logger.debug(f"Updated member: {name}")
+                    logger.debug(f"Updated member: {member_id} ({name})")
                 else:
                     # Create new member
                     new_member = Member(
+                        member_id=member_id,
                         name=name,
                         callsign=member_data.get("callsign"),
                         role=member_data.get("role"),
@@ -192,23 +169,12 @@ def import_members(
                         contact=member_data.get("contact"),
                     )
                     session.add(new_member)
-                    session.flush()  # Get the ID for the member
-
-                    # Add nodes if provided
-                    if member_data.get("nodes"):
-                        for node_data in member_data["nodes"]:
-                            node = MemberNode(
-                                member_id=new_member.id,
-                                public_key=node_data["public_key"],
-                                node_role=node_data.get("node_role"),
-                            )
-                            session.add(node)
 
                     stats["created"] += 1
-                    logger.debug(f"Created member: {name}")
+                    logger.debug(f"Created member: {member_id} ({name})")
 
             except Exception as e:
-                error_msg = f"Error processing member '{member_data.get('name', 'unknown')}': {e}"
+                error_msg = f"Error processing member '{member_data.get('member_id', 'unknown')}' ({member_data.get('name', 'unknown')}): {e}"
                 stats["errors"].append(error_msg)
                 logger.error(error_msg)
 

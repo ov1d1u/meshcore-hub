@@ -33,7 +33,9 @@
             {% if member.nodes %}
             <div class="mt-4 space-y-2">
                     {% for node in member.nodes %}
-                    {% set adv_type = node.node_adv_type or node.node_role %}
+                    {% set adv_type = node.adv_type %}
+                    {% set node_tag_name = node.tags|selectattr('key', 'equalto', 'name')|map(attribute='value')|first %}
+                    {% set display_name = node_tag_name or node.name %}
                     <a href="/nodes/{{ node.public_key }}" class="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
                         <span class="text-lg" title="{{ adv_type or 'Unknown' }}">
                             {% if adv_type and adv_type|lower == 'chat' %}
@@ -49,8 +51,8 @@
                             {% endif %}
                         </span>
                         <div>
-                            {% if node.friendly_name or node.node_name %}
-                            <div class="font-medium text-sm">{{ node.friendly_name or node.node_name }}</div>
+                            {% if display_name %}
+                            <div class="font-medium text-sm">{{ display_name }}</div>
                             <div class="font-mono text-xs opacity-60">{{ node.public_key[:12] }}...</div>
                             {% else %}
                             <div class="font-mono text-sm">{{ node.public_key[:12] }}...</div>
@@ -80,18 +82,20 @@
         <h2 class="card-title">Members File Format</h2>
         <p class="mb-4">Create a YAML file at <code>$SEED_HOME/members.yaml</code> with the following structure:</p>
         <pre class="bg-base-200 p-4 rounded-box text-sm overflow-x-auto"><code>members:
-  - name: John Doe
+  - member_id: johndoe
+    name: John Doe
     callsign: AB1CD
     role: Network Admin
     description: Manages the main repeater node.
     contact: john@example.com
-    nodes:
-      - public_key: abc123def456...  # 64-char hex
-        node_role: repeater
-  - name: Jane Smith
+  - member_id: janesmith
+    name: Jane Smith
     role: Member
     description: Regular user in the downtown area.</code></pre>
-        <p class="mt-4 text-sm opacity-70">Run <code>meshcore-hub collector seed</code> to import members, or they will be imported automatically on collector startup.</p>
+        <p class="mt-4 text-sm opacity-70">
+            Run <code>meshcore-hub collector seed</code> to import members.<br/>
+            To associate nodes with members, add a <code>member_id</code> tag to nodes in <code>node_tags.yaml</code>.
+        </p>
     </div>
 </div>
 {% endif %}
