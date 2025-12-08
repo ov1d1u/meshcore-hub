@@ -663,3 +663,212 @@ def cleanup_cmd(
     db.dispose()
     click.echo("")
     click.echo("Cleanup complete." if not dry_run else "Dry run complete.")
+
+
+@collector.command("truncate")
+@click.option(
+    "--members",
+    is_flag=True,
+    default=False,
+    help="Truncate members table",
+)
+@click.option(
+    "--nodes",
+    is_flag=True,
+    default=False,
+    help="Truncate nodes table (also clears tags, advertisements, messages, telemetry, trace paths)",
+)
+@click.option(
+    "--messages",
+    is_flag=True,
+    default=False,
+    help="Truncate messages table",
+)
+@click.option(
+    "--advertisements",
+    is_flag=True,
+    default=False,
+    help="Truncate advertisements table",
+)
+@click.option(
+    "--telemetry",
+    is_flag=True,
+    default=False,
+    help="Truncate telemetry table",
+)
+@click.option(
+    "--trace-paths",
+    is_flag=True,
+    default=False,
+    help="Truncate trace_paths table",
+)
+@click.option(
+    "--event-logs",
+    is_flag=True,
+    default=False,
+    help="Truncate event_logs table",
+)
+@click.option(
+    "--all",
+    "truncate_all",
+    is_flag=True,
+    default=False,
+    help="Truncate ALL tables (use with caution!)",
+)
+@click.option(
+    "--yes",
+    is_flag=True,
+    default=False,
+    help="Skip confirmation prompt",
+)
+@click.pass_context
+def truncate_cmd(
+    ctx: click.Context,
+    members: bool,
+    nodes: bool,
+    messages: bool,
+    advertisements: bool,
+    telemetry: bool,
+    trace_paths: bool,
+    event_logs: bool,
+    truncate_all: bool,
+    yes: bool,
+) -> None:
+    """Truncate (clear) data tables.
+
+    WARNING: This permanently deletes data! Use with caution.
+
+    Examples:
+      # Clear members table
+      meshcore-hub collector truncate --members
+
+      # Clear messages and advertisements
+      meshcore-hub collector truncate --messages --advertisements
+
+      # Clear everything (requires confirmation)
+      meshcore-hub collector truncate --all
+
+    Note: Clearing nodes also clears all related data (tags, advertisements,
+    messages, telemetry, trace paths) due to foreign key constraints.
+    """
+    configure_logging(level=ctx.obj["log_level"])
+
+    # Determine what to truncate
+    if truncate_all:
+        tables_to_clear = {
+            "members": True,
+            "nodes": True,
+            "messages": True,
+            "advertisements": True,
+            "telemetry": True,
+            "trace_paths": True,
+            "event_logs": True,
+        }
+    else:
+        tables_to_clear = {
+            "members": members,
+            "nodes": nodes,
+            "messages": messages,
+            "advertisements": advertisements,
+            "telemetry": telemetry,
+            "trace_paths": trace_paths,
+            "event_logs": event_logs,
+        }
+
+    # Check if any tables selected
+    if not any(tables_to_clear.values()):
+        click.echo("No tables specified. Use --help to see available options.")
+        return
+
+    # Show what will be cleared
+    click.echo("Database: " + ctx.obj["database_url"])
+    click.echo("")
+    click.echo("The following tables will be PERMANENTLY CLEARED:")
+    for table, should_clear in tables_to_clear.items():
+        if should_clear:
+            click.echo(f"  - {table}")
+
+    if tables_to_clear.get("nodes"):
+        click.echo("")
+        click.echo(
+            "WARNING: Clearing nodes will also clear all related data due to foreign keys:"
+        )
+        click.echo("  - node_tags")
+        click.echo("  - advertisements")
+        click.echo("  - messages")
+        click.echo("  - telemetry")
+        click.echo("  - trace_paths")
+
+    click.echo("")
+
+    # Confirm
+    if not yes:
+        if not click.confirm(
+            "Are you sure you want to permanently delete this data?", default=False
+        ):
+            click.echo("Aborted.")
+            return
+
+    from meshcore_hub.common.database import DatabaseManager
+    from meshcore_hub.common.models import (
+        Advertisement,
+        EventLog,
+        Member,
+        Message,
+        Node,
+        NodeTag,
+        Telemetry,
+        TracePath,
+    )
+    from sqlalchemy import delete
+    from sqlalchemy.engine import CursorResult
+
+    db = DatabaseManager(ctx.obj["database_url"])
+
+    with db.session_scope() as session:
+        # Truncate in correct order to respect foreign keys
+        cleared: list[str] = []
+
+        # Clear members (no dependencies)
+        if tables_to_clear.get("members"):
+            result: CursorResult = session.execute(delete(Member))  # type: ignore
+            cleared.append(f"members: {result.rowcount} rows")
+
+        # Clear event-specific tables first (they depend on nodes)
+        if tables_to_clear.get("messages"):
+            result = session.execute(delete(Message))  # type: ignore
+            cleared.append(f"messages: {result.rowcount} rows")
+
+        if tables_to_clear.get("advertisements"):
+            result = session.execute(delete(Advertisement))  # type: ignore
+            cleared.append(f"advertisements: {result.rowcount} rows")
+
+        if tables_to_clear.get("telemetry"):
+            result = session.execute(delete(Telemetry))  # type: ignore
+            cleared.append(f"telemetry: {result.rowcount} rows")
+
+        if tables_to_clear.get("trace_paths"):
+            result = session.execute(delete(TracePath))  # type: ignore
+            cleared.append(f"trace_paths: {result.rowcount} rows")
+
+        if tables_to_clear.get("event_logs"):
+            result = session.execute(delete(EventLog))  # type: ignore
+            cleared.append(f"event_logs: {result.rowcount} rows")
+
+        # Clear nodes last (this will cascade delete tags and any remaining events)
+        if tables_to_clear.get("nodes"):
+            # Delete tags first (they depend on nodes)
+            tag_result: CursorResult = session.execute(delete(NodeTag))  # type: ignore
+            cleared.append(f"node_tags: {tag_result.rowcount} rows (cascade)")
+
+            # Delete nodes (will cascade to remaining related tables)
+            node_result: CursorResult = session.execute(delete(Node))  # type: ignore
+            cleared.append(f"nodes: {node_result.rowcount} rows")
+
+    db.dispose()
+
+    click.echo("")
+    click.echo("Truncate complete. Cleared:")
+    for item in cleared:
+        click.echo(f"  - {item}")
+    click.echo("")
