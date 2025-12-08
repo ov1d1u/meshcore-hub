@@ -297,26 +297,26 @@ All components are configured via environment variables. Create a `.env` file or
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
+| `DATA_HOME` | `./data` | Base directory for runtime data |
+| `SEED_HOME` | `./seed` | Directory containing seed data files |
 | `MQTT_HOST` | `localhost` | MQTT broker hostname |
 | `MQTT_PORT` | `1883` | MQTT broker port |
+| `MQTT_USERNAME` | *(none)* | MQTT username (optional) |
+| `MQTT_PASSWORD` | *(none)* | MQTT password (optional) |
 | `MQTT_PREFIX` | `meshcore` | Topic prefix for all MQTT messages |
+| `MQTT_TLS` | `false` | Enable TLS/SSL for MQTT connection |
 
 ### Interface Settings
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `INTERFACE_MODE` | `RECEIVER` | Operating mode (RECEIVER or SENDER) |
 | `SERIAL_PORT` | `/dev/ttyUSB0` | Serial port for MeshCore device |
 | `SERIAL_BAUD` | `115200` | Serial baud rate |
 | `MESHCORE_DEVICE_NAME` | *(none)* | Device/node name set on startup (broadcast in advertisements) |
-| `MOCK_DEVICE` | `false` | Use mock device for testing |
 
 ### Collector Settings
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DATABASE_URL` | `sqlite:///{data_home}/collector/meshcore.db` | SQLAlchemy database URL |
-| `SEED_HOME` | `./seed` | Directory containing seed data files (node_tags.yaml, members.yaml) |
+The database is stored in `{DATA_HOME}/collector/meshcore.db` by default.
 
 #### Webhook Configuration
 
@@ -343,6 +343,18 @@ Webhook payload format:
 }
 ```
 
+#### Data Retention
+
+The collector automatically cleans up old event data and inactive nodes:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATA_RETENTION_ENABLED` | `true` | Enable automatic cleanup of old events |
+| `DATA_RETENTION_DAYS` | `30` | Days to retain event data |
+| `DATA_RETENTION_INTERVAL_HOURS` | `24` | Hours between cleanup runs |
+| `NODE_CLEANUP_ENABLED` | `true` | Enable removal of inactive nodes |
+| `NODE_CLEANUP_DAYS` | `7` | Remove nodes not seen for this many days |
+
 ### API Settings
 
 | Variable | Default | Description |
@@ -362,6 +374,11 @@ Webhook payload format:
 | `NETWORK_NAME` | `MeshCore Network` | Display name for the network |
 | `NETWORK_CITY` | *(none)* | City where network is located |
 | `NETWORK_COUNTRY` | *(none)* | Country code (ISO 3166-1 alpha-2) |
+| `NETWORK_RADIO_CONFIG` | *(none)* | Radio config (comma-delimited: profile,freq,bw,sf,cr,power) |
+| `NETWORK_WELCOME_TEXT` | *(none)* | Custom welcome text for homepage |
+| `NETWORK_CONTACT_EMAIL` | *(none)* | Contact email address |
+| `NETWORK_CONTACT_DISCORD` | *(none)* | Discord server link |
+| `NETWORK_CONTACT_GITHUB` | *(none)* | GitHub repository URL |
 
 ## CLI Reference
 
@@ -375,7 +392,7 @@ meshcore-hub interface --mode receiver --device-name "Gateway Node"  # Set devic
 meshcore-hub interface --mode sender --mock  # Use mock device
 
 # Collector component
-meshcore-hub collector                          # Run collector (auto-seeds on startup)
+meshcore-hub collector                          # Run collector
 meshcore-hub collector seed                     # Import all seed data from SEED_HOME
 meshcore-hub collector import-tags              # Import node tags from SEED_HOME/node_tags.yaml
 meshcore-hub collector import-tags /path/to/file.yaml  # Import from specific file
@@ -396,15 +413,11 @@ meshcore-hub db current      # Show current revision
 
 ## Seed Data
 
-The collector supports seeding the database with node tags and network members on startup. Seed files are read from the `SEED_HOME` directory (default: `./seed`).
+The database can be seeded with node tags and network members from YAML files in the `SEED_HOME` directory (default: `./seed`).
 
-### Automatic Seeding
+### Running the Seed Process
 
-When the collector starts, it automatically imports seed data from YAML files if they exist:
-- `{SEED_HOME}/node_tags.yaml` - Node tag definitions
-- `{SEED_HOME}/members.yaml` - Network member definitions
-
-### Manual Seeding
+Seeding is a separate process and must be run explicitly:
 
 ```bash
 # Native CLI
@@ -413,6 +426,10 @@ meshcore-hub collector seed
 # With Docker Compose
 docker compose --profile seed up
 ```
+
+This imports data from the following files (if they exist):
+- `{SEED_HOME}/node_tags.yaml` - Node tag definitions
+- `{SEED_HOME}/members.yaml` - Network member definitions
 
 ### Directory Structure
 
@@ -484,17 +501,21 @@ Network members represent the people operating nodes in your network. Members ca
 ### Members YAML Format
 
 ```yaml
-members:
-  - name: John Doe
-    callsign: N0CALL
-    role: Network Operator
-    description: Example member entry
-    contact: john@example.com
-    public_key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+- member_id: walshie86
+  name: Walshie
+  callsign: Walshie86
+  role: member
+  description: IPNet Member
+- member_id: craig
+  name: Craig
+  callsign: M7XCN
+  role: member
+  description: IPNet Member
 ```
 
 | Field | Required | Description |
 |-------|----------|-------------|
+| `member_id` | Yes | Unique identifier for the member |
 | `name` | Yes | Member's display name |
 | `callsign` | No | Amateur radio callsign |
 | `role` | No | Member's role in the network |
@@ -620,14 +641,8 @@ pytest -k "test_list"
 ### Code Quality
 
 ```bash
-# Format code
-black src/ tests/
-
-# Lint
-flake8 src/ tests/
-
-# Type check
-mypy src/
+# Run all code quality checks (formatting, linting, type checking)
+pre-commit run --all-files
 ```
 
 ### Creating Database Migrations
@@ -684,7 +699,7 @@ meshcore-hub/
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Run tests and linting (`pytest && black . && flake8`)
+4. Run tests and quality checks (`pytest && pre-commit run --all-files`)
 5. Commit your changes (`git commit -m 'Add amazing feature'`)
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request

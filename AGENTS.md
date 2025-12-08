@@ -274,10 +274,9 @@ meshcore-hub/
 │   │   ├── app.py            # FastAPI app
 │   │   ├── auth.py           # Authentication
 │   │   ├── dependencies.py
-│   │   ├── routes/           # API routes
-│   │   │   ├── members.py    # Member CRUD endpoints
-│   │   │   └── ...
-│   │   └── templates/        # Dashboard HTML
+│   │   └── routes/           # API routes
+│   │       ├── members.py    # Member CRUD endpoints
+│   │       └── ...
 │   └── web/
 │       ├── cli.py
 │       ├── app.py            # FastAPI app
@@ -457,9 +456,11 @@ Key variables:
 - `DATA_HOME` - Base directory for runtime data (default: `./data`)
 - `SEED_HOME` - Directory containing seed data files (default: `./seed`)
 - `MQTT_HOST`, `MQTT_PORT`, `MQTT_PREFIX` - MQTT broker connection
-- `DATABASE_URL` - SQLAlchemy database URL (default: `sqlite:///{DATA_HOME}/collector/meshcore.db`)
+- `MQTT_TLS` - Enable TLS/SSL for MQTT (default: `false`)
 - `API_READ_KEY`, `API_ADMIN_KEY` - API authentication keys
 - `LOG_LEVEL` - Logging verbosity
+
+The database defaults to `sqlite:///{DATA_HOME}/collector/meshcore.db` and does not typically need to be configured.
 
 ### Directory Structure
 
@@ -479,13 +480,21 @@ ${DATA_HOME}/
 
 Services automatically create their subdirectories if they don't exist.
 
-### Automatic Seeding
+### Seeding
 
-The collector automatically imports seed data on startup if YAML files exist in `SEED_HOME`:
+The database can be seeded with node tags and network members from YAML files in `SEED_HOME`:
 - `node_tags.yaml` - Node tag definitions (keyed by public_key)
 - `members.yaml` - Network member definitions
 
-Manual seeding can be triggered with: `meshcore-hub collector seed`
+Seeding is a separate process from the collector and must be run explicitly:
+
+```bash
+# Native CLI
+meshcore-hub collector seed
+
+# With Docker Compose
+docker compose --profile seed up
+```
 
 ### Webhook Configuration
 
@@ -559,9 +568,9 @@ Webhook payload structure:
 ### Common Issues
 
 1. **MQTT Connection Failed**: Check broker is running and `MQTT_HOST`/`MQTT_PORT` are correct
-2. **Database Migration Errors**: Ensure `DATABASE_URL` is correct, run `alembic upgrade head`
+2. **Database Migration Errors**: Ensure `DATA_HOME` is writable, run `meshcore-hub db upgrade`
 3. **Import Errors**: Ensure package is installed with `pip install -e .`
-4. **Type Errors**: Run `mypy src/` to check type annotations
+4. **Type Errors**: Run `pre-commit run --all-files` to check type annotations and other issues
 
 ### Debugging
 

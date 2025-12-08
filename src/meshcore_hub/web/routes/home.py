@@ -29,8 +29,9 @@ async def home(request: Request) -> HTMLResponse:
         "advertisements_24h": 0,
     }
 
-    # Fetch activity data for chart
-    activity = {"days": 7, "data": []}
+    # Fetch activity data for charts
+    advert_activity = {"days": 7, "data": []}
+    message_activity = {"days": 7, "data": []}
 
     try:
         response = await request.app.state.http_client.get("/api/v1/dashboard/stats")
@@ -45,12 +46,22 @@ async def home(request: Request) -> HTMLResponse:
             "/api/v1/dashboard/activity", params={"days": 7}
         )
         if response.status_code == 200:
-            activity = response.json()
+            advert_activity = response.json()
     except Exception as e:
         logger.warning(f"Failed to fetch activity from API: {e}")
 
+    try:
+        response = await request.app.state.http_client.get(
+            "/api/v1/dashboard/message-activity", params={"days": 7}
+        )
+        if response.status_code == 200:
+            message_activity = response.json()
+    except Exception as e:
+        logger.warning(f"Failed to fetch message activity from API: {e}")
+
     context["stats"] = stats
-    # Pass activity data as JSON string for the chart
-    context["activity_json"] = json.dumps(activity)
+    # Pass activity data as JSON strings for the chart
+    context["advert_activity_json"] = json.dumps(advert_activity)
+    context["message_activity_json"] = json.dumps(message_activity)
 
     return templates.TemplateResponse("home.html", context)
