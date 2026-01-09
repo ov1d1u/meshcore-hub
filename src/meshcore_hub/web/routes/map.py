@@ -30,28 +30,27 @@ async def map_data(request: Request) -> JSONResponse:
     """
     nodes_with_location: list[dict[str, Any]] = []
     members_list: list[dict[str, Any]] = []
-    members_by_key: dict[str, dict[str, Any]] = {}
+    members_by_id: dict[str, dict[str, Any]] = {}
     error: str | None = None
     total_nodes = 0
     nodes_with_coords = 0
 
     try:
-        # Fetch all members to build lookup by public_key
+        # Fetch all members to build lookup by member_id
         members_response = await request.app.state.http_client.get(
             "/api/v1/members", params={"limit": 500}
         )
         if members_response.status_code == 200:
             members_data = members_response.json()
             for member in members_data.get("items", []):
-                # Only include members with public_key (required for node ownership)
-                if member.get("public_key"):
-                    member_info = {
-                        "public_key": member.get("public_key"),
-                        "name": member.get("name"),
-                        "callsign": member.get("callsign"),
-                    }
-                    members_list.append(member_info)
-                    members_by_key[member["public_key"]] = member_info
+                member_info = {
+                    "member_id": member.get("member_id"),
+                    "name": member.get("name"),
+                    "callsign": member.get("callsign"),
+                }
+                members_list.append(member_info)
+                if member.get("member_id"):
+                    members_by_id[member["member_id"]] = member_info
         else:
             logger.warning(
                 f"Failed to fetch members: status {members_response.status_code}"
@@ -73,6 +72,7 @@ async def map_data(request: Request) -> JSONResponse:
                 lon = None
                 friendly_name = None
                 role = None
+                node_member_id = None
 
                 for tag in tags:
                     key = tag.get("key")
@@ -90,6 +90,8 @@ async def map_data(request: Request) -> JSONResponse:
                         friendly_name = tag.get("value")
                     elif key == "role":
                         role = tag.get("value")
+                    elif key == "member_id":
+                        node_member_id = tag.get("value")
 
                 if lat is not None and lon is not None:
                     nodes_with_coords += 1
@@ -101,8 +103,10 @@ async def map_data(request: Request) -> JSONResponse:
                     )
                     public_key = node.get("public_key")
 
-                    # Find owner member if exists
-                    owner = members_by_key.get(public_key)
+                    # Find owner member by member_id tag
+                    owner = (
+                        members_by_id.get(node_member_id) if node_member_id else None
+                    )
 
                     nodes_with_location.append(
                         {
@@ -114,6 +118,7 @@ async def map_data(request: Request) -> JSONResponse:
                             "last_seen": node.get("last_seen"),
                             "role": role,
                             "is_infra": role == "infra",
+                            "member_id": node_member_id,
                             "owner": owner,
                         }
                     )

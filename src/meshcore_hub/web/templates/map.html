@@ -45,10 +45,10 @@
             </div>
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Owner</span>
+                    <span class="label-text">Member</span>
                 </label>
-                <select id="filter-owner" class="select select-bordered select-sm">
-                    <option value="">All Owners</option>
+                <select id="filter-member" class="select select-bordered select-sm">
+                    <option value="">All Members</option>
                     <!-- Populated dynamically -->
                 </select>
             </div>
@@ -190,16 +190,16 @@
     // Core filter logic - returns filtered nodes and updates markers
     function applyFiltersCore() {
         const typeFilter = document.getElementById('filter-type').value;
-        const ownerFilter = document.getElementById('filter-owner').value;
+        const memberFilter = document.getElementById('filter-member').value;
 
         // Filter nodes
         const filteredNodes = allNodes.filter(node => {
             // Type filter (case-insensitive)
             if (typeFilter && normalizeType(node.adv_type) !== typeFilter) return false;
 
-            // Owner filter
-            if (ownerFilter) {
-                if (!node.owner || node.owner.public_key !== ownerFilter) return false;
+            // Member filter - match node's member_id tag to selected member_id
+            if (memberFilter) {
+                if (node.member_id !== memberFilter) return false;
             }
 
             return true;
@@ -249,45 +249,36 @@
         applyFiltersCore();
     }
 
-    // Populate owner filter dropdown
-    function populateOwnerFilter() {
-        const select = document.getElementById('filter-owner');
+    // Populate member filter dropdown
+    function populateMemberFilter() {
+        const select = document.getElementById('filter-member');
 
-        // Get unique owners from nodes that have locations
-        const ownersWithNodes = new Set();
-        allNodes.forEach(node => {
-            if (node.owner) {
-                ownersWithNodes.add(node.owner.public_key);
+        // Sort members by name
+        const sortedMembers = [...allMembers].sort((a, b) => a.name.localeCompare(b.name));
+
+        // Add options for all members
+        sortedMembers.forEach(member => {
+            if (member.member_id) {
+                const option = document.createElement('option');
+                option.value = member.member_id;
+                option.textContent = member.callsign
+                    ? `${member.name} (${member.callsign})`
+                    : member.name;
+                select.appendChild(option);
             }
-        });
-
-        // Filter members to only those who own nodes on the map
-        const relevantMembers = allMembers.filter(m => ownersWithNodes.has(m.public_key));
-
-        // Sort by name
-        relevantMembers.sort((a, b) => a.name.localeCompare(b.name));
-
-        // Add options
-        relevantMembers.forEach(member => {
-            const option = document.createElement('option');
-            option.value = member.public_key;
-            option.textContent = member.callsign
-                ? `${member.name} (${member.callsign})`
-                : member.name;
-            select.appendChild(option);
         });
     }
 
     // Clear all filters
     function clearFilters() {
         document.getElementById('filter-type').value = '';
-        document.getElementById('filter-owner').value = '';
+        document.getElementById('filter-member').value = '';
         applyFilters();
     }
 
     // Event listeners for filters
     document.getElementById('filter-type').addEventListener('change', applyFilters);
-    document.getElementById('filter-owner').addEventListener('change', applyFilters);
+    document.getElementById('filter-member').addEventListener('change', applyFilters);
     document.getElementById('clear-filters').addEventListener('click', clearFilters);
 
     // Fetch and display nodes
@@ -318,8 +309,8 @@
                 return;
             }
 
-            // Populate owner filter
-            populateOwnerFilter();
+            // Populate member filter
+            populateMemberFilter();
 
             // Initial display - center map on nodes if available
             if (allNodes.length > 0) {
