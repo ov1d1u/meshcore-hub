@@ -49,6 +49,16 @@ class NodeTagMove(BaseModel):
     )
 
 
+class NodeTagsCopyResult(BaseModel):
+    """Schema for bulk copy tags result."""
+
+    copied: int = Field(..., description="Number of tags copied")
+    skipped: int = Field(..., description="Number of tags skipped (already exist)")
+    skipped_keys: list[str] = Field(
+        default_factory=list, description="Keys of skipped tags"
+    )
+
+
 class NodeTagRead(BaseModel):
     """Schema for reading a node tag."""
 

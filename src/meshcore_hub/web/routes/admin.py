@@ -315,3 +315,79 @@ async def admin_delete_node_tag(
         redirect_url = _build_redirect_url(public_key, error="Failed to delete tag")
 
     return RedirectResponse(url=redirect_url, status_code=303)
+
+
+@router.post("/node-tags/copy-all", response_class=RedirectResponse)
+async def admin_copy_all_tags(
+    request: Request,
+    public_key: str = Form(...),
+    dest_public_key: str = Form(...),
+) -> RedirectResponse:
+    """Copy all tags from one node to another."""
+    _check_admin_enabled(request)
+    _require_auth(request)
+
+    try:
+        response = await request.app.state.http_client.post(
+            f"/api/v1/nodes/{public_key}/tags/copy-to/{dest_public_key}",
+        )
+        if response.status_code == 200:
+            data = response.json()
+            copied = data.get("copied", 0)
+            skipped = data.get("skipped", 0)
+            if skipped > 0:
+                message = f"Copied {copied} tag(s), skipped {skipped} existing"
+            else:
+                message = f"Copied {copied} tag(s) successfully"
+            # Redirect to destination node to show copied tags
+            redirect_url = _build_redirect_url(dest_public_key, message=message)
+        elif response.status_code == 400:
+            redirect_url = _build_redirect_url(
+                public_key, error=_get_error_detail(response)
+            )
+        elif response.status_code == 404:
+            redirect_url = _build_redirect_url(
+                public_key, error=_get_error_detail(response)
+            )
+        else:
+            redirect_url = _build_redirect_url(
+                public_key, error=_get_error_detail(response)
+            )
+    except Exception as e:
+        logger.exception("Failed to copy tags: %s", e)
+        redirect_url = _build_redirect_url(public_key, error="Failed to copy tags")
+
+    return RedirectResponse(url=redirect_url, status_code=303)
+
+
+@router.post("/node-tags/delete-all", response_class=RedirectResponse)
+async def admin_delete_all_tags(
+    request: Request,
+    public_key: str = Form(...),
+) -> RedirectResponse:
+    """Delete all tags from a node."""
+    _check_admin_enabled(request)
+    _require_auth(request)
+
+    try:
+        response = await request.app.state.http_client.delete(
+            f"/api/v1/nodes/{public_key}/tags",
+        )
+        if response.status_code == 200:
+            data = response.json()
+            deleted = data.get("deleted", 0)
+            message = f"Deleted {deleted} tag(s) successfully"
+            redirect_url = _build_redirect_url(public_key, message=message)
+        elif response.status_code == 404:
+            redirect_url = _build_redirect_url(
+                public_key, error=_get_error_detail(response)
+            )
+        else:
+            redirect_url = _build_redirect_url(
+                public_key, error=_get_error_detail(response)
+            )
+    except Exception as e:
+        logger.exception("Failed to delete tags: %s", e)
+        redirect_url = _build_redirect_url(public_key, error="Failed to delete tags")
+
+    return RedirectResponse(url=redirect_url, status_code=303)

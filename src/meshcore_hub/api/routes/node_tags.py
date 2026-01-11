@@ -10,6 +10,7 @@ from meshcore_hub.common.schemas.nodes import (
     NodeTagCreate,
     NodeTagMove,
     NodeTagRead,
+    NodeTagsCopyResult,
     NodeTagUpdate,
 )
 
@@ -194,6 +195,72 @@ async def move_node_tag(
     return NodeTagRead.model_validate(node_tag)
 
 
+@router.post(
+    "/nodes/{public_key}/tags/copy-to/{dest_public_key}",
+    response_model=NodeTagsCopyResult,
+)
+async def copy_all_tags(
+    _: RequireAdmin,
+    session: DbSession,
+    public_key: str,
+    dest_public_key: str,
+) -> NodeTagsCopyResult:
+    """Copy all tags from one node to another.
+
+    Tags that already exist on the destination node are skipped.
+    """
+    # Check if source and destination are the same
+    if public_key == dest_public_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Source and destination nodes are the same",
+        )
+
+    # Find source node
+    source_query = select(Node).where(Node.public_key == public_key)
+    source_node = session.execute(source_query).scalar_one_or_none()
+
+    if not source_node:
+        raise HTTPException(status_code=404, detail="Source node not found")
+
+    # Find destination node
+    dest_query = select(Node).where(Node.public_key == dest_public_key)
+    dest_node = session.execute(dest_query).scalar_one_or_none()
+
+    if not dest_node:
+        raise HTTPException(status_code=404, detail="Destination node not found")
+
+    # Get existing tags on destination node
+    existing_query = select(NodeTag.key).where(NodeTag.node_id == dest_node.id)
+    existing_keys = set(session.execute(existing_query).scalars().all())
+
+    # Copy tags
+    copied = 0
+    skipped_keys = []
+
+    for tag in source_node.tags:
+        if tag.key in existing_keys:
+            skipped_keys.append(tag.key)
+            continue
+
+        new_tag = NodeTag(
+            node_id=dest_node.id,
+            key=tag.key,
+            value=tag.value,
+            value_type=tag.value_type,
+        )
+        session.add(new_tag)
+        copied += 1
+
+    session.commit()
+
+    return NodeTagsCopyResult(
+        copied=copied,
+        skipped=len(skipped_keys),
+        skipped_keys=skipped_keys,
+    )
+
+
 @router.delete("/nodes/{public_key}/tags/{key}", status_code=204)
 async def delete_node_tag(
     _: RequireAdmin,
@@ -220,3 +287,27 @@ async def delete_node_tag(
 
     session.delete(node_tag)
     session.commit()
+
+
+@router.delete("/nodes/{public_key}/tags")
+async def delete_all_node_tags(
+    _: RequireAdmin,
+    session: DbSession,
+    public_key: str,
+) -> dict:
+    """Delete all tags for a node."""
+    # Find node
+    node_query = select(Node).where(Node.public_key == public_key)
+    node = session.execute(node_query).scalar_one_or_none()
+
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    # Count and delete all tags
+    count = len(node.tags)
+    for tag in node.tags:
+        session.delete(tag)
+
+    session.commit()
+
+    return {"deleted": count}

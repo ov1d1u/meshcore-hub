@@ -71,7 +71,13 @@
                     <p class="text-sm opacity-70 font-mono">{{ selected_public_key }}</p>
                 </div>
             </div>
-            <a href="/nodes/{{ selected_public_key }}" class="btn btn-ghost btn-sm">View Node</a>
+            <div class="flex gap-2">
+                {% if tags %}
+                <button class="btn btn-outline btn-sm" onclick="copyAllModal.showModal()">Copy All</button>
+                <button class="btn btn-outline btn-error btn-sm" onclick="deleteAllModal.showModal()">Delete All</button>
+                {% endif %}
+                <a href="/nodes/{{ selected_public_key }}" class="btn btn-ghost btn-sm">View Node</a>
+            </div>
         </div>
     </div>
 </div>
@@ -284,6 +290,76 @@
             <div class="modal-action">
                 <button type="button" class="btn" onclick="deleteModal.close()">Cancel</button>
                 <button type="submit" class="btn btn-error">Delete</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<!-- Copy All Tags Modal -->
+<dialog id="copyAllModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Copy All Tags to Another Node</h3>
+        <form method="post" action="/a/node-tags/copy-all" class="py-4">
+            <input type="hidden" name="public_key" value="{{ selected_public_key }}">
+
+            <p class="mb-4">Copy all {{ tags|length }} tag(s) from <strong>{{ selected_node.name or 'Unnamed' }}</strong> to another node.</p>
+
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Destination Node</span>
+                </label>
+                <select name="dest_public_key" class="select select-bordered w-full" required>
+                    <option value="">-- Select destination node --</option>
+                    {% for node in nodes %}
+                    {% if node.public_key != selected_public_key %}
+                    <option value="{{ node.public_key }}">
+                        {{ node.name or 'Unnamed' }} ({{ node.public_key[:8] }}...{{ node.public_key[-4:] }})
+                    </option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="alert alert-info mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Tags that already exist on the destination node will be skipped. Original tags remain on this node.</span>
+            </div>
+
+            <div class="modal-action">
+                <button type="button" class="btn" onclick="copyAllModal.close()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Copy Tags</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<!-- Delete All Tags Modal -->
+<dialog id="deleteAllModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Delete All Tags</h3>
+        <form method="post" action="/a/node-tags/delete-all" class="py-4">
+            <input type="hidden" name="public_key" value="{{ selected_public_key }}">
+
+            <p class="mb-4">Are you sure you want to delete all {{ tags|length }} tag(s) from <strong>{{ selected_node.name or 'Unnamed' }}</strong>?</p>
+
+            <div class="alert alert-error mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>This action cannot be undone. All tags will be permanently deleted.</span>
+            </div>
+
+            <div class="modal-action">
+                <button type="button" class="btn" onclick="deleteAllModal.close()">Cancel</button>
+                <button type="submit" class="btn btn-error">Delete All Tags</button>
             </div>
         </form>
     </div>
