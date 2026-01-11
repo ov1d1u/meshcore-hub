@@ -298,6 +298,48 @@ class TestAdminUpdateTag:
         assert "message=" in response.headers["location"]
         assert "updated" in response.headers["location"]
 
+    def test_update_tag_not_found(
+        self, admin_app, mock_http_client_admin: MockHttpClient
+    ):
+        """Test updating a non-existent tag returns error."""
+        # Set up 404 response for this specific tag
+        mock_http_client_admin.set_response(
+            "PUT",
+            "/api/v1/nodes/abc123def456abc123def456abc123de/tags/nonexistent",
+            404,
+            {"detail": "Tag not found"},
+        )
+        admin_app.state.http_client = mock_http_client_admin
+        client = TestClient(admin_app, raise_server_exceptions=True)
+
+        response = client.post(
+            "/a/node-tags/update",
+            data={
+                "public_key": "abc123def456abc123def456abc123de",
+                "key": "nonexistent",
+                "value": "value",
+                "value_type": "string",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 303
+        assert "error=" in response.headers["location"]
+        assert "not+found" in response.headers["location"].lower()
+
+    def test_update_tag_disabled(self, admin_client_disabled):
+        """Test updating tag when admin is disabled."""
+        response = admin_client_disabled.post(
+            "/a/node-tags/update",
+            data={
+                "public_key": "abc123def456abc123def456abc123de",
+                "key": "environment",
+                "value": "staging",
+                "value_type": "string",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 404
+
 
 class TestAdminMoveTag:
     """Tests for moving node tags."""

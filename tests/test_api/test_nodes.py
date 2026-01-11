@@ -288,3 +288,36 @@ class TestMoveNodeTag:
             headers={"Authorization": "Bearer test-read-key"},
         )
         assert response.status_code == 403
+
+    def test_move_node_tag_same_node(self, client_no_auth, api_db_session):
+        """Test moving a tag to the same node returns 400."""
+        from datetime import datetime, timezone
+
+        from meshcore_hub.common.models import Node, NodeTag
+
+        # Create node with 64-char public key
+        full_key = "abc123def456abc123def456abc123deabc123def456abc123def456abc123de"
+        node = Node(
+            public_key=full_key,
+            name="Test Node 64",
+            adv_type="REPEATER",
+            first_seen=datetime.now(timezone.utc),
+        )
+        api_db_session.add(node)
+        api_db_session.commit()
+
+        # Create tag
+        tag = NodeTag(
+            node_id=node.id,
+            key="test_tag",
+            value="test_value",
+        )
+        api_db_session.add(tag)
+        api_db_session.commit()
+
+        response = client_no_auth.put(
+            f"/api/v1/nodes/{full_key}/tags/test_tag/move",
+            json={"new_public_key": full_key},
+        )
+        assert response.status_code == 400
+        assert "same" in response.json()["detail"].lower()

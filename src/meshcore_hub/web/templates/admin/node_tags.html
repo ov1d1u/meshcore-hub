@@ -95,7 +95,7 @@
                 </thead>
                 <tbody>
                     {% for tag in tags %}
-                    <tr>
+                    <tr data-tag-key="{{ tag.key }}" data-tag-value="{{ tag.value or '' }}" data-tag-type="{{ tag.value_type }}">
                         <td class="font-mono font-semibold">{{ tag.key }}</td>
                         <td class="max-w-xs truncate" title="{{ tag.value or '' }}">{{ tag.value or '-' }}</td>
                         <td>
@@ -104,13 +104,13 @@
                         <td class="text-sm opacity-70">{{ tag.updated_at[:10] if tag.updated_at else '-' }}</td>
                         <td>
                             <div class="flex gap-1">
-                                <button class="btn btn-ghost btn-xs" onclick="openEditModal('{{ tag.key }}', '{{ tag.value|e if tag.value else '' }}', '{{ tag.value_type }}')">
+                                <button class="btn btn-ghost btn-xs btn-edit">
                                     Edit
                                 </button>
-                                <button class="btn btn-ghost btn-xs" onclick="openMoveModal('{{ tag.key }}')">
+                                <button class="btn btn-ghost btn-xs btn-move">
                                     Move
                                 </button>
-                                <button class="btn btn-ghost btn-xs text-error" onclick="openDeleteModal('{{ tag.key }}')">
+                                <button class="btn btn-ghost btn-xs text-error btn-delete">
                                     Delete
                                 </button>
                             </div>
@@ -316,25 +316,45 @@
 
 {% block extra_scripts %}
 <script>
-function openEditModal(key, value, valueType) {
-    document.getElementById('editKey').value = key;
-    document.getElementById('editKeyDisplay').value = key;
-    document.getElementById('editValue').value = value;
-    document.getElementById('editValueType').value = valueType;
-    editModal.showModal();
-}
+// Use event delegation to handle button clicks safely
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit button handler
+    document.querySelectorAll('.btn-edit').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var row = this.closest('tr');
+            var key = row.dataset.tagKey;
+            var value = row.dataset.tagValue;
+            var valueType = row.dataset.tagType;
+            document.getElementById('editKey').value = key;
+            document.getElementById('editKeyDisplay').value = key;
+            document.getElementById('editValue').value = value;
+            document.getElementById('editValueType').value = valueType;
+            editModal.showModal();
+        });
+    });
 
-function openMoveModal(key) {
-    document.getElementById('moveKey').value = key;
-    document.getElementById('moveKeyDisplay').value = key;
-    document.getElementById('moveDestination').selectedIndex = 0;
-    moveModal.showModal();
-}
+    // Move button handler
+    document.querySelectorAll('.btn-move').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var row = this.closest('tr');
+            var key = row.dataset.tagKey;
+            document.getElementById('moveKey').value = key;
+            document.getElementById('moveKeyDisplay').value = key;
+            document.getElementById('moveDestination').selectedIndex = 0;
+            moveModal.showModal();
+        });
+    });
 
-function openDeleteModal(key) {
-    document.getElementById('deleteKey').value = key;
-    document.getElementById('deleteKeyDisplay').textContent = key;
-    deleteModal.showModal();
-}
+    // Delete button handler
+    document.querySelectorAll('.btn-delete').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var row = this.closest('tr');
+            var key = row.dataset.tagKey;
+            document.getElementById('deleteKey').value = key;
+            document.getElementById('deleteKeyDisplay').textContent = key;
+            deleteModal.showModal();
+        });
+    });
+});
 </script>
 {% endblock %}

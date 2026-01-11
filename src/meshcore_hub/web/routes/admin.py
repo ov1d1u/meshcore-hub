@@ -1,12 +1,39 @@
 """Admin page routes."""
 
 import logging
-from typing import Optional
+from typing import Any, Optional
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from httpx import Response
 
 from meshcore_hub.web.app import get_network_context, get_templates
+
+
+def _build_redirect_url(
+    public_key: str,
+    message: Optional[str] = None,
+    error: Optional[str] = None,
+) -> str:
+    """Build a properly encoded redirect URL with optional message/error."""
+    params: dict[str, str] = {"public_key": public_key}
+    if message:
+        params["message"] = message
+    if error:
+        params["error"] = error
+    return f"/a/node-tags?{urlencode(params)}"
+
+
+def _get_error_detail(response: Response) -> str:
+    """Safely extract error detail from response JSON."""
+    try:
+        data: Any = response.json()
+        detail: str = data.get("detail", "Unknown error")
+        return detail
+    except Exception:
+        return "Unknown error"
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/a", tags=["admin"])
@@ -116,8 +143,6 @@ async def admin_create_node_tag(
     """Create a new node tag."""
     _check_admin_enabled(request)
 
-    redirect_url = f"/a/node-tags?public_key={public_key}"
-
     try:
         response = await request.app.state.http_client.post(
             f"/api/v1/nodes/{public_key}/tags",
@@ -128,17 +153,22 @@ async def admin_create_node_tag(
             },
         )
         if response.status_code == 201:
-            redirect_url += f"&message=Tag '{key}' created successfully"
+            redirect_url = _build_redirect_url(
+                public_key, message=f"Tag '{key}' created successfully"
+            )
         elif response.status_code == 409:
-            redirect_url += f"&error=Tag '{key}' already exists"
+            redirect_url = _build_redirect_url(
+                public_key, error=f"Tag '{key}' already exists"
+            )
         elif response.status_code == 404:
-            redirect_url += "&error=Node not found"
+            redirect_url = _build_redirect_url(public_key, error="Node not found")
         else:
-            detail = response.json().get("detail", "Unknown error")
-            redirect_url += f"&error={detail}"
+            redirect_url = _build_redirect_url(
+                public_key, error=_get_error_detail(response)
+            )
     except Exception as e:
         logger.exception("Failed to create tag: %s", e)
-        redirect_url += "&error=Failed to create tag"
+        redirect_url = _build_redirect_url(public_key, error="Failed to create tag")
 
     return RedirectResponse(url=redirect_url, status_code=303)
 
@@ -154,8 +184,6 @@ async def admin_update_node_tag(
     """Update an existing node tag."""
     _check_admin_enabled(request)
 
-    redirect_url = f"/a/node-tags?public_key={public_key}"
-
     try:
         response = await request.app.state.http_client.put(
             f"/api/v1/nodes/{public_key}/tags/{key}",
@@ -165,15 +193,20 @@ async def admin_update_node_tag(
             },
         )
         if response.status_code == 200:
-            redirect_url += f"&message=Tag '{key}' updated successfully"
+            redirect_url = _build_redirect_url(
+                public_key, message=f"Tag '{key}' updated successfully"
+            )
         elif response.status_code == 404:
-            redirect_url += f"&error=Tag '{key}' not found"
+            redirect_url = _build_redirect_url(
+                public_key, error=f"Tag '{key}' not found"
+            )
         else:
-            detail = response.json().get("detail", "Unknown error")
-            redirect_url += f"&error={detail}"
+            redirect_url = _build_redirect_url(
+                public_key, error=_get_error_detail(response)
+            )
     except Exception as e:
         logger.exception("Failed to update tag: %s", e)
-        redirect_url += "&error=Failed to update tag"
+        redirect_url = _build_redirect_url(public_key, error="Failed to update tag")
 
     return RedirectResponse(url=redirect_url, status_code=303)
 
@@ -188,32 +221,32 @@ async def admin_move_node_tag(
     """Move a node tag to a different node."""
     _check_admin_enabled(request)
 
-    # Redirect to the destination node after move
-    redirect_url = f"/a/node-tags?public_key={new_public_key}"
-
     try:
         response = await request.app.state.http_client.put(
             f"/api/v1/nodes/{public_key}/tags/{key}/move",
             json={"new_public_key": new_public_key},
         )
         if response.status_code == 200:
-            redirect_url += f"&message=Tag '{key}' moved successfully"
+            # Redirect to the destination node after successful move
+            redirect_url = _build_redirect_url(
+                new_public_key, message=f"Tag '{key}' moved successfully"
+            )
         elif response.status_code == 404:
             # Stay on source node if not found
-            redirect_url = f"/a/node-tags?public_key={public_key}"
-            detail = response.json().get("detail", "Not found")
-            redirect_url += f"&error={detail}"
+            redirect_url = _build_redirect_url(
+                public_key, error=_get_error_detail(response)
+            )
         elif response.status_code == 409:
-            redirect_url = f"/a/node-tags?public_key={public_key}"
-            redirect_url += f"&error=Tag '{key}' already exists on destination node"
+            redirect_url = _build_redirect_url(
+                public_key, error=f"Tag '{key}' already exists on destination node"
+            )
         else:
-            redirect_url = f"/a/node-tags?public_key={public_key}"
-            detail = response.json().get("detail", "Unknown error")
-            redirect_url += f"&error={detail}"
+            redirect_url = _build_redirect_url(
+                public_key, error=_get_error_detail(response)
+            )
     except Exception as e:
         logger.exception("Failed to move tag: %s", e)
-        redirect_url = f"/a/node-tags?public_key={public_key}"
-        redirect_url += "&error=Failed to move tag"
+        redirect_url = _build_redirect_url(public_key, error="Failed to move tag")
 
     return RedirectResponse(url=redirect_url, status_code=303)
 
@@ -227,21 +260,24 @@ async def admin_delete_node_tag(
     """Delete a node tag."""
     _check_admin_enabled(request)
 
-    redirect_url = f"/a/node-tags?public_key={public_key}"
-
     try:
         response = await request.app.state.http_client.delete(
             f"/api/v1/nodes/{public_key}/tags/{key}",
         )
         if response.status_code == 204:
-            redirect_url += f"&message=Tag '{key}' deleted successfully"
+            redirect_url = _build_redirect_url(
+                public_key, message=f"Tag '{key}' deleted successfully"
+            )
         elif response.status_code == 404:
-            redirect_url += f"&error=Tag '{key}' not found"
+            redirect_url = _build_redirect_url(
+                public_key, error=f"Tag '{key}' not found"
+            )
         else:
-            detail = response.json().get("detail", "Unknown error")
-            redirect_url += f"&error={detail}"
+            redirect_url = _build_redirect_url(
+                public_key, error=_get_error_detail(response)
+            )
     except Exception as e:
         logger.exception("Failed to delete tag: %s", e)
-        redirect_url += "&error=Failed to delete tag"
+        redirect_url = _build_redirect_url(public_key, error="Failed to delete tag")
 
     return RedirectResponse(url=redirect_url, status_code=303)

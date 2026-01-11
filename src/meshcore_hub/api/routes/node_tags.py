@@ -144,6 +144,13 @@ async def move_node_tag(
     data: NodeTagMove,
 ) -> NodeTagRead:
     """Move a node tag to a different node."""
+    # Check if source and destination are the same
+    if public_key == data.new_public_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Source and destination nodes are the same",
+        )
+
     # Find source node
     source_query = select(Node).where(Node.public_key == public_key)
     source_node = session.execute(source_query).scalar_one_or_none()
