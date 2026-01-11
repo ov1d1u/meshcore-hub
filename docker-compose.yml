@@ -139,7 +139,7 @@ services:
       - core
     restart: unless-stopped
     depends_on:
-      seed:
+      db-migrate:
         condition: service_completed_successfully
     volumes:
       - ${DATA_HOME:-./data}:/data
@@ -196,7 +196,7 @@ services:
       - core
     restart: unless-stopped
     depends_on:
-      seed:
+      db-migrate:
         condition: service_completed_successfully
       collector:
         condition: service_started
@@ -295,7 +295,10 @@ services:
     command: ["db", "upgrade"]
 
   # ==========================================================================
-  # Seed Data - Import node_tags.json and members.json from SEED_HOME
+  # Seed Data - Import node_tags.yaml and members.yaml from SEED_HOME
+  # NOTE: This is NOT run automatically. Use --profile seed to run explicitly.
+  # Since tags are now managed via the admin UI, automatic seeding would
+  # overwrite user changes.
   # ==========================================================================
   seed:
     image: ghcr.io/ipnet-mesh/meshcore-hub:${IMAGE_VERSION:-latest}
@@ -304,8 +307,6 @@ services:
       dockerfile: Dockerfile
     container_name: meshcore-seed
     profiles:
-      - all
-      - core
       - seed
     restart: "no"
     depends_on:
@@ -322,7 +323,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       # Explicitly unset to use DATA_HOME-based default path
       - DATABASE_URL=
-    # Imports both node_tags.json and members.json if they exist
+    # Imports both node_tags.yaml and members.yaml if they exist
     command: ["collector", "seed"]
 
 # ==========================================================================

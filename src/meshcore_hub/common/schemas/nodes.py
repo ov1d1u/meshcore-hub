@@ -19,7 +19,7 @@ class NodeTagCreate(BaseModel):
         default=None,
         description="Tag value",
     )
-    value_type: Literal["string", "number", "boolean", "coordinate"] = Field(
+    value_type: Literal["string", "number", "boolean"] = Field(
         default="string",
         description="Value type hint",
     )
@@ -32,7 +32,7 @@ class NodeTagUpdate(BaseModel):
         default=None,
         description="Tag value",
     )
-    value_type: Optional[Literal["string", "number", "boolean", "coordinate"]] = Field(
+    value_type: Optional[Literal["string", "number", "boolean"]] = Field(
         default=None,
         description="Value type hint",
     )
