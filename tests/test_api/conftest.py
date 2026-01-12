@@ -20,6 +20,7 @@ from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.models import (
     Advertisement,
     Base,
+    Member,
     Message,
     Node,
     NodeTag,
@@ -264,3 +265,147 @@ def sample_trace_path(api_db_session):
     api_db_session.commit()
     api_db_session.refresh(trace)
     return trace
+
+
+@pytest.fixture
+def sample_member(api_db_session):
+    """Create a sample member in the database."""
+    member = Member(
+        member_id="alice",
+        name="Alice Smith",
+        callsign="W1ABC",
+        role="Admin",
+        description="Network administrator",
+        contact="alice@example.com",
+    )
+    api_db_session.add(member)
+    api_db_session.commit()
+    api_db_session.refresh(member)
+    return member
+
+
+@pytest.fixture
+def receiver_node(api_db_session):
+    """Create a receiver node in the database."""
+    node = Node(
+        public_key="receiver123receiver123receiver12",
+        name="Receiver Node",
+        adv_type="REPEATER",
+        first_seen=datetime.now(timezone.utc),
+        last_seen=datetime.now(timezone.utc),
+    )
+    api_db_session.add(node)
+    api_db_session.commit()
+    api_db_session.refresh(node)
+    return node
+
+
+@pytest.fixture
+def sample_message_with_receiver(api_db_session, receiver_node):
+    """Create a message with a receiver node."""
+    message = Message(
+        message_type="channel",
+        channel_idx=1,
+        pubkey_prefix="xyz789",
+        text="Channel message with receiver",
+        received_at=datetime.now(timezone.utc),
+        receiver_node_id=receiver_node.id,
+    )
+    api_db_session.add(message)
+    api_db_session.commit()
+    api_db_session.refresh(message)
+    return message
+
+
+@pytest.fixture
+def sample_advertisement_with_receiver(api_db_session, sample_node, receiver_node):
+    """Create an advertisement with source and receiver nodes."""
+    advert = Advertisement(
+        public_key=sample_node.public_key,
+        name="SourceNode",
+        adv_type="REPEATER",
+        received_at=datetime.now(timezone.utc),
+        node_id=sample_node.id,
+        receiver_node_id=receiver_node.id,
+    )
+    api_db_session.add(advert)
+    api_db_session.commit()
+    api_db_session.refresh(advert)
+    return advert
+
+
+@pytest.fixture
+def sample_telemetry_with_receiver(api_db_session, receiver_node):
+    """Create a telemetry record with a receiver node."""
+    telemetry = Telemetry(
+        node_public_key="xyz789xyz789xyz789xyz789xyz789xy",
+        parsed_data={"battery_level": 50.0},
+        received_at=datetime.now(timezone.utc),
+        receiver_node_id=receiver_node.id,
+    )
+    api_db_session.add(telemetry)
+    api_db_session.commit()
+    api_db_session.refresh(telemetry)
+    return telemetry
+
+
+@pytest.fixture
+def sample_trace_path_with_receiver(api_db_session, receiver_node):
+    """Create a trace path with a receiver node."""
+    trace = TracePath(
+        initiator_tag=99999,
+        path_hashes=["aaa111", "bbb222"],
+        hop_count=2,
+        received_at=datetime.now(timezone.utc),
+        receiver_node_id=receiver_node.id,
+    )
+    api_db_session.add(trace)
+    api_db_session.commit()
+    api_db_session.refresh(trace)
+    return trace
+
+
+@pytest.fixture
+def sample_node_with_name_tag(api_db_session):
+    """Create a node with a name tag for search testing."""
+    node = Node(
+        public_key="searchable123searchable123searc",
+        name="Original Name",
+        adv_type="CLIENT",
+        first_seen=datetime.now(timezone.utc),
+    )
+    api_db_session.add(node)
+    api_db_session.commit()
+
+    tag = NodeTag(
+        node_id=node.id,
+        key="name",
+        value="Friendly Search Name",
+    )
+    api_db_session.add(tag)
+    api_db_session.commit()
+    api_db_session.refresh(node)
+    return node
+
+
+@pytest.fixture
+def sample_node_with_member_tag(api_db_session):
+    """Create a node with a member_id tag for filter testing."""
+    node = Node(
+        public_key="member123member123member123membe",
+        name="Member Node",
+        adv_type="CHAT",
+        first_seen=datetime.now(timezone.utc),
+    )
+    api_db_session.add(node)
+    api_db_session.commit()
+
+    tag = NodeTag(
+        node_id=node.id,
+        key="member_id",
+        value="alice",
+    )
+    api_db_session.add(tag)
+    api_db_session.commit()
+    api_db_session.refresh(node)
+    return node

@@ -57,6 +57,66 @@ class TestListNodes:
         assert response.status_code == 200
 
 
+class TestListNodesFilters:
+    """Tests for node list query filters."""
+
+    def test_filter_by_search_public_key(self, client_no_auth, sample_node):
+        """Test filtering nodes by public key search."""
+        # Partial public key match
+        response = client_no_auth.get("/api/v1/nodes?search=abc123")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+
+        # No match
+        response = client_no_auth.get("/api/v1/nodes?search=zzz999")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 0
+
+    def test_filter_by_search_node_name(self, client_no_auth, sample_node):
+        """Test filtering nodes by node name search."""
+        response = client_no_auth.get("/api/v1/nodes?search=Test%20Node")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+
+    def test_filter_by_search_name_tag(self, client_no_auth, sample_node_with_name_tag):
+        """Test filtering nodes by name tag search."""
+        response = client_no_auth.get("/api/v1/nodes?search=Friendly%20Search")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+
+    def test_filter_by_adv_type(self, client_no_auth, sample_node):
+        """Test filtering nodes by advertisement type."""
+        # Match REPEATER
+        response = client_no_auth.get("/api/v1/nodes?adv_type=REPEATER")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+
+        # No match
+        response = client_no_auth.get("/api/v1/nodes?adv_type=CLIENT")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 0
+
+    def test_filter_by_member_id(self, client_no_auth, sample_node_with_member_tag):
+        """Test filtering nodes by member_id tag."""
+        # Match alice
+        response = client_no_auth.get("/api/v1/nodes?member_id=alice")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+
+        # No match
+        response = client_no_auth.get("/api/v1/nodes?member_id=unknown")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 0
+
+
 class TestGetNode:
     """Tests for GET /nodes/{public_key} endpoint."""
 

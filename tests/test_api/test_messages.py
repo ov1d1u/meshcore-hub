@@ -1,5 +1,7 @@
 """Tests for message API routes."""
 
+from datetime import datetime, timezone
+
 
 class TestListMessages:
     """Tests for GET /messages endpoint."""
@@ -57,3 +59,127 @@ class TestGetMessage:
         """Test getting a non-existent message."""
         response = client_no_auth.get("/api/v1/messages/nonexistent-id")
         assert response.status_code == 404
+
+
+class TestListMessagesFilters:
+    """Tests for message list query filters."""
+
+    def test_filter_by_pubkey_prefix(self, client_no_auth, sample_message):
+        """Test filtering messages by pubkey_prefix."""
+        # Match
+        response = client_no_auth.get("/api/v1/messages?pubkey_prefix=abc123")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+
+        # No match
+        response = client_no_auth.get("/api/v1/messages?pubkey_prefix=xyz999")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 0
+
+    def test_filter_by_channel_idx(
+        self, client_no_auth, sample_message, sample_message_with_receiver
+    ):
+        """Test filtering messages by channel_idx."""
+        # Channel 1 should match sample_message_with_receiver
+        response = client_no_auth.get("/api/v1/messages?channel_idx=1")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["channel_idx"] == 1
+
+        # Channel 0 should return no results
+        response = client_no_auth.get("/api/v1/messages?channel_idx=0")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 0
+
+    def test_filter_by_received_by(
+        self,
+        client_no_auth,
+        sample_message,
+        sample_message_with_receiver,
+        receiver_node,
+    ):
+        """Test filtering messages by receiver node."""
+        response = client_no_auth.get(
+            f"/api/v1/messages?received_by={receiver_node.public_key}"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["text"] == sample_message_with_receiver.text
+
+    def test_filter_by_since(self, client_no_auth, api_db_session):
+        """Test filtering messages by since timestamp."""
+        from datetime import timedelta
+
+        from meshcore_hub.common.models import Message
+
+        now = datetime.now(timezone.utc)
+        old_time = now - timedelta(days=7)
+
+        # Create an old message
+        old_msg = Message(
+            message_type="direct",
+            pubkey_prefix="old123",
+            text="Old message",
+            received_at=old_time,
+        )
+        api_db_session.add(old_msg)
+        api_db_session.commit()
+
+        # Filter since yesterday - should not include old message
+        since = (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S")
+        response = client_no_auth.get(f"/api/v1/messages?since={since}")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 0
+
+    def test_filter_by_until(self, client_no_auth, api_db_session):
+        """Test filtering messages by until timestamp."""
+        from datetime import timedelta
+
+        from meshcore_hub.common.models import Message
+
+        now = datetime.now(timezone.utc)
+        old_time = now - timedelta(days=7)
+
+        # Create an old message
+        old_msg = Message(
+            message_type="direct",
+            pubkey_prefix="old456",
+            text="Old message for until",
+            received_at=old_time,
+        )
+        api_db_session.add(old_msg)
+        api_db_session.commit()
+
+        # Filter until 5 days ago - should include old message
+        until = (now - timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%S")
+        response = client_no_auth.get(f"/api/v1/messages?until={until}")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["text"] == "Old message for until"
+
+    def test_filter_by_search(self, client_no_auth, sample_message):
+        """Test filtering messages by text search."""
+        # Match
+        response = client_no_auth.get("/api/v1/messages?search=Hello")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+
+        # Case insensitive match
+        response = client_no_auth.get("/api/v1/messages?search=hello")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+
+        # No match
+        response = client_no_auth.get("/api/v1/messages?search=nonexistent")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 0
