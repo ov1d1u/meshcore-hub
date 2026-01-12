@@ -437,7 +437,7 @@ async def admin_members(
     try:
         response = await request.app.state.http_client.get(
             "/api/v1/members",
-            params={"limit": 1000},
+            params={"limit": 500},
         )
         if response.status_code == 200:
             data = response.json()

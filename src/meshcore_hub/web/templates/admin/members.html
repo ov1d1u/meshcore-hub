@@ -37,9 +37,12 @@
 {% endif %}
 
 <!-- Members Table -->
-<div class="card bg-base-100 shadow-xl mb-6">
+<div class="card bg-base-100 shadow-xl">
     <div class="card-body">
-        <h2 class="card-title">Network Members ({{ members|length }})</h2>
+        <div class="flex justify-between items-center">
+            <h2 class="card-title">Network Members ({{ members|length }})</h2>
+            <button class="btn btn-primary btn-sm" onclick="addModal.showModal()">Add Member</button>
+        </div>
 
         {% if members %}
         <div class="overflow-x-auto">
@@ -49,7 +52,6 @@
                         <th>Member ID</th>
                         <th>Name</th>
                         <th>Callsign</th>
-                        <th>Role</th>
                         <th>Contact</th>
                         <th class="w-32">Actions</th>
                     </tr>
@@ -60,7 +62,6 @@
                         data-member-name="{{ member.name }}"
                         data-member-member-id="{{ member.member_id }}"
                         data-member-callsign="{{ member.callsign or '' }}"
-                        data-member-role="{{ member.role or '' }}"
                         data-member-description="{{ member.description or '' }}"
                         data-member-contact="{{ member.contact or '' }}">
                         <td class="font-mono font-semibold">{{ member.member_id }}</td>
@@ -72,7 +73,6 @@
                             <span class="text-base-content/40">-</span>
                             {% endif %}
                         </td>
-                        <td class="max-w-xs truncate" title="{{ member.role or '' }}">{{ member.role or '-' }}</td>
                         <td class="max-w-xs truncate" title="{{ member.contact or '' }}">{{ member.contact or '-' }}</td>
                         <td>
                             <div class="flex gap-1">
@@ -92,23 +92,23 @@
         {% else %}
         <div class="text-center py-8 text-base-content/60">
             <p>No members configured yet.</p>
-            <p class="text-sm mt-2">Add a new member below.</p>
+            <p class="text-sm mt-2">Click "Add Member" to create the first member.</p>
         </div>
         {% endif %}
     </div>
 </div>
 
-<!-- Add New Member Form -->
-<div class="card bg-base-100 shadow-xl">
-    <div class="card-body">
-        <h2 class="card-title">Add New Member</h2>
-        <form method="post" action="/a/members">
+<!-- Add Modal -->
+<dialog id="addModal" class="modal">
+    <div class="modal-box w-11/12 max-w-2xl">
+        <h3 class="font-bold text-lg">Add New Member</h3>
+        <form method="post" action="/a/members" class="py-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="form-control">
                     <label class="label">
                         <span class="label-text">Member ID <span class="text-error">*</span></span>
                     </label>
-                    <input type="text" name="member_id" class="input input-bordered"
+                    <input type="text" name="member_id" id="add_member_id" class="input input-bordered"
                            placeholder="walshie86" required maxlength="50"
                            pattern="[a-zA-Z0-9_]+"
                            title="Letters, numbers, and underscores only">
@@ -121,7 +121,7 @@
                     <label class="label">
                         <span class="label-text">Name <span class="text-error">*</span></span>
                     </label>
-                    <input type="text" name="name" class="input input-bordered"
+                    <input type="text" name="name" id="add_name" class="input input-bordered"
                            placeholder="John Smith" required maxlength="255">
                 </div>
 
@@ -129,23 +129,15 @@
                     <label class="label">
                         <span class="label-text">Callsign</span>
                     </label>
-                    <input type="text" name="callsign" class="input input-bordered"
+                    <input type="text" name="callsign" id="add_callsign" class="input input-bordered"
                            placeholder="VK4ABC" maxlength="20">
                 </div>
 
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text">Role</span>
-                    </label>
-                    <input type="text" name="role" class="input input-bordered"
-                           placeholder="Network Coordinator" maxlength="100">
-                </div>
-
-                <div class="form-control md:col-span-2">
-                    <label class="label">
                         <span class="label-text">Contact</span>
                     </label>
-                    <input type="text" name="contact" class="input input-bordered"
+                    <input type="text" name="contact" id="add_contact" class="input input-bordered"
                            placeholder="john@example.com or phone number" maxlength="255">
                 </div>
 
@@ -153,17 +145,21 @@
                     <label class="label">
                         <span class="label-text">Description</span>
                     </label>
-                    <textarea name="description" rows="3" class="textarea textarea-bordered"
+                    <textarea name="description" id="add_description" rows="3" class="textarea textarea-bordered"
                               placeholder="Brief description of member's role and responsibilities..."></textarea>
                 </div>
             </div>
 
-            <div class="form-control mt-4">
+            <div class="modal-action">
+                <button type="button" class="btn" onclick="addModal.close()">Cancel</button>
                 <button type="submit" class="btn btn-primary">Add Member</button>
             </div>
         </form>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
 
 <!-- Edit Modal -->
 <dialog id="editModal" class="modal">
@@ -199,14 +195,6 @@
                 </div>
 
                 <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Role</span>
-                    </label>
-                    <input type="text" name="role" id="edit_role" class="input input-bordered"
-                           maxlength="100">
-                </div>
-
-                <div class="form-control md:col-span-2">
                     <label class="label">
                         <span class="label-text">Contact</span>
                     </label>
@@ -274,7 +262,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_member_id').value = row.dataset.memberMemberId;
             document.getElementById('edit_name').value = row.dataset.memberName;
             document.getElementById('edit_callsign').value = row.dataset.memberCallsign;
-            document.getElementById('edit_role').value = row.dataset.memberRole;
             document.getElementById('edit_description').value = row.dataset.memberDescription;
             document.getElementById('edit_contact').value = row.dataset.memberContact;
             editModal.showModal();
