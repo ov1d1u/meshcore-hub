@@ -125,6 +125,7 @@
         "welcome_default": "Welcome to the {{network_name}} mesh network dashboard. Monitor network activity, view connected nodes, and explore message history.",
         "all_discovered_nodes": "All discovered nodes",
         "network_info": "Network Info",
+        "radio_configuration": "Radio Configuration",
         "network_activity": "Network Activity",
         "meshcore_attribution": "Our local off-grid mesh network is made possible by",
         "frequency": "Frequency",

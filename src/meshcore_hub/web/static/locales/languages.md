@@ -226,6 +226,7 @@ Homepage-specific content:
 | `welcome_default` | Welcome to the {{network_name}} mesh network dashboard. Monitor network activity, view connected nodes, and explore message history. | Default welcome message |
 | `all_discovered_nodes` | All discovered nodes | Stat description |
 | `network_info` | Network Info | Network info card title |
+| `radio_configuration` | Radio Configuration | Radio configuration card title |
 | `network_activity` | Network Activity | Activity chart title |
 | `meshcore_attribution` | Our local off-grid mesh network is made possible by | Attribution text before MeshCore logo |
 | `frequency` | Frequency | Radio frequency label |
