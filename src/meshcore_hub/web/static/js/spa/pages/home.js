@@ -147,7 +147,7 @@ export async function render(container, params, router) {
         <div class="card-body">
             <h2 class="card-title">
                 ${iconInfo('h-6 w-6')}
-                Network Info
+                Radio Configuration
             </h2>
             <div class="space-y-2">
                 ${renderRadioConfig(rc)}
