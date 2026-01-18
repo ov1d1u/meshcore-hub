@@ -145,3 +145,214 @@
 
 {{ pagination(page, total_pages, {"message_type": message_type, "limit": limit}) }}
 {% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    'use strict';
+
+    // Only enable WebSocket on first page (page 1) and without search filter
+    const currentPage = {{ page }};
+    const hasSearchFilter = {{ 'true' if search else 'false' }};
+    
+    if (currentPage !== 1 || hasSearchFilter) {
+        return; // Don't enable WebSocket for paginated or filtered views
+    }
+
+    // Get current filter
+    const currentMessageType = {{ ('"' + message_type + '"') if message_type else 'null' }};
+
+    // WebSocket connection
+    let ws = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 3000;
+
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/messages/ws`;
+        
+        try {
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                console.log('WebSocket connected for real-time message updates');
+                reconnectAttempts = 0;
+            };
+
+            ws.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'new_message') {
+                        handleNewMessage(message.data);
+                    }
+                } catch (e) {
+                    console.error('Failed to parse WebSocket message:', e);
+                }
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = function() {
+                console.log('WebSocket disconnected');
+                ws = null;
+                
+                // Attempt to reconnect
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    setTimeout(connectWebSocket, reconnectDelay);
+                }
+            };
+        } catch (e) {
+            console.error('Failed to create WebSocket connection:', e);
+        }
+    }
+
+    function handleNewMessage(msg) {
+        // Check if message matches current filter
+        if (currentMessageType && msg.message_type !== currentMessageType) {
+            return; // Skip if filter doesn't match
+        }
+
+        // Update total count
+        const totalBadge = document.querySelector('.badge.badge-lg');
+        if (totalBadge) {
+            const currentTotal = parseInt(totalBadge.textContent) || 0;
+            totalBadge.textContent = (currentTotal + 1) + ' total';
+        }
+
+        // Add message to mobile view
+        // Find container by class attribute contains space-y-3
+        const mobileContainer = Array.from(document.querySelectorAll('div[class*="space-y-3"]')).find(
+            el => el.getAttribute('class') && el.getAttribute('class').includes('lg:hidden')
+        );
+        if (mobileContainer) {
+            const emptyMsg = mobileContainer.querySelector('.text-center');
+            if (emptyMsg) {
+                emptyMsg.remove();
+            }
+            const card = createMobileMessageCard(msg);
+            mobileContainer.insertBefore(card, mobileContainer.firstChild);
+        }
+
+        // Add message to desktop table
+        const desktopContainer = Array.from(document.querySelectorAll('div[class*="lg:block"]')).find(
+            el => el.getAttribute('class') && el.getAttribute('class').includes('hidden')
+        );
+        const tableBody = desktopContainer ? desktopContainer.querySelector('table tbody') : null;
+        if (tableBody) {
+            const emptyRow = tableBody.querySelector('tr td[colspan="5"]');
+            if (emptyRow) {
+                emptyRow.parentElement.remove();
+            }
+            const row = createDesktopMessageRow(msg);
+            tableBody.insertBefore(row, tableBody.firstChild);
+        }
+
+        // Update receiver tooltips for new elements
+        if (typeof populateReceiverTooltips === 'function') {
+            populateReceiverTooltips();
+        }
+    }
+
+    function createMobileMessageCard(msg) {
+        const card = document.createElement('div');
+        card.className = 'card bg-base-100 shadow-sm';
+        card.innerHTML = `
+            <div class="card-body p-3">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-lg flex-shrink-0" title="${msg.message_type === 'channel' ? 'Channel' : 'Contact'}">
+                            ${msg.message_type === 'channel' ? '📻' : '👤'}
+                        </span>
+                        <div class="min-w-0">
+                            <div class="font-medium text-sm truncate">
+                                ${msg.message_type === 'channel' 
+                                    ? '<span class="opacity-60">Public</span>'
+                                    : (msg.sender_tag_name || msg.sender_name 
+                                        ? escapeHtml(msg.sender_tag_name || msg.sender_name)
+                                        : `<span class="font-mono text-xs">${escapeHtml((msg.pubkey_prefix || '-').substring(0, 12))}</span>`)}
+                            </div>
+                            <div class="text-xs opacity-60">
+                                ${formatDateTime(msg.received_at)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        ${createReceiversHtml(msg, true)}
+                    </div>
+                </div>
+                <p class="text-sm mt-2 break-words whitespace-pre-wrap">${escapeHtml(msg.text || '-')}</p>
+            </div>
+        `;
+        return card;
+    }
+
+    function createDesktopMessageRow(msg) {
+        const row = document.createElement('tr');
+        row.className = 'hover align-top';
+        row.innerHTML = `
+            <td class="text-lg" title="${msg.message_type === 'channel' ? 'Channel' : 'Contact'}">
+                ${msg.message_type === 'channel' ? '📻' : '👤'}
+            </td>
+            <td class="text-sm whitespace-nowrap">
+                ${formatDateTime(msg.received_at, true)}
+            </td>
+            <td class="text-sm whitespace-nowrap">
+                ${msg.message_type === 'channel' 
+                    ? '<span class="opacity-60">Public</span>'
+                    : (msg.sender_tag_name || msg.sender_name 
+                        ? `<span class="font-medium">${escapeHtml(msg.sender_tag_name || msg.sender_name)}</span>`
+                        : `<span class="font-mono text-xs">${escapeHtml((msg.pubkey_prefix || '-').substring(0, 12))}</span>`)}
+            </td>
+            <td class="break-words max-w-md" style="white-space: pre-wrap;">${escapeHtml(msg.text || '-')}</td>
+            <td>${createReceiversHtml(msg, false)}</td>
+        `;
+        return row;
+    }
+
+    function createReceiversHtml(msg, isMobile) {
+        if (msg.receivers && msg.receivers.length >= 1) {
+            const sizeClass = isMobile ? 'text-sm' : 'text-lg';
+            const receivers = msg.receivers.map(recv => {
+                const name = recv.tag_name || recv.name || recv.public_key.substring(0, 12);
+                return `<a href="/nodes/${recv.public_key}" class="${sizeClass} hover:opacity-70" title="${escapeHtml(name)}">📡</a>`;
+            }).join('');
+            return `<div class="flex ${isMobile ? 'gap-0.5' : 'gap-1'}">${receivers}</div>`;
+        } else if (msg.received_by) {
+            const name = msg.receiver_tag_name || msg.receiver_name || msg.received_by.substring(0, 12);
+            const sizeClass = isMobile ? 'text-sm' : 'text-lg';
+            return `<a href="/nodes/${msg.received_by}" class="${sizeClass} hover:opacity-70" title="${escapeHtml(name)}">📡</a>`;
+        }
+        return '<span class="opacity-50">-</span>';
+    }
+
+    function formatDateTime(timestamp, full) {
+        if (!timestamp) return '-';
+        const date = new Date(timestamp);
+        if (full) {
+            return date.toISOString().replace('T', ' ').substring(0, 19);
+        }
+        return date.toISOString().replace('T', ' ').substring(0, 16);
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Connect on page load
+    connectWebSocket();
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (ws) {
+            ws.close();
+        }
+    });
+})();
+</script>
+{% endblock %}

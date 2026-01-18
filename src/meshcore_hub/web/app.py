@@ -1,11 +1,13 @@
 """FastAPI application for MeshCore Hub Web Dashboard."""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 from zoneinfo import ZoneInfo
+import uuid
 
 import httpx
 from fastapi import FastAPI, Request
@@ -77,11 +79,121 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         timeout=30.0,
     )
 
+    # Initialize WebSocket manager
+    from meshcore_hub.web.websocket import WebSocketManager
+
+    ws_manager = WebSocketManager()
+    app.state.ws_manager = ws_manager
+
+    # Set up MQTT subscription for message events (for real-time updates)
+    mqtt_client = None
+    try:
+        from meshcore_hub.common.config import get_web_settings
+        from meshcore_hub.common.mqtt import MQTTClient, MQTTConfig
+
+        settings = get_web_settings()
+        mqtt_config = MQTTConfig(
+            host=settings.mqtt_host,
+            port=settings.mqtt_port,
+            username=settings.mqtt_username,
+            password=settings.mqtt_password,
+            prefix=settings.mqtt_prefix,
+            client_id=f"meshcore-web-{uuid.uuid4().hex[:8]}",
+            tls=settings.mqtt_tls,
+        )
+        mqtt_client = MQTTClient(mqtt_config)
+
+        # Get the event loop for running async callbacks from MQTT thread
+        loop = asyncio.get_event_loop()
+
+        async def fetch_and_broadcast_message(
+            event_type: str, public_key: str, payload: dict[str, Any]
+        ) -> None:
+            """Fetch full message from API and broadcast to WebSocket clients."""
+            try:
+                # Determine message type
+                message_type = "contact" if event_type == "contact_msg_recv" else "channel"
+
+                # Extract identifying fields from payload to find the message
+                # We'll fetch the latest message matching these criteria
+                params: dict[str, Any] = {"limit": 1, "message_type": message_type}
+
+                if message_type == "contact" and "pubkey_prefix" in payload:
+                    params["pubkey_prefix"] = payload["pubkey_prefix"]
+                elif message_type == "channel" and "channel_idx" in payload:
+                    params["channel_idx"] = payload["channel_idx"]
+
+                if "sender_timestamp" in payload:
+                    from datetime import datetime, timezone
+
+                    try:
+                        sender_ts = payload["sender_timestamp"]
+                        if isinstance(sender_ts, (int, float)):
+                            since = datetime.fromtimestamp(sender_ts, tz=timezone.utc)
+                            params["since"] = since.isoformat()
+                    except (ValueError, OSError):
+                        pass
+
+                # Fetch the message from API
+                response = await app.state.http_client.get("/api/v1/messages", params=params)
+                if response.status_code == 200:
+                    data = response.json()
+                    items = data.get("items", [])
+                    if items:
+                        # Broadcast the new message to all WebSocket clients
+                        await ws_manager.broadcast_new_message(items[0])
+                        msg_id = items[0].get("id", "unknown")
+                        logger.debug(
+                            "Broadcast new %s message via WebSocket (hash=%s...)",
+                            message_type,
+                            msg_id[:8] if isinstance(msg_id, str) else msg_id,
+                        )
+            except Exception as e:
+                logger.warning("Failed to fetch/broadcast new message: %s", e)
+
+        def handle_message_event(topic: str, pattern: str, payload: dict[str, Any]) -> None:
+            """Handle MQTT message event (runs in MQTT thread)."""
+            # Parse topic to get event type
+            parts = topic.split("/")
+            if len(parts) >= 4 and parts[2] == "event":
+                event_type = parts[3]
+                public_key = parts[1]
+
+                # Only handle message events
+                if event_type in ("contact_msg_recv", "channel_msg_recv"):
+                    # Schedule async callback in event loop
+                    asyncio.run_coroutine_threadsafe(
+                        fetch_and_broadcast_message(event_type, public_key, payload),
+                        loop,
+                    )
+
+        # Subscribe to all message events
+        message_topic = f"{mqtt_config.prefix}/+/event/contact_msg_recv"
+        mqtt_client.subscribe(message_topic, handle_message_event)
+        channel_topic = f"{mqtt_config.prefix}/+/event/channel_msg_recv"
+        mqtt_client.subscribe(channel_topic, handle_message_event)
+
+        # Connect and start MQTT client
+        mqtt_client.connect()
+        mqtt_client.start_background()
+        app.state.mqtt_client = mqtt_client
+
+        logger.info("Connected to MQTT broker for real-time message updates")
+    except Exception as e:
+        logger.warning(f"Failed to set up MQTT subscription for real-time updates: {e}")
+
     logger.info(f"Web dashboard started, API URL: {api_url}")
 
     yield
 
     # Cleanup
+    if mqtt_client:
+        try:
+            mqtt_client.stop()
+            mqtt_client.disconnect()
+        except Exception as e:
+            logger.warning(f"Error disconnecting MQTT client: {e}")
+
     await app.state.http_client.aclose()
     logger.info("Web dashboard stopped")
 

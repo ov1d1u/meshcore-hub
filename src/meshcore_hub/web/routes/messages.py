@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 
 from meshcore_hub.web.app import get_network_context, get_templates
@@ -45,7 +45,7 @@ async def messages_list(
             messages = data.get("items", [])
             total = data.get("total", 0)
     except Exception as e:
-        logger.warning(f"Failed to fetch messages from API: {e}")
+        logger.warning("Failed to fetch messages from API: %s", e)
         context["api_error"] = str(e)
 
     # Calculate pagination
@@ -64,3 +64,23 @@ async def messages_list(
     )
 
     return templates.TemplateResponse("messages.html", context)
+
+
+@router.websocket("/messages/ws")
+async def messages_websocket(websocket: WebSocket) -> None:
+    """WebSocket endpoint for real-time message updates."""
+    ws_manager = websocket.app.state.ws_manager
+
+    await ws_manager.connect(websocket)
+    try:
+        # Keep connection alive - clients don't need to send messages
+        while True:
+            # Wait for ping/pong or any message to keep connection alive
+            data = await websocket.receive_text()
+            # Echo back or ignore - we only send updates from server
+            logger.debug(f"Received WebSocket message: {data}")
+    except WebSocketDisconnect:
+        await ws_manager.disconnect(websocket)
+    except Exception as e:
+        logger.error("WebSocket error: %s", e)
+        await ws_manager.disconnect(websocket)
