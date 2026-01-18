@@ -5,6 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
+<<<<<<< HEAD
 from typing import Any, AsyncGenerator
 from zoneinfo import ZoneInfo
 
@@ -25,6 +26,41 @@ logger = logging.getLogger(__name__)
 PACKAGE_DIR = Path(__file__).parent
 TEMPLATES_DIR = PACKAGE_DIR / "templates"
 STATIC_DIR = PACKAGE_DIR / "static"
+ROMANIA_TZ = ZoneInfo("Europe/Bucharest")
+UTC = ZoneInfo("UTC")
+
+
+def to_local_time(value: datetime | str | None, fmt: str | None = None) -> str:
+    """Convert timestamps to the Romania timezone with optional formatting."""
+
+    if value in (None, ""):
+        return "-"
+
+    dt: datetime | None = None
+
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, str):
+        normalized = value.strip()
+        if normalized.endswith("Z"):
+            normalized = normalized[:-1] + "+00:00"
+        try:
+            dt = datetime.fromisoformat(normalized)
+        except ValueError:
+            return value
+
+    if dt is None:
+        return "-"
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+
+    local_dt = dt.astimezone(ROMANIA_TZ)
+
+    if fmt:
+        return local_dt.strftime(fmt)
+
+    return local_dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
 @asynccontextmanager
@@ -236,6 +272,7 @@ def create_app(
     templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
     templates.env.trim_blocks = True
     templates.env.lstrip_blocks = True
+    templates.env.filters["localtime"] = to_local_time
     app.state.templates = templates
 
     # Compute timezone
