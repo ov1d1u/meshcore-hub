@@ -28,8 +28,10 @@ async def list_nodes(
     offset: int = Query(0, ge=0, description="Page offset"),
 ) -> NodeList:
     """List all nodes with pagination and filtering."""
-    # Build base query with tags loaded
-    query = select(Node).options(selectinload(Node.tags))
+    # Build base query with tags loaded and skip nodes lacking advertisement type
+    query = select(Node).options(selectinload(Node.tags)).where(
+        Node.adv_type.is_not(None)
+    )
 
     if search:
         # Search in public key, node name, or name tag
