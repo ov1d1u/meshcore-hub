@@ -105,6 +105,54 @@
     let markers = [];
     let mapCenter = { lat: 0, lon: 0 };
 
+    // Convert ISO timestamps to local time strings
+    function localtime(timestamp, format = "%Y-%m-%d %H:%M:%S") {
+        if (!timestamp) {
+            return "-";
+        }
+
+        let dt = null;
+
+        if (timestamp instanceof Date && !Number.isNaN(timestamp.getTime())) {
+            dt = timestamp;
+        } else if (typeof timestamp === "string") {
+            let normalized = timestamp.trim();
+
+            if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(normalized)) {
+                normalized += "Z";
+            }
+
+            normalized = normalized.replace(/\.\d+/, match => match.slice(0, 4));
+
+            const parsed = new Date(normalized);
+            if (!Number.isNaN(parsed.getTime())) {
+                dt = parsed;
+            }
+        }
+
+        if (!dt) {
+            return typeof timestamp === "string" ? timestamp : "-";
+        }
+
+        const pad = (value, length = 2) => String(value).padStart(length, "0");
+
+        const tokens = {
+            "%Y": dt.getFullYear().toString(),
+            "%m": pad(dt.getMonth() + 1),
+            "%d": pad(dt.getDate()),
+            "%H": pad(dt.getHours()),
+            "%M": pad(dt.getMinutes()),
+            "%S": pad(dt.getSeconds()),
+        };
+
+        let result = format;
+        for (const [token, value] of Object.entries(tokens)) {
+            result = result.split(token).join(value);
+        }
+
+        return result;
+    }
+
     // Normalize adv_type to lowercase for consistent comparison
     function normalizeType(type) {
         return type ? type.toLowerCase() : null;
@@ -173,7 +221,7 @@
                     ${ownerHtml}
                     <p><span class="opacity-70">Key:</span> <code class="text-xs">${node.public_key.substring(0, 16)}...</code></p>
                     <p><span class="opacity-70">Location:</span> ${node.lat.toFixed(4)}, ${node.lon.toFixed(4)}</p>
-                    ${node.last_seen ? `<p><span class="opacity-70">Last seen:</span> ${node.last_seen.substring(0, 19).replace('T', ' ')}</p>` : ''}
+                    ${node.last_seen ? `<p><span class="opacity-70">Last seen:</span> ${localtime(node.last_seen, "%Y-%m-%d %H:%M:%S")}</p>` : ''}
                 </div>
                 <a href="/nodes/${node.public_key}" class="btn btn-primary btn-xs mt-3">View Details</a>
             </div>
