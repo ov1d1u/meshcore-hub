@@ -98,6 +98,11 @@ async def map_data(request: Request) -> JSONResponse:
                 if lon is None:
                     lon = node.get("lon")
 
+                # Remove nodes that has 0.0 for both lat and lon
+                if lat == 0.0 and lon == 0.0:
+                    lat = None
+                    lon = None
+
                 if lat is not None and lon is not None:
                     nodes_with_coords += 1
                     # Use friendly_name, then node name, then public key prefix
