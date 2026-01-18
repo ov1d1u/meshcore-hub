@@ -93,6 +93,11 @@ async def map_data(request: Request) -> JSONResponse:
                     elif key == "member_id":
                         node_member_id = tag.get("value")
 
+                if lat is None:
+                    lat = node.get("lat")
+                if lon is None:
+                    lon = node.get("lon")
+
                 if lat is not None and lon is not None:
                     nodes_with_coords += 1
                     # Use friendly_name, then node name, then public key prefix
