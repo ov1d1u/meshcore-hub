@@ -205,6 +205,49 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tableEmpty) tableEmpty.classList.add('hidden');
     };
 
+    const generateMessageKey = (msg) => {
+        // Create a composite key from type, text, and timestamp (rounded to second)
+        // to identify duplicate messages arriving via multiple paths
+        const timestamp = msg.received_at ? new Date(msg.received_at).toISOString().slice(0, 19) : '';
+        const text = (msg.text || '').slice(0, 100); // Limit to avoid excessively long keys
+        return `${msg.message_type}:${text}:${timestamp}`;
+    };
+
+    const findMessageElement = (container, messageKey) => {
+        if (!container || !messageKey) {
+            return null;
+        }
+        return container.querySelector(`[data-message-key='${CSS.escape(messageKey)}']`);
+    };
+
+    const addReceiverIconToMessage = (element, msg) => {
+        if (!element || !msg.received_by) {
+            return;
+        }
+        const receiverContainer = element.querySelector('.flex.gap-0\\.5, .flex.gap-1');
+        if (!receiverContainer) {
+            return;
+        }
+        // Check if this receiver is already shown
+        const existing = Array.from(receiverContainer.querySelectorAll('a')).find(
+            (a) => a.href.includes(msg.received_by)
+        );
+        if (existing) {
+            return; // Already have this receiver
+        }
+        // Add new receiver icon
+        const anchor = document.createElement('a');
+        anchor.href = `/nodes/${msg.received_by}`;
+        anchor.className = receiverContainer.classList.contains('gap-1') ? 'text-lg hover:opacity-70' : 'text-sm hover:opacity-70';
+        anchor.textContent = '📡';
+        anchor.title = getReceiverLabel(msg) || 'Receiver';
+        if (receiverContainer.classList.contains('gap-1')) {
+            anchor.dataset.receiverTooltip = '';
+            anchor.dataset.name = getReceiverLabel(msg);
+        }
+        receiverContainer.appendChild(anchor);
+    };
+
     const trimExcess = (container, limit) => {
         if (!container) return;
         const items = container.querySelectorAll('[data-message-item]');
@@ -255,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.className = 'card bg-base-100 shadow-sm';
         card.dataset.messageItem = 'true';
         card.dataset.messageType = msg.message_type;
+        card.dataset.messageKey = generateMessageKey(msg);
 
         const body = document.createElement('div');
         body.className = 'card-body p-3';
@@ -312,6 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
         row.className = 'hover align-top';
         row.dataset.messageItem = 'true';
         row.dataset.messageType = msg.message_type;
+        row.dataset.messageKey = generateMessageKey(msg);
 
         const typeCell = document.createElement('td');
         typeCell.className = 'text-lg';
@@ -416,6 +461,18 @@ document.addEventListener('DOMContentLoaded', () => {
             receiver_name: null,
             receiver_tag_name: null,
         };
+
+        // Deduplicate: if the same message is already rendered (arrived via another path),
+        // update it with the new receiver instead of adding a duplicate row
+        const messageKey = generateMessageKey(message);
+        const existingMobile = findMessageElement(mobileList, messageKey);
+        const existingTable = findMessageElement(tableBody, messageKey);
+        
+        if (existingMobile || existingTable) {
+            if (existingMobile) addReceiverIconToMessage(existingMobile, message);
+            if (existingTable) addReceiverIconToMessage(existingTable, message);
+            return;
+        }
 
         insertMessage(message);
     };
