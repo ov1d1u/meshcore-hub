@@ -61,6 +61,7 @@ class Receiver:
         self._allowed_channels: Optional[list[str]] = (
             list(allowed_channels) if allowed_channels else None
         )
+        self.contacts = []
         self._running = False
         self._shutdown_event = threading.Event()
         self._device_connected = False
@@ -170,6 +171,21 @@ class Receiver:
             if event_type == EventType.CONTACTS:
                 self._publish_contacts(payload)
                 return
+            
+            # If payload contains pubkey_prefix, try to get the contact name
+            if event_type == EventType.CONTACT_MSG_RECV or event_type == EventType.CHANNEL_MSG_RECV:
+                if "pubkey_prefix" in payload:
+                    pubkey_prefix = payload["pubkey_prefix"]
+                    contact_name = None
+                    for contact in self.contacts:
+                        if (
+                            isinstance(contact, dict)
+                            and contact.get("public_key", "").startswith(pubkey_prefix)
+                        ):
+                            contact_name = contact.get("adv_name") or contact.get("name")
+                            break
+                    if contact_name:
+                        payload["sender_name"] = contact_name
 
             # For channel messages, add channel_name to payload for collector/API
             publish_payload = dict(payload)
@@ -233,6 +249,8 @@ class Receiver:
         if not contacts:
             logger.debug("Empty contacts list received")
             return
+
+        self.contacts = contacts  # Store for reference
 
         device_key = self.device.public_key  # Capture for type narrowing
         current_time = int(time.time())

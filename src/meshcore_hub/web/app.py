@@ -122,6 +122,7 @@ def _build_config_json(app: FastAPI, request: Request) -> str:
 
 def create_app(
     api_url: str | None = None,
+    api_public_url: str | None = None,
     api_key: str | None = None,
     admin_enabled: bool | None = None,
     members_page_enabled: bool | None = None,
@@ -189,6 +190,11 @@ def create_app(
         settings.web_theme if settings.web_theme in ("dark", "light") else "dark"
     )
     app.state.api_url = api_url or settings.api_base_url
+    app.state.api_public_base_url = (
+        api_public_url
+        if api_public_url is not None
+        else settings.api_public_base_url
+    )
     app.state.api_key = api_key or settings.api_key
     app.state.admin_enabled = (
         admin_enabled if admin_enabled is not None else settings.web_admin_enabled

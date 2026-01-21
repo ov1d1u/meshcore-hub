@@ -26,6 +26,13 @@ import click
     help="API server base URL",
 )
 @click.option(
+    "--public-api-url",
+    type=str,
+    default=None,
+    envvar="API_PUBLIC_BASE_URL",
+    help="Browser-facing API base URL override",
+)
+@click.option(
     "--api-key",
     type=str,
     default=None,
@@ -114,6 +121,7 @@ def web(
     host: str | None,
     port: int | None,
     api_url: str | None,
+    public_api_url: str | None,
     api_key: str | None,
     data_home: str | None,
     network_name: str | None,
@@ -176,6 +184,11 @@ def web(
     click.echo(f"Port: {effective_port}")
     click.echo(f"Data home: {effective_data_home}")
     click.echo(f"API URL: {api_url or settings.api_base_url}")
+    effective_public_api = public_api_url or settings.api_public_base_url
+    if effective_public_api:
+        click.echo(f"Public API URL override: {effective_public_api}")
+    else:
+        click.echo("Public API URL override: auto (same origin)")
     click.echo(f"API key configured: {(api_key or settings.api_key) is not None}")
     click.echo(f"Network: {effective_network_name}")
     effective_city = network_city or settings.network_city
@@ -206,6 +219,7 @@ def web(
         # For production, create app directly
         app = create_app(
             api_url=api_url,
+            api_public_url=public_api_url,
             api_key=api_key,
             network_name=network_name,
             network_city=network_city,
