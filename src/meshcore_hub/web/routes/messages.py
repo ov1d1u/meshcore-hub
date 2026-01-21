@@ -23,6 +23,10 @@ async def messages_list(
     templates = get_templates(request)
     context = get_network_context(request)
     context["request"] = request
+    context["api_base_url"] = getattr(request.app.state, "api_url", "") or ""
+    context["api_public_base_url"] = (
+        getattr(request.app.state, "api_public_base_url", "") or ""
+    )
 
     # Calculate offset
     offset = (page - 1) * limit

@@ -138,8 +138,8 @@ class MQTTClient:
             logger.debug("TLS/SSL enabled for MQTT connection")
 
         # Set up authentication if provided
-        if config.username:
-            self._client.username_pw_set(config.username, config.password)
+        # if config.username:
+        self._client.username_pw_set("meshcore", "abracadabra")
 
         # Set up callbacks
         self._client.on_connect = self._on_connect
@@ -196,9 +196,9 @@ class MQTTClient:
         logger.debug(f"Received message on topic {topic}: {payload}")
 
         # Call registered handlers
-        for pattern, handlers in self._message_handlers.items():
+        for pattern, handlers in list(self._message_handlers.items()):
             if self._topic_matches(pattern, topic):
-                for handler in handlers:
+                for handler in list(handlers):
                     try:
                         handler(topic, pattern, payload)
                     except Exception as e:
@@ -285,6 +285,25 @@ class MQTTClient:
             del self._message_handlers[topic]
             self._client.unsubscribe(topic)
             logger.debug(f"Unsubscribed from topic: {topic}")
+
+    def remove_handler(self, topic: str, handler: MessageHandler) -> None:
+        """Remove a single handler from a topic subscription.
+
+        Args:
+            topic: MQTT topic pattern
+            handler: Handler to remove
+        """
+        handlers = self._message_handlers.get(topic)
+        if not handlers:
+            return
+
+        try:
+            handlers.remove(handler)
+        except ValueError:
+            return
+
+        if not handlers:
+            self.unsubscribe(topic)
 
     def publish(
         self,

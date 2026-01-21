@@ -4,9 +4,13 @@
 {% block title %}{{ network_name }} - Messages{% endblock %}
 
 {% block content %}
+<div id="messages-page" data-message-type-filter="{{ message_type or '' }}" data-page-limit="{{ limit }}">
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-3xl font-bold">Messages</h1>
-    <span class="badge badge-lg">{{ total }} total</span>
+    <span class="badge badge-lg gap-2">
+        <span id="messages-total-count" data-count="{{ total }}">{{ total }}</span>
+        total
+    </span>
 </div>
 
 {% if api_error %}
@@ -41,9 +45,11 @@
 </div>
 
 <!-- Messages List - Mobile Card View -->
-<div class="lg:hidden space-y-3">
+<div class="lg:hidden" id="messages-mobile">
+    <div id="messages-mobile-empty" class="text-center py-8 opacity-70 {% if messages %}hidden{% endif %}">No messages found.</div>
+    <div id="messages-mobile-list" class="space-y-3 {% if not messages %}hidden{% endif %}" data-limit="{{ limit }}">
     {% for msg in messages %}
-    <div class="card bg-base-100 shadow-sm">
+    <div class="card bg-base-100 shadow-sm" data-message-item data-message-type="{{ msg.message_type }}">
         <div class="card-body p-3">
             <div class="flex items-start justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0">
@@ -82,9 +88,8 @@
             <p class="text-sm mt-2 break-words whitespace-pre-wrap">{{ msg.text or '-' }}</p>
         </div>
     </div>
-    {% else %}
-    <div class="text-center py-8 opacity-70">No messages found.</div>
     {% endfor %}
+    </div>
 </div>
 
 <!-- Messages Table - Desktop View -->
@@ -99,9 +104,9 @@
                 <th>Receivers</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="messages-table-body" data-limit="{{ limit }}">
             {% for msg in messages %}
-            <tr class="hover align-top">
+            <tr class="hover align-top" data-message-item data-message-type="{{ msg.message_type }}">
                 <td class="text-lg" title="{{ msg.message_type|capitalize }}">
                     {% if msg.message_type == 'channel' %}📻{% else %}👤{% endif %}
                 </td>
@@ -134,14 +139,377 @@
                     {% endif %}
                 </td>
             </tr>
-            {% else %}
-            <tr>
+            {% endfor %}
+            <tr id="messages-table-empty" class="{% if messages %}hidden{% endif %}">
                 <td colspan="5" class="text-center py-8 opacity-70">No messages found.</td>
             </tr>
-            {% endfor %}
         </tbody>
     </table>
 </div>
 
 {{ pagination(page, total_pages, {"message_type": message_type, "limit": limit}) }}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const pageEl = document.getElementById('messages-page');
+    if (!pageEl) {
+        return;
+    }
+
+    const messageTypeFilter = pageEl.dataset.messageTypeFilter || '';
+    const pageLimit = parseInt(pageEl.dataset.pageLimit || '50', 10);
+
+    const totalCountEl = document.getElementById('messages-total-count');
+    const mobileList = document.getElementById('messages-mobile-list');
+    const mobileEmpty = document.getElementById('messages-mobile-empty');
+    const tableBody = document.getElementById('messages-table-body');
+    const tableEmpty = document.getElementById('messages-table-empty');
+
+    const mobileLimit = mobileList ? parseInt(mobileList.dataset.limit || `${pageLimit}`, 10) : pageLimit;
+    const tableLimit = tableBody ? parseInt(tableBody.dataset.limit || `${pageLimit}`, 10) : pageLimit;
+
+    const iconMap = { contact: '👤', channel: '📻' };
+
+    const pad = (value) => value.toString().padStart(2, '0');
+    const formatTimestamp = (value) => {
+        if (!value) return '-';
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return '-';
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    };
+
+    const getSenderLabel = (msg) => {
+        if (msg.message_type === 'channel') {
+            return 'Public';
+        }
+        return msg.sender_tag_name || msg.sender_name || (msg.pubkey_prefix ? msg.pubkey_prefix.slice(0, 12) : '-');
+    };
+
+    const getReceiverLabel = (msg) => msg.receiver_tag_name || msg.receiver_name || (msg.received_by ? msg.received_by.slice(0, 12) : '');
+
+    const updateTotalCount = () => {
+        if (!totalCountEl) return;
+        const current = parseInt(totalCountEl.dataset.count || totalCountEl.textContent || '0', 10) || 0;
+        const next = current + 1;
+        totalCountEl.dataset.count = `${next}`;
+        totalCountEl.textContent = `${next}`;
+    };
+
+    const hideEmptyStates = () => {
+        if (mobileEmpty) mobileEmpty.classList.add('hidden');
+        if (mobileList) mobileList.classList.remove('hidden');
+        if (tableEmpty) tableEmpty.classList.add('hidden');
+    };
+
+    const trimExcess = (container, limit) => {
+        if (!container) return;
+        const items = container.querySelectorAll('[data-message-item]');
+        if (items.length <= limit) return;
+        const overflow = items.length - limit;
+        const toRemove = Array.from(items).slice(-overflow);
+        toRemove.forEach((el) => el.remove());
+    };
+
+    const buildReceiverIcons = (msg, options = {}) => {
+        const { linkClass, iconSize, includeTooltip } = options;
+        const wrapper = document.createElement('div');
+        if (Array.isArray(msg.receivers) && msg.receivers.length > 0) {
+            wrapper.className = 'flex gap-0.5';
+            msg.receivers.forEach((receiver) => {
+                if (!receiver.public_key) return;
+                const anchor = document.createElement('a');
+                anchor.href = `/nodes/${receiver.public_key}`;
+                anchor.className = linkClass;
+                anchor.textContent = iconSize || '📡';
+                anchor.title = receiver.tag_name || receiver.name || receiver.public_key.slice(0, 12);
+                if (includeTooltip) {
+                    anchor.dataset.receiverTooltip = '';
+                    anchor.dataset.name = receiver.tag_name || receiver.name || receiver.public_key.slice(0, 12);
+                    if (receiver.received_at) {
+                        anchor.dataset.timestamp = receiver.received_at;
+                    }
+                }
+                wrapper.appendChild(anchor);
+            });
+        } else if (msg.received_by) {
+            const anchor = document.createElement('a');
+            anchor.href = `/nodes/${msg.received_by}`;
+            anchor.className = linkClass;
+            anchor.textContent = iconSize || '📡';
+            anchor.title = getReceiverLabel(msg) || 'Receiver';
+            if (includeTooltip) {
+                anchor.dataset.receiverTooltip = '';
+                anchor.dataset.name = getReceiverLabel(msg);
+            }
+            wrapper.appendChild(anchor);
+        }
+        return wrapper;
+    };
+
+    const createMobileCard = (msg) => {
+        const card = document.createElement('div');
+        card.className = 'card bg-base-100 shadow-sm';
+        card.dataset.messageItem = 'true';
+        card.dataset.messageType = msg.message_type;
+
+        const body = document.createElement('div');
+        body.className = 'card-body p-3';
+
+        const topRow = document.createElement('div');
+        topRow.className = 'flex items-start justify-between gap-2';
+
+        const left = document.createElement('div');
+        left.className = 'flex items-center gap-2 min-w-0';
+
+        const icon = document.createElement('span');
+        icon.className = 'text-lg flex-shrink-0';
+        icon.title = msg.message_type === 'channel' ? 'Channel' : 'Direct';
+        icon.textContent = iconMap[msg.message_type] || '👤';
+
+        const textWrapper = document.createElement('div');
+        textWrapper.className = 'min-w-0';
+
+        const sender = document.createElement('div');
+        sender.className = 'font-medium text-sm truncate';
+        sender.textContent = getSenderLabel(msg);
+
+        const time = document.createElement('div');
+        time.className = 'text-xs opacity-60';
+        time.textContent = formatTimestamp(msg.received_at);
+
+        textWrapper.appendChild(sender);
+        textWrapper.appendChild(time);
+
+        left.appendChild(icon);
+        left.appendChild(textWrapper);
+
+        const right = document.createElement('div');
+        right.className = 'flex items-center gap-2 flex-shrink-0';
+        const receiverIcons = buildReceiverIcons(msg, { linkClass: 'text-sm hover:opacity-70' });
+        if (receiverIcons.childNodes.length > 0) {
+            right.appendChild(receiverIcons);
+        }
+
+        topRow.appendChild(left);
+        topRow.appendChild(right);
+
+        const messageText = document.createElement('p');
+        messageText.className = 'text-sm mt-2 break-words whitespace-pre-wrap';
+        messageText.textContent = msg.text || '-';
+
+        body.appendChild(topRow);
+        body.appendChild(messageText);
+        card.appendChild(body);
+        return card;
+    };
+
+    const createTableRow = (msg) => {
+        const row = document.createElement('tr');
+        row.className = 'hover align-top';
+        row.dataset.messageItem = 'true';
+        row.dataset.messageType = msg.message_type;
+
+        const typeCell = document.createElement('td');
+        typeCell.className = 'text-lg';
+        typeCell.title = msg.message_type === 'channel' ? 'Channel' : 'Direct';
+        typeCell.textContent = iconMap[msg.message_type] || '👤';
+
+        const timeCell = document.createElement('td');
+        timeCell.className = 'text-sm whitespace-nowrap';
+        timeCell.textContent = formatTimestamp(msg.received_at);
+
+        const fromCell = document.createElement('td');
+        fromCell.className = 'text-sm whitespace-nowrap';
+        if (msg.message_type === 'channel') {
+            const span = document.createElement('span');
+            span.className = 'opacity-60';
+            span.textContent = 'Public';
+            fromCell.appendChild(span);
+        } else {
+            const span = document.createElement('span');
+            span.className = msg.sender_tag_name || msg.sender_name ? 'font-medium' : 'font-mono text-xs';
+            span.textContent = getSenderLabel(msg);
+            fromCell.appendChild(span);
+        }
+
+        const messageCell = document.createElement('td');
+        messageCell.className = 'break-words max-w-md';
+        messageCell.style.whiteSpace = 'pre-wrap';
+        messageCell.textContent = msg.text || '-';
+
+        const receiversCell = document.createElement('td');
+        const receivers = buildReceiverIcons(msg, {
+            linkClass: 'text-lg hover:opacity-70',
+            includeTooltip: true,
+        });
+        if (receivers.childNodes.length > 0) {
+            receiversCell.appendChild(receivers);
+        } else {
+            const span = document.createElement('span');
+            span.className = 'opacity-50';
+            span.textContent = '-';
+            receiversCell.appendChild(span);
+        }
+
+        row.appendChild(typeCell);
+        row.appendChild(timeCell);
+        row.appendChild(fromCell);
+        row.appendChild(messageCell);
+        row.appendChild(receiversCell);
+
+        return row;
+    };
+
+    const insertMessage = (msg) => {
+        hideEmptyStates();
+
+        if (mobileList) {
+            const card = createMobileCard(msg);
+            mobileList.prepend(card);
+            trimExcess(mobileList, mobileLimit);
+        }
+
+        if (tableBody) {
+            const row = createTableRow(msg);
+            tableBody.prepend(row);
+            trimExcess(tableBody, tableLimit);
+        }
+
+        updateTotalCount();
+    };
+
+    const handleRealtimeEvent = (eventData) => {
+        if (!eventData || !eventData.event_name) {
+            return;
+        }
+
+        console.log('Received event:', eventData.event_name, eventData);
+
+        if (!['contact_msg_recv', 'channel_msg_recv'].includes(eventData.event_name)) {
+            return;
+        }
+
+        const payload = eventData.payload || {};
+        if (!payload.text) {
+            return;
+        }
+
+        const messageType = eventData.event_name === 'channel_msg_recv' ? 'channel' : 'contact';
+        if (messageTypeFilter && messageTypeFilter !== messageType) {
+            return;
+        }
+
+        const message = {
+            message_type: messageType,
+            text: payload.text,
+            pubkey_prefix: payload.pubkey_prefix || null,
+            sender_name: payload.sender_name || null,
+            sender_tag_name: null,
+            channel_idx: payload.channel_idx ?? null,
+            received_at: eventData.received_at || new Date().toISOString(),
+            receivers: [],
+            received_by: eventData.public_key || null,
+            receiver_name: null,
+            receiver_tag_name: null,
+        };
+
+        insertMessage(message);
+    };
+
+    let socket;
+    let retryDelay = 1000;
+    const apiPublicBaseUrl = {{ api_public_base_url | tojson }};
+    const apiInternalBaseUrl = {{ api_base_url | tojson }};
+    const fallbackOrigin = window.location.origin;
+
+    const normalizeBasePath = (path) => {
+        if (!path || path === '/') {
+            return '';
+        }
+        return path.endsWith('/') ? path.slice(0, -1) : path;
+    };
+
+    const parseUrl = (value) => {
+        if (!value) {
+            return null;
+        }
+        try {
+            return new URL(value, fallbackOrigin);
+        } catch (err) {
+            console.warn('Failed to parse API base URL value', value, err);
+            return null;
+        }
+    };
+
+    const isLikelyInternalHost = (hostname) => {
+        if (!hostname) {
+            return false;
+        }
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return false;
+        }
+        return !hostname.includes('.');
+    };
+
+    const deriveBrowserUrl = () => {
+        let baseUrl = parseUrl(apiPublicBaseUrl) || parseUrl(apiInternalBaseUrl);
+
+        if (!baseUrl) {
+            return new URL(fallbackOrigin);
+        }
+
+        if (!apiPublicBaseUrl && isLikelyInternalHost(baseUrl.hostname)) {
+            const adjusted = new URL(fallbackOrigin);
+            adjusted.protocol = baseUrl.protocol;
+            if (baseUrl.port) {
+                adjusted.port = baseUrl.port;
+            }
+            return adjusted;
+        }
+
+        return baseUrl;
+    };
+
+    const buildWebSocketUrl = () => {
+        const baseUrl = deriveBrowserUrl();
+        const basePath = normalizeBasePath(baseUrl.pathname);
+        const protocol = baseUrl.protocol === 'https:' ? 'wss' : 'ws';
+        const wsPath = `${basePath}/api/v1/ws/events`;
+        return `${protocol}://${baseUrl.host}${wsPath}`;
+    };
+
+    const connect = () => {
+        const url = buildWebSocketUrl();
+        socket = new WebSocket(url);
+
+        socket.onopen = () => {
+            retryDelay = 1000;
+        };
+
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                handleRealtimeEvent(data);
+            } catch (err) {
+                console.warn('Failed to parse event payload', err);
+            }
+        };
+
+        socket.onclose = () => {
+            setTimeout(connect, Math.min(retryDelay, 10000));
+            retryDelay = Math.min(retryDelay * 2, 10000);
+        };
+
+        socket.onerror = () => {
+            socket.close();
+        };
+    };
+
+    connect();
+});
+</script>
 {% endblock %}
