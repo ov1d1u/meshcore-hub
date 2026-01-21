@@ -284,6 +284,11 @@ class WebSettings(CommonSettings):
         default="http://localhost:8000",
         description="API server base URL",
     )
+    api_public_base_url: Optional[str] = Field(
+        default=None,
+        description=
+        "Public API base URL for browser clients (overrides automatic same-origin detection)",
+    )
     api_key: Optional[str] = Field(default=None, description="API key for queries")
 
     # Network information

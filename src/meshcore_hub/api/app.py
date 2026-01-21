@@ -36,13 +36,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Initializing database: {database_url}")
     _db_manager = DatabaseManager(database_url)
 
-    yield
+    try:
+        yield
+    finally:
+        from meshcore_hub.api.dependencies import cleanup_mqtt_client
 
-    # Cleanup
-    if _db_manager:
-        _db_manager.dispose()
-        _db_manager = None
-    logger.info("Database connection closed")
+        cleanup_mqtt_client(app)
+
+        if _db_manager:
+            _db_manager.dispose()
+            _db_manager = None
+        logger.info("Database connection closed")
 
 
 def create_app(
@@ -88,6 +92,8 @@ def create_app(
     app.state.mqtt_port = mqtt_port
     app.state.mqtt_prefix = mqtt_prefix
     app.state.mqtt_tls = mqtt_tls
+    app.state.mqtt_client = None
+    app.state.mqtt_client_id = None
 
     # Configure CORS
     if cors_origins is None:

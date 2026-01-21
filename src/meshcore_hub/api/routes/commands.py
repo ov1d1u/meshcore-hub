@@ -30,10 +30,6 @@ async def send_message(
     Publishes a send_msg command to MQTT for the sender interface to process.
     """
     try:
-        # Connect to MQTT
-        mqtt.connect()
-        mqtt.start_background()
-
         # Build payload
         payload = {
             "destination": command.destination,
@@ -43,10 +39,6 @@ async def send_message(
 
         # Publish to wildcard topic (any sender can pick it up)
         mqtt.publish_command("+", "send_msg", payload)
-
-        # Cleanup
-        mqtt.stop()
-        mqtt.disconnect()
 
         logger.info(f"Published send_msg command to {command.destination[:12]}...")
 
@@ -74,10 +66,6 @@ async def send_channel_message(
     Publishes a send_channel_msg command to MQTT for the sender interface to process.
     """
     try:
-        # Connect to MQTT
-        mqtt.connect()
-        mqtt.start_background()
-
         # Build payload
         payload = {
             "channel_idx": command.channel_idx,
@@ -87,10 +75,6 @@ async def send_channel_message(
 
         # Publish to wildcard topic
         mqtt.publish_command("+", "send_channel_msg", payload)
-
-        # Cleanup
-        mqtt.stop()
-        mqtt.disconnect()
 
         logger.info(
             f"Published send_channel_msg command to channel {command.channel_idx}"
@@ -120,10 +104,6 @@ async def send_advertisement(
     Publishes a send_advert command to MQTT for the sender interface to process.
     """
     try:
-        # Connect to MQTT
-        mqtt.connect()
-        mqtt.start_background()
-
         # Build payload
         payload = {
             "flood": command.flood,
@@ -131,10 +111,6 @@ async def send_advertisement(
 
         # Publish to wildcard topic
         mqtt.publish_command("+", "send_advert", payload)
-
-        # Cleanup
-        mqtt.stop()
-        mqtt.disconnect()
 
         logger.info(f"Published send_advert command (flood={command.flood})")
 

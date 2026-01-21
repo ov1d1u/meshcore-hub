@@ -18,6 +18,11 @@ export async function render(container, params, router) {
     const tz = config.timezone || '';
     const tzBadge = tz && tz !== 'UTC' ? html`<span class="text-sm opacity-60">${tz}</span>` : nothing;
     const navigate = (url) => router.navigate(url);
+    let messages = [];
+    let total = 0;
+    let socket = null;
+    let retryDelay = 1000;
+    let closed = false;
 
     function renderPage(content, { total = null } = {}) {
         litRender(html`
@@ -31,15 +36,88 @@ export async function render(container, params, router) {
 ${content}`, container);
     }
 
-    // Render page header immediately (old content stays visible until data loads)
-    renderPage(nothing);
+    const buildWebSocketUrl = () => {
+        const url = new URL('/api/v1/ws/events', window.location.origin);
+        url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+        return url.toString();
+    };
 
-    try {
-        const data = await apiGet('/api/v1/messages', { limit, offset, message_type });
-        const messages = data.items || [];
-        const total = data.total || 0;
+    const handleRealtimeEvent = (eventData) => {
+        if (!eventData || !eventData.event_name) {
+            return;
+        }
+
+        if (!['contact_msg_recv', 'channel_msg_recv'].includes(eventData.event_name)) {
+            return;
+        }
+
+        const payload = eventData.payload || {};
+        if (!payload.text) {
+            return;
+        }
+
+        const messageType = eventData.event_name === 'channel_msg_recv' ? 'channel' : 'contact';
+        if (message_type && messageType !== message_type) {
+            return;
+        }
+
+        const message = {
+            message_type: messageType,
+            text: payload.text,
+            pubkey_prefix: payload.pubkey_prefix || null,
+            sender_name: payload.sender_name || null,
+            sender_tag_name: null,
+            channel_idx: payload.channel_idx ?? null,
+            received_at: eventData.received_at || new Date().toISOString(),
+            receivers: [],
+            received_by: eventData.public_key || null,
+            receiver_name: null,
+            receiver_tag_name: null,
+        };
+
+        messages = [message, ...messages];
+        if (messages.length > limit) {
+            messages = messages.slice(0, limit);
+        }
+        total += 1;
+        renderContent();
+    };
+
+    const startWebSocket = () => {
+        const connect = () => {
+            if (closed) return;
+            const url = buildWebSocketUrl();
+            socket = new WebSocket(url);
+
+            socket.onopen = () => {
+                retryDelay = 1000;
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleRealtimeEvent(data);
+                } catch (err) {
+                    console.warn('Failed to parse event payload', err);
+                }
+            };
+
+            socket.onclose = () => {
+                if (closed) return;
+                setTimeout(connect, Math.min(retryDelay, 10000));
+                retryDelay = Math.min(retryDelay * 2, 10000);
+            };
+
+            socket.onerror = () => {
+                if (socket) socket.close();
+            };
+        };
+
+        connect();
+    };
+
+    function renderContent() {
         const totalPages = Math.ceil(total / limit);
-
         const mobileCards = messages.length === 0
             ? html`<div class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.messages').toLowerCase() })}</div>`
             : messages.map(msg => {
@@ -191,8 +269,23 @@ ${content}`, container);
 </div>
 
 ${paginationBlock}`, { total });
+        }
+    // Render page header immediately (old content stays visible until data loads)
+    renderPage(nothing);
 
+    let cleanup = null;
+    try {
+        const data = await apiGet('/api/v1/messages', { limit, offset, message_type });
+        messages = data.items || [];
+        total = data.total || 0;
+        renderContent();
+        startWebSocket();
+        cleanup = () => {
+            closed = true;
+            if (socket) socket.close();
+        };
     } catch (e) {
         renderPage(errorAlert(e.message));
     }
+    return cleanup;
 }
