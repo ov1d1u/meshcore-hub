@@ -2,12 +2,10 @@ import { apiGet } from '../api.js';
 import {
     html, litRender, nothing, t,
     getConfig, formatDateTime, formatDateTimeShort,
-    getChannelLabelsMap, resolveChannelLabel,
     truncateKey, errorAlert,
     pagination, timezoneIndicator,
     createFilterHandler, autoSubmit, submitOnEnter
 } from '../components.js';
-import { createAutoRefresh } from '../auto-refresh.js';
 
 export async function render(container, params, router) {
     const query = params.query || {};
@@ -17,162 +15,20 @@ export async function render(container, params, router) {
     const offset = (page - 1) * limit;
 
     const config = getConfig();
-    const channelLabels = getChannelLabelsMap(config);
     const tz = config.timezone || '';
     const tzBadge = tz && tz !== 'UTC' ? html`<span class="text-sm opacity-60">${tz}</span>` : nothing;
     const navigate = (url) => router.navigate(url);
-
-    function channelInfo(msg) {
-        if (msg.message_type !== 'channel') {
-            return { label: null, text: msg.text || '-' };
-        }
-        const rawText = msg.text || '';
-        const match = rawText.match(/^\[([^\]]+)\]\s+([\s\S]*)$/);
-        if (msg.channel_idx !== null && msg.channel_idx !== undefined) {
-            const knownLabel = resolveChannelLabel(msg.channel_idx, channelLabels);
-            if (knownLabel) {
-                return {
-                    label: knownLabel,
-                    text: match ? (match[2] || '-') : (rawText || '-'),
-                };
-            }
-        }
-        if (msg.channel_name) {
-            return { label: msg.channel_name, text: msg.text || '-' };
-        }
-        if (match) {
-            return {
-                label: match[1],
-                text: match[2] || '-',
-            };
-        }
-        if (msg.channel_idx !== null && msg.channel_idx !== undefined) {
-            const knownLabel = resolveChannelLabel(msg.channel_idx, channelLabels);
-            return { label: knownLabel || `Ch ${msg.channel_idx}`, text: rawText || '-' };
-        }
-        return { label: t('messages.type_channel'), text: rawText || '-' };
-    }
-
-    function senderBlock(msg, emphasize = false) {
-        const senderName = msg.sender_tag_name || msg.sender_name;
-        if (senderName) {
-            return emphasize
-                ? html`<span class="font-medium">${senderName}</span>`
-                : html`${senderName}`;
-        }
-        const prefix = (msg.pubkey_prefix || '').slice(0, 12);
-        if (prefix) {
-            return html`<span class="font-mono text-xs">${prefix}</span>`;
-        }
-        return html`<span class="opacity-50">-</span>`;
-    }
-
-    function parseSenderFromText(text) {
-        if (!text || typeof text !== 'string') {
-            return { sender: null, text: text || '-' };
-        }
-        const patterns = [
-            /^\s*ack\s+@\[(.+?)\]\s*:\s*([\s\S]+)$/i,
-            /^\s*@\[(.+?)\]\s*:\s*([\s\S]+)$/i,
-            /^\s*ack\s+([^:|\n]{1,80})\s*:\s*([\s\S]+)$/i,
-        ];
-        for (const pattern of patterns) {
-            const match = text.match(pattern);
-            if (!match) continue;
-            const sender = (match[1] || '').trim();
-            const remaining = (match[2] || '').trim();
-            if (!sender) continue;
-            return {
-                sender,
-                text: remaining || text,
-            };
-        }
-        return { sender: null, text };
-    }
-
-    function messageTextWithSender(msg, text) {
-        const parsed = parseSenderFromText(text || '-');
-        const explicitSender = msg.sender_tag_name || msg.sender_name || (msg.pubkey_prefix || '').slice(0, 12) || null;
-        const sender = explicitSender || parsed.sender;
-        const body = (parsed.text || text || '-').trim() || '-';
-        if (!sender) {
-            return body;
-        }
-        if (body.toLowerCase().startsWith(`${sender.toLowerCase()}:`)) {
-            return body;
-        }
-        return `${sender}: ${body}`;
-    }
-
-    function dedupeBySignature(items) {
-        const deduped = [];
-        const bySignature = new Map();
-
-        for (const msg of items) {
-            const signature = typeof msg.signature === 'string' ? msg.signature.trim().toUpperCase() : '';
-            const canDedupe = msg.message_type === 'channel' && signature.length >= 8;
-            if (!canDedupe) {
-                deduped.push(msg);
-                continue;
-            }
-
-            const existing = bySignature.get(signature);
-            if (!existing) {
-                const clone = {
-                    ...msg,
-                    receivers: [...(msg.receivers || [])],
-                };
-                bySignature.set(signature, clone);
-                deduped.push(clone);
-                continue;
-            }
-
-            const combined = [...(existing.receivers || []), ...(msg.receivers || [])];
-            const seenReceivers = new Set();
-            existing.receivers = combined.filter((recv) => {
-                const key = recv?.public_key || recv?.node_id || `${recv?.received_at || ''}:${recv?.snr || ''}`;
-                if (seenReceivers.has(key)) return false;
-                seenReceivers.add(key);
-                return true;
-            });
-
-            if (!existing.received_by && msg.received_by) existing.received_by = msg.received_by;
-            if (!existing.receiver_name && msg.receiver_name) existing.receiver_name = msg.receiver_name;
-            if (!existing.receiver_tag_name && msg.receiver_tag_name) existing.receiver_tag_name = msg.receiver_tag_name;
-            if (!existing.pubkey_prefix && msg.pubkey_prefix) existing.pubkey_prefix = msg.pubkey_prefix;
-            if (!existing.sender_name && msg.sender_name) existing.sender_name = msg.sender_name;
-            if (!existing.sender_tag_name && msg.sender_tag_name) existing.sender_tag_name = msg.sender_tag_name;
-            if (!existing.channel_name && msg.channel_name) existing.channel_name = msg.channel_name;
-            if (
-                existing.channel_name === 'Public'
-                && msg.channel_name
-                && msg.channel_name !== 'Public'
-            ) {
-                existing.channel_name = msg.channel_name;
-            }
-            if (existing.channel_idx === null || existing.channel_idx === undefined) {
-                if (msg.channel_idx !== null && msg.channel_idx !== undefined) {
-                    existing.channel_idx = msg.channel_idx;
-                }
-            } else if (
-                existing.channel_idx === 17
-                && msg.channel_idx !== null
-                && msg.channel_idx !== undefined
-                && msg.channel_idx !== 17
-            ) {
-                existing.channel_idx = msg.channel_idx;
-            }
-        }
-
-        return deduped;
-    }
+    let messages = [];
+    let total = 0;
+    let socket = null;
+    let retryDelay = 1000;
+    let closed = false;
 
     function renderPage(content, { total = null } = {}) {
         litRender(html`
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-3xl font-bold">${t('entities.messages')}</h1>
     <div class="flex items-center gap-2">
-        <span id="auto-refresh-toggle"></span>
         ${tzBadge}
         ${total !== null ? html`<span class="badge badge-lg">${t('common.total', { count: total })}</span>` : nothing}
     </div>
@@ -180,107 +36,189 @@ export async function render(container, params, router) {
 ${content}`, container);
     }
 
-    // Render page header immediately (old content stays visible until data loads)
-    renderPage(nothing);
+    const buildWebSocketUrl = () => {
+        const url = new URL('/ws', window.location.origin);
+        url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+        return url.toString();
+    };
 
-    async function fetchAndRenderData() {
-        try {
-            const data = await apiGet('/api/v1/messages', { limit, offset, message_type });
-            const messages = dedupeBySignature(data.items || []);
-            const total = data.total || 0;
-            const totalPages = Math.ceil(total / limit);
+    const handleRealtimeEvent = (eventData) => {
+        if (!eventData || !eventData.event_name) {
+            return;
+        }
 
-            const mobileCards = messages.length === 0
-                ? html`<div class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.messages').toLowerCase() })}</div>`
-                : messages.map(msg => {
-                    const isChannel = msg.message_type === 'channel';
-                    const typeIcon = isChannel ? '\u{1F4FB}' : '\u{1F464}';
-                    const typeTitle = isChannel ? t('messages.type_channel') : t('messages.type_contact');
-                    const chInfo = channelInfo(msg);
-                    const sender = senderBlock(msg);
-                    const displayMessage = messageTextWithSender(msg, chInfo.text);
-                    const fromPrimary = isChannel
-                        ? html`<span class="font-medium">${chInfo.label || t('messages.type_channel')}</span>`
-                        : sender;
-                    let receiversBlock = nothing;
-                    if (msg.receivers && msg.receivers.length >= 1) {
-                        receiversBlock = html`<div class="flex gap-0.5">
-                            ${msg.receivers.map(recv => {
-                                const recvName = recv.tag_name || recv.name || truncateKey(recv.public_key, 12);
-                                return html`<a href="/nodes/${recv.public_key}" class="text-sm hover:opacity-70" title=${recvName}>\u{1F4E1}</a>`;
-                            })}
-                        </div>`;
-                    } else if (msg.received_by) {
-                        const recvTitle = msg.receiver_tag_name || msg.receiver_name || truncateKey(msg.received_by, 12);
-                        receiversBlock = html`<a href="/nodes/${msg.received_by}" class="text-sm hover:opacity-70" title=${recvTitle}>\u{1F4E1}</a>`;
+        if (!['contact_msg_recv', 'channel_msg_recv'].includes(eventData.event_name)) {
+            return;
+        }
+
+        const payload = eventData.payload || {};
+        if (!payload.text) {
+            return;
+        }
+
+        const messageType = eventData.event_name === 'channel_msg_recv' ? 'channel' : 'contact';
+        if (message_type && messageType !== message_type) {
+            return;
+        }
+
+        const message = {
+            message_type: messageType,
+            text: payload.text,
+            pubkey_prefix: payload.pubkey_prefix || null,
+            sender_name: payload.sender_name || null,
+            sender_tag_name: null,
+            channel_idx: payload.channel_idx ?? null,
+            received_at: eventData.received_at || new Date().toISOString(),
+            receivers: [],
+            received_by: eventData.public_key || null,
+            receiver_name: null,
+            receiver_tag_name: null,
+        };
+
+        messages = [message, ...messages];
+        if (messages.length > limit) {
+            messages = messages.slice(0, limit);
+        }
+        total += 1;
+        renderContent();
+    };
+
+    const startWebSocket = () => {
+        const connect = () => {
+            if (closed) return;
+            const url = buildWebSocketUrl();
+            socket = new WebSocket(url);
+
+            socket.onopen = () => {
+                retryDelay = 1000;
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleRealtimeEvent(data);
+                } catch (err) {
+                    console.warn('Failed to parse event payload', err);
+                }
+            };
+
+            socket.onclose = () => {
+                if (closed) return;
+                setTimeout(connect, Math.min(retryDelay, 10000));
+                retryDelay = Math.min(retryDelay * 2, 10000);
+            };
+
+            socket.onerror = () => {
+                if (socket) socket.close();
+            };
+        };
+
+        connect();
+    };
+
+    function renderContent() {
+        const totalPages = Math.ceil(total / limit);
+        const mobileCards = messages.length === 0
+            ? html`<div class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.messages').toLowerCase() })}</div>`
+            : messages.map(msg => {
+                const isChannel = msg.message_type === 'channel';
+                const typeIcon = isChannel ? '\u{1F4FB}' : '\u{1F464}';
+                const typeTitle = isChannel ? t('messages.type_channel') : t('messages.type_contact');
+                let senderBlock;
+                if (isChannel) {
+                    const channelLabel = msg.channel_name || (msg.channel_idx === 0 ? t('messages.type_public') : (msg.channel_idx != null ? t('messages.channel_index', { index: msg.channel_idx }) : t('messages.type_channel')));
+                    senderBlock = html`<span class="opacity-60">${channelLabel}</span>`;
+                } else {
+                    const senderName = msg.sender_tag_name || msg.sender_name;
+                    if (senderName) {
+                        senderBlock = senderName;
+                    } else {
+                        senderBlock = html`<span class="font-mono text-xs">${(msg.pubkey_prefix || '-').slice(0, 12)}</span>`;
                     }
-                    return html`<div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-3">
-                <div class="flex items-start justify-between gap-2">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="text-lg flex-shrink-0" title=${typeTitle}>
-                            ${typeIcon}
-                        </span>
-                        <div class="min-w-0">
-                            <div class="font-medium text-sm truncate">
-                                ${fromPrimary}
-                            </div>
-                            <div class="text-xs opacity-60">
-                                ${formatDateTimeShort(msg.received_at)}
-                            </div>
+                }
+                let receiversBlock = nothing;
+                if (msg.receivers && msg.receivers.length >= 1) {
+                    receiversBlock = html`<div class="flex gap-0.5">
+                        ${msg.receivers.map(recv => {
+                            const recvName = recv.tag_name || recv.name || truncateKey(recv.public_key, 12);
+                            return html`<a href="/nodes/${recv.public_key}" class="text-sm hover:opacity-70" title=${recvName}>\u{1F4E1}</a>`;
+                        })}
+                    </div>`;
+                } else if (msg.received_by) {
+                    const recvTitle = msg.receiver_tag_name || msg.receiver_name || truncateKey(msg.received_by, 12);
+                    receiversBlock = html`<a href="/nodes/${msg.received_by}" class="text-sm hover:opacity-70" title=${recvTitle}>\u{1F4E1}</a>`;
+                }
+                return html`<div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-3">
+            <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-lg flex-shrink-0" title=${typeTitle}>
+                        ${typeIcon}
+                    </span>
+                    <div class="min-w-0">
+                        <div class="font-medium text-sm truncate">
+                            ${senderBlock}
+                        </div>
+                        <div class="text-xs opacity-60">
+                            ${formatDateTimeShort(msg.received_at)}
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        ${receiversBlock}
-                    </div>
                 </div>
-                <p class="text-sm mt-2 break-words whitespace-pre-wrap">${displayMessage}</p>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    ${receiversBlock}
+                </div>
             </div>
-        </div>`;
-                });
-
-            const tableRows = messages.length === 0
-                ? html`<tr><td colspan="5" class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.messages').toLowerCase() })}</td></tr>`
-                : messages.map(msg => {
-                    const isChannel = msg.message_type === 'channel';
-                    const typeIcon = isChannel ? '\u{1F4FB}' : '\u{1F464}';
-                    const typeTitle = isChannel ? t('messages.type_channel') : t('messages.type_contact');
-                    const chInfo = channelInfo(msg);
-                    const sender = senderBlock(msg, true);
-                    const displayMessage = messageTextWithSender(msg, chInfo.text);
-                    const fromPrimary = isChannel
-                        ? html`<span class="font-medium">${chInfo.label || t('messages.type_channel')}</span>`
-                        : sender;
-                    let receiversBlock;
-                    if (msg.receivers && msg.receivers.length >= 1) {
-                        receiversBlock = html`<div class="flex gap-1">
-                            ${msg.receivers.map(recv => {
-                                const recvName = recv.tag_name || recv.name || truncateKey(recv.public_key, 12);
-                                return html`<a href="/nodes/${recv.public_key}" class="text-lg hover:opacity-70" title=${recvName}>\u{1F4E1}</a>`;
-                            })}
-                        </div>`;
-                    } else if (msg.received_by) {
-                        const recvTitle = msg.receiver_tag_name || msg.receiver_name || truncateKey(msg.received_by, 12);
-                        receiversBlock = html`<a href="/nodes/${msg.received_by}" class="text-lg hover:opacity-70" title=${recvTitle}>\u{1F4E1}</a>`;
-                    } else {
-                        receiversBlock = html`<span class="opacity-50">-</span>`;
-                    }
-                    return html`<tr class="hover align-top">
-                    <td class="text-lg" title=${typeTitle}>${typeIcon}</td>
-                    <td class="text-sm whitespace-nowrap">${formatDateTime(msg.received_at)}</td>
-                    <td class="text-sm whitespace-nowrap">
-                        <div>${fromPrimary}</div>
-                    </td>
-                    <td class="break-words max-w-md" style="white-space: pre-wrap;">${displayMessage}</td>
-                    <td>${receiversBlock}</td>
-                </tr>`;
-                });
-
-            const paginationBlock = pagination(page, totalPages, '/messages', {
-                message_type, limit,
+            <p class="text-sm mt-2 break-words whitespace-pre-wrap">${msg.text || '-'}</p>
+        </div>
+    </div>`;
             });
 
-            renderPage(html`
+        const tableRows = messages.length === 0
+            ? html`<tr><td colspan="5" class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.messages').toLowerCase() })}</td></tr>`
+            : messages.map(msg => {
+                const isChannel = msg.message_type === 'channel';
+                const typeIcon = isChannel ? '\u{1F4FB}' : '\u{1F464}';
+                const typeTitle = isChannel ? t('messages.type_channel') : t('messages.type_contact');
+                let senderBlock;
+                if (isChannel) {
+                    const channelLabel = msg.channel_name || (msg.channel_idx === 0 ? t('messages.type_public') : (msg.channel_idx != null ? t('messages.channel_index', { index: msg.channel_idx }) : t('messages.type_channel')));
+                    senderBlock = html`<span class="opacity-60">${channelLabel}</span>`;
+                } else {
+                    const senderName = msg.sender_tag_name || msg.sender_name;
+                    if (senderName) {
+                        senderBlock = html`<span class="font-medium">${senderName}</span>`;
+                    } else {
+                        senderBlock = html`<span class="font-mono text-xs">${(msg.pubkey_prefix || '-').slice(0, 12)}</span>`;
+                    }
+                }
+                let receiversBlock;
+                if (msg.receivers && msg.receivers.length >= 1) {
+                    receiversBlock = html`<div class="flex gap-1">
+                        ${msg.receivers.map(recv => {
+                            const recvName = recv.tag_name || recv.name || truncateKey(recv.public_key, 12);
+                            return html`<a href="/nodes/${recv.public_key}" class="text-lg hover:opacity-70" title=${recvName}>\u{1F4E1}</a>`;
+                        })}
+                    </div>`;
+                } else if (msg.received_by) {
+                    const recvTitle = msg.receiver_tag_name || msg.receiver_name || truncateKey(msg.received_by, 12);
+                    receiversBlock = html`<a href="/nodes/${msg.received_by}" class="text-lg hover:opacity-70" title=${recvTitle}>\u{1F4E1}</a>`;
+                } else {
+                    receiversBlock = html`<span class="opacity-50">-</span>`;
+                }
+                return html`<tr class="hover align-top">
+                <td class="text-lg" title=${typeTitle}>${typeIcon}</td>
+                <td class="text-sm whitespace-nowrap">${formatDateTime(msg.received_at)}</td>
+                <td class="text-sm whitespace-nowrap">${senderBlock}</td>
+                <td class="break-words max-w-md" style="white-space: pre-wrap;">${msg.text || '-'}</td>
+                <td>${receiversBlock}</td>
+            </tr>`;
+            });
+
+        const paginationBlock = pagination(page, totalPages, '/messages', {
+            message_type, limit,
+        });
+
+        renderPage(html`
 <div class="card shadow mb-6 panel-solid" style="--panel-color: var(--color-neutral)">
     <div class="card-body py-4">
         <form method="GET" action="/messages" class="flex gap-4 flex-wrap items-end" @submit=${createFilterHandler('/messages', navigate)}>
@@ -324,18 +262,23 @@ ${content}`, container);
 </div>
 
 ${paginationBlock}`, { total });
-
-        } catch (e) {
-            renderPage(errorAlert(e.message));
         }
+    // Render page header immediately (old content stays visible until data loads)
+    renderPage(nothing);
+
+    let cleanup = null;
+    try {
+        const data = await apiGet('/api/v1/messages', { limit, offset, message_type });
+        messages = data.items || [];
+        total = data.total || 0;
+        renderContent();
+        startWebSocket();
+        cleanup = () => {
+            closed = true;
+            if (socket) socket.close();
+        };
+    } catch (e) {
+        renderPage(errorAlert(e.message));
     }
-
-    await fetchAndRenderData();
-
-    const toggleEl = container.querySelector('#auto-refresh-toggle');
-    const { cleanup } = createAutoRefresh({
-        fetchAndRender: fetchAndRenderData,
-        toggleContainer: toggleEl,
-    });
     return cleanup;
 }
