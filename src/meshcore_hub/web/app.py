@@ -7,8 +7,10 @@ from typing import AsyncGenerator
 
 import httpx
 from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from meshcore_hub import __version__
 from meshcore_hub.common.schemas import RadioConfig
@@ -149,6 +151,24 @@ def create_app(
             return {"status": "not_ready", "api": f"status {response.status_code}"}
         except Exception as e:
             return {"status": "not_ready", "api": str(e)}
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(
+        request: Request, exc: StarletteHTTPException
+    ) -> HTMLResponse:
+        """Handle HTTP exceptions with custom error pages."""
+        if exc.status_code == 404:
+            context = get_network_context(request)
+            context["request"] = request
+            context["detail"] = exc.detail if exc.detail != "Not Found" else None
+            return templates.TemplateResponse(
+                "errors/404.html", context, status_code=404
+            )
+        # For other errors, return a simple response
+        return HTMLResponse(
+            content=f"<h1>{exc.status_code}</h1><p>{exc.detail}</p>",
+            status_code=exc.status_code,
+        )
 
     return app
 
