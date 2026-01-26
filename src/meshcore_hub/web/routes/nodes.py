@@ -3,7 +3,7 @@
 import logging
 
 from fastapi import APIRouter, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from meshcore_hub.web.app import get_network_context, get_templates
 
@@ -81,8 +81,13 @@ async def nodes_list(
     return templates.TemplateResponse("nodes.html", context)
 
 
+@router.get("/n/{public_key}", response_class=RedirectResponse)
+async def node_short_link(public_key: str) -> RedirectResponse:
+    """Redirect short link to full node detail page."""
+    return RedirectResponse(url=f"/nodes/{public_key}", status_code=301)
+
+
 @router.get("/nodes/{public_key}", response_class=HTMLResponse)
-@router.get("/n/{public_key}", response_class=HTMLResponse)
 async def node_detail(request: Request, public_key: str) -> HTMLResponse:
     """Render the node detail page."""
     templates = get_templates(request)
