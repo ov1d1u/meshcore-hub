@@ -131,6 +131,15 @@ export async function render(container, params, router) {
 
         const sortedMembers = allMembers.slice().sort((a, b) => a.name.localeCompare(b.name));
 
+        function isNodeOffline(node) {
+            if (!node.last_seen) return true;
+            const lastSeenTime = new Date(node.last_seen).getTime();
+            if (Number.isNaN(lastSeenTime)) return true;
+            const now = Date.now();
+            const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
+            return (now - lastSeenTime) > twoDaysMs;
+        }
+
         function applyFilters() {
             const filteredNodes = applyFiltersCore();
             const categoryFilter = container.querySelector('#filter-category').value;
@@ -167,6 +176,7 @@ export async function render(container, params, router) {
             container.querySelector('#filter-type').value = '';
             container.querySelector('#filter-member').value = '';
             container.querySelector('#show-labels').checked = false;
+            container.querySelector('#filter-show-offline').checked = false;
             updateLabelVisibility();
             applyFilters();
         }
@@ -226,6 +236,12 @@ export async function render(container, params, router) {
                     <input type="checkbox" id="show-labels" class="checkbox checkbox-sm" @change=${updateLabelVisibility}>
                 </label>
             </div>
+            <div class="form-control">
+                <label class="label cursor-pointer gap-2 py-1">
+                    <span class="label-text">${t('map.show_offline_nodes')}</span>
+                    <input type="checkbox" id="filter-show-offline" class="checkbox checkbox-sm" @change=${applyFilters}>
+                </label>
+            </div>
             <button id="clear-filters" class="btn btn-ghost btn-sm" @click=${clearFiltersHandler}>${t('common.clear_filters')}</button>
         </div>
     </div>
@@ -271,12 +287,14 @@ export async function render(container, params, router) {
             const categoryFilter = container.querySelector('#filter-category').value;
             const typeFilter = container.querySelector('#filter-type').value;
             const memberFilter = container.querySelector('#filter-member').value;
+            const showOffline = container.querySelector('#filter-show-offline').checked;
 
             const filteredNodes = allNodes.filter(node => {
                 if (categoryFilter === 'infra' && !node.is_infra) return false;
                 const nodeType = normalizeType(node.adv_type);
                 if (typeFilter && nodeType !== typeFilter) return false;
                 if (memberFilter && node.member_id !== memberFilter) return false;
+                if (!showOffline && isNodeOffline(node)) return false;
                 return true;
             });
 
@@ -318,19 +336,21 @@ export async function render(container, params, router) {
             return () => map.remove();
         }
 
-        const infraNodes = allNodes.filter(n => n.is_infra);
-        if (infraNodes.length > 0) {
-            const bounds = L.latLngBounds(infraNodes.map(n => [n.lat, n.lon]));
+        const visibleNodes = applyFiltersCore();
+        const visibleInfra = visibleNodes.filter(n => n.is_infra);
+
+        if (visibleInfra.length > 0) {
+            const bounds = L.latLngBounds(visibleInfra.map(n => [n.lat, n.lon]));
             map.fitBounds(bounds, { padding: BOUNDS_PADDING });
-        } else if (allNodes.length > 0) {
-            const anchor = getAnchorPoint(allNodes, infraCenter);
-            const nearbyNodes = getNodesWithinRadius(allNodes, anchor.lat, anchor.lon, MAX_BOUNDS_RADIUS_KM);
-            const nodesToFit = nearbyNodes.length > 0 ? nearbyNodes : allNodes;
+        } else if (visibleNodes.length > 0) {
+            const anchor = getAnchorPoint(visibleNodes, infraCenter);
+            const nearbyNodes = getNodesWithinRadius(visibleNodes, anchor.lat, anchor.lon, MAX_BOUNDS_RADIUS_KM);
+            const nodesToFit = nearbyNodes.length > 0 ? nearbyNodes : visibleNodes;
             const bounds = L.latLngBounds(nodesToFit.map(n => [n.lat, n.lon]));
             map.fitBounds(bounds, { padding: BOUNDS_PADDING });
+        } else if (mapCenter.lat !== 0 || mapCenter.lon !== 0) {
+            map.setView([mapCenter.lat, mapCenter.lon], 10);
         }
-
-        applyFiltersCore();
 
         return () => map.remove();
 

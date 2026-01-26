@@ -289,6 +289,7 @@ Map page content:
 | `owner` | Owner: | Node owner label |
 | `role` | Role: | Member role label |
 | `select_destination_node` | -- Select destination node -- | Dropdown placeholder |
+| `show_offline_nodes` | Show Offline Nodes | Show offline nodes (older than 48h) in map |
 
 ### 12. `members`
 

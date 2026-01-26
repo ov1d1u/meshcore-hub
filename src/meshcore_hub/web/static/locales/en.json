@@ -160,7 +160,8 @@
         "gps_description": "Nodes are placed on the map based on GPS coordinates from node reports or manual tags.",
         "owner": "Owner:",
         "role": "Role:",
-        "select_destination_node": "-- Select destination node --"
+        "select_destination_node": "-- Select destination node --",
+        "show_offline_nodes": "Show Offline Nodes"
     },
     "members": {
         "empty_state_description": "To display network members, create a members.yaml file in your seed directory.",
