@@ -52,6 +52,12 @@
                     <!-- Populated dynamically -->
                 </select>
             </div>
+            <div class="form-control">
+                <label class="label cursor-pointer">
+                    <input type="checkbox" id="filter-show-offline" class="checkbox checkbox-sm" />
+                    <span class="label-text ml-2">Show offline nodes</span>
+                </label>
+            </div>
             <button id="clear-filters" class="btn btn-ghost btn-sm">Clear Filters</button>
         </div>
     </div>
@@ -158,6 +164,17 @@
         return type ? type.toLowerCase() : null;
     }
 
+    // Check if a node is offline (last_seen older than 2 days)
+    function isNodeOffline(node) {
+        if (!node.last_seen) return true; // No last_seen means offline
+        
+        const lastSeenTime = new Date(node.last_seen).getTime();
+        const now = new Date().getTime();
+        const twoDaysMs = 2 * 24 * 60 * 60 * 1000; // 2 days in milliseconds
+        
+        return (now - lastSeenTime) > twoDaysMs;
+    }
+
     // formatRelativeTime is provided by /static/js/utils.js
 
     // Get emoji marker based on node type
@@ -238,6 +255,7 @@
     function applyFiltersCore() {
         const typeFilter = document.getElementById('filter-type').value;
         const memberFilter = document.getElementById('filter-member').value;
+        const showOffline = document.getElementById('filter-show-offline').checked;
 
         // Filter nodes
         const filteredNodes = allNodes.filter(node => {
@@ -248,6 +266,9 @@
             if (memberFilter) {
                 if (node.member_id !== memberFilter) return false;
             }
+
+            // Offline filter - hide offline nodes unless checkbox is checked
+            if (!showOffline && isNodeOffline(node)) return false;
 
             return true;
         });
@@ -326,6 +347,7 @@
     // Event listeners for filters
     document.getElementById('filter-type').addEventListener('change', applyFilters);
     document.getElementById('filter-member').addEventListener('change', applyFilters);
+    document.getElementById('filter-show-offline').addEventListener('change', applyFilters);
     document.getElementById('clear-filters').addEventListener('click', clearFilters);
 
     // Fetch and display nodes
@@ -359,14 +381,16 @@
             // Populate member filter
             populateMemberFilter();
 
-            // Initial display - center map on nodes if available
-            if (allNodes.length > 0) {
-                const bounds = L.latLngBounds(allNodes.map(n => [n.lat, n.lon]));
-                map.fitBounds(bounds, { padding: [50, 50] });
-            }
+            // Apply filters first to get visible nodes
+            const visibleNodes = applyFiltersCore();
 
-            // Apply filters (won't re-center since we just did above)
-            applyFiltersNoRecenter();
+            // Initial display - center map on filtered (visible) nodes only
+            if (visibleNodes.length > 0) {
+                const bounds = L.latLngBounds(visibleNodes.map(n => [n.lat, n.lon]));
+                map.fitBounds(bounds, { padding: [50, 50] });
+            } else if (mapCenter.lat !== 0 || mapCenter.lon !== 0) {
+                map.setView([mapCenter.lat, mapCenter.lon], 10);
+            }
         })
         .catch(error => {
             console.error('Error loading map data:', error);
