@@ -73,21 +73,27 @@ class TestNodeDetailPage:
         self, client: TestClient, mock_http_client: MockHttpClient
     ) -> None:
         """Test that node detail page returns 200 status code."""
-        response = client.get("/nodes/abc123def456abc123def456abc123de")
+        response = client.get(
+            "/nodes/abc123def456abc123def456abc123def456abc123def456abc123def456abc1"
+        )
         assert response.status_code == 200
 
     def test_node_detail_returns_html(
         self, client: TestClient, mock_http_client: MockHttpClient
     ) -> None:
         """Test that node detail page returns HTML content."""
-        response = client.get("/nodes/abc123def456abc123def456abc123de")
+        response = client.get(
+            "/nodes/abc123def456abc123def456abc123def456abc123def456abc123def456abc1"
+        )
         assert "text/html" in response.headers["content-type"]
 
     def test_node_detail_displays_node_info(
         self, client: TestClient, mock_http_client: MockHttpClient
     ) -> None:
         """Test that node detail page displays node information."""
-        response = client.get("/nodes/abc123def456abc123def456abc123de")
+        response = client.get(
+            "/nodes/abc123def456abc123def456abc123def456abc123def456abc123def456abc1"
+        )
         assert response.status_code == 200
         # Should display node details
         assert "Node One" in response.text
@@ -98,8 +104,13 @@ class TestNodeDetailPage:
         self, client: TestClient, mock_http_client: MockHttpClient
     ) -> None:
         """Test that node detail page displays the full public key."""
-        response = client.get("/nodes/abc123def456abc123def456abc123de")
-        assert "abc123def456abc123def456abc123de" in response.text
+        response = client.get(
+            "/nodes/abc123def456abc123def456abc123def456abc123def456abc123def456abc1"
+        )
+        assert (
+            "abc123def456abc123def456abc123def456abc123def456abc123def456abc1"
+            in response.text
+        )
 
 
 class TestNodesPageAPIErrors:

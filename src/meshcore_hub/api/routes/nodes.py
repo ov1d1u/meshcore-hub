@@ -77,27 +77,42 @@ async def list_nodes(
     )
 
 
-@router.get("/{public_key}", response_model=NodeRead)
-async def get_node(
+@router.get("/prefix/{prefix}", response_model=NodeRead)
+async def get_node_by_prefix(
     _: RequireRead,
     session: DbSession,
-    public_key: str = Path(
-        description="Full public key or prefix. If multiple nodes match the prefix, "
-        "the first one (alphabetically) is returned."
-    ),
+    prefix: str = Path(description="Public key prefix to search for"),
 ) -> NodeRead:
-    """Get a single node by public key or prefix.
+    """Get a single node by public key prefix.
 
-    Supports prefix matching - you can provide any number of leading characters
-    of a public key. If multiple nodes match the prefix, the first one
-    (alphabetically by public_key) is returned.
+    Returns the first node (alphabetically by public_key) that matches the prefix.
     """
     query = (
         select(Node)
         .options(selectinload(Node.tags))
-        .where(Node.public_key.startswith(public_key))
+        .where(Node.public_key.startswith(prefix))
         .order_by(Node.public_key)
         .limit(1)
+    )
+    node = session.execute(query).scalar_one_or_none()
+
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    return NodeRead.model_validate(node)
+
+
+@router.get("/{public_key}", response_model=NodeRead)
+async def get_node(
+    _: RequireRead,
+    session: DbSession,
+    public_key: str = Path(description="Full 64-character public key"),
+) -> NodeRead:
+    """Get a single node by exact public key match."""
+    query = (
+        select(Node)
+        .options(selectinload(Node.tags))
+        .where(Node.public_key == public_key)
     )
     node = session.execute(query).scalar_one_or_none()
 

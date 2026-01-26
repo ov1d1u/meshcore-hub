@@ -149,7 +149,7 @@ class TestGetNode:
     def test_get_node_by_prefix(self, client_no_auth, sample_node):
         """Test getting a node by public key prefix."""
         prefix = sample_node.public_key[:8]  # First 8 chars
-        response = client_no_auth.get(f"/api/v1/nodes/{prefix}")
+        response = client_no_auth.get(f"/api/v1/nodes/prefix/{prefix}")
         assert response.status_code == 200
         data = response.json()
         assert data["public_key"] == sample_node.public_key
@@ -157,7 +157,7 @@ class TestGetNode:
     def test_get_node_by_single_char_prefix(self, client_no_auth, sample_node):
         """Test getting a node by single character prefix."""
         prefix = sample_node.public_key[0]
-        response = client_no_auth.get(f"/api/v1/nodes/{prefix}")
+        response = client_no_auth.get(f"/api/v1/nodes/prefix/{prefix}")
         assert response.status_code == 200
         data = response.json()
         assert data["public_key"] == sample_node.public_key
@@ -189,7 +189,7 @@ class TestGetNode:
         api_db_session.commit()
 
         # Request with prefix should return first alphabetically
-        response = client_no_auth.get("/api/v1/nodes/abc")
+        response = client_no_auth.get("/api/v1/nodes/prefix/abc")
         assert response.status_code == 200
         data = response.json()
         assert data["public_key"] == node_a.public_key

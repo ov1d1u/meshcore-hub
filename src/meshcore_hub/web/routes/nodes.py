@@ -82,35 +82,38 @@ async def nodes_list(
 
 
 @router.get("/n/{prefix}")
-async def node_short_link(request: Request, prefix: str) -> RedirectResponse:
-    """Redirect short link to full node detail page.
+async def node_short_link(prefix: str) -> RedirectResponse:
+    """Redirect short link to nodes page."""
+    return RedirectResponse(url=f"/nodes/{prefix}", status_code=302)
 
-    Looks up the node by prefix and redirects to the canonical URL
-    with the full public key.
+
+@router.get("/nodes/{public_key}")
+async def node_detail(
+    request: Request, public_key: str
+) -> HTMLResponse | RedirectResponse:
+    """Render the node detail page.
+
+    If the key is not a full 64-character public key, uses the prefix API
+    to resolve it and redirects to the canonical URL.
     """
-    try:
-        response = await request.app.state.http_client.get(f"/api/v1/nodes/{prefix}")
+    # If not a full public key, resolve via prefix API and redirect
+    if len(public_key) != 64:
+        response = await request.app.state.http_client.get(
+            f"/api/v1/nodes/prefix/{public_key}"
+        )
         if response.status_code == 200:
             node = response.json()
             return RedirectResponse(url=f"/nodes/{node['public_key']}", status_code=302)
-    except Exception as e:
-        logger.warning(f"Failed to look up node for short link: {e}")
+        raise HTTPException(status_code=404, detail="Node not found")
 
-    raise HTTPException(status_code=404, detail="Node not found")
-
-
-@router.get("/nodes/{public_key}", response_class=HTMLResponse)
-async def node_detail(request: Request, public_key: str) -> HTMLResponse:
-    """Render the node detail page."""
     templates = get_templates(request)
     context = get_network_context(request)
     context["request"] = request
 
-    node = None
     advertisements = []
     telemetry = []
 
-    # Fetch node details
+    # Fetch node details (exact match)
     response = await request.app.state.http_client.get(f"/api/v1/nodes/{public_key}")
     if response.status_code != 200:
         raise HTTPException(status_code=404, detail="Node not found")

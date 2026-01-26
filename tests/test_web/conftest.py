@@ -40,7 +40,7 @@ class MockHttpClient:
                 "items": [
                     {
                         "id": "node-1",
-                        "public_key": "abc123def456abc123def456abc123de",
+                        "public_key": "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
                         "name": "Node One",
                         "adv_type": "REPEATER",
                         "last_seen": "2024-01-01T12:00:00Z",
@@ -48,7 +48,7 @@ class MockHttpClient:
                     },
                     {
                         "id": "node-2",
-                        "public_key": "def456abc123def456abc123def456ab",
+                        "public_key": "def456abc123def456abc123def456abc123def456abc123def456abc123def4",
                         "name": "Node Two",
                         "adv_type": "CLIENT",
                         "last_seen": "2024-01-01T11:00:00Z",
@@ -62,12 +62,14 @@ class MockHttpClient:
             },
         }
 
-        # Default single node response
-        self._responses["GET:/api/v1/nodes/abc123def456abc123def456abc123de"] = {
+        # Default single node response (exact match)
+        self._responses[
+            "GET:/api/v1/nodes/abc123def456abc123def456abc123def456abc123def456abc123def456abc1"
+        ] = {
             "status_code": 200,
             "json": {
                 "id": "node-1",
-                "public_key": "abc123def456abc123def456abc123de",
+                "public_key": "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
                 "name": "Node One",
                 "adv_type": "REPEATER",
                 "last_seen": "2024-01-01T12:00:00Z",
@@ -110,7 +112,7 @@ class MockHttpClient:
                 "items": [
                     {
                         "id": "adv-1",
-                        "public_key": "abc123def456abc123def456abc123de",
+                        "public_key": "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
                         "name": "Node One",
                         "adv_type": "REPEATER",
                         "received_at": "2024-01-01T12:00:00Z",
@@ -127,7 +129,7 @@ class MockHttpClient:
                 "items": [
                     {
                         "id": "tel-1",
-                        "node_public_key": "abc123def456abc123def456abc123de",
+                        "node_public_key": "abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
                         "parsed_data": {"battery_level": 85.5},
                         "received_at": "2024-01-01T12:00:00Z",
                     },
