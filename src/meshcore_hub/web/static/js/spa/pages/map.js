@@ -242,7 +242,11 @@ export async function render(container, params, router) {
             </div>
             <div class="form-control">
                 <label class="label cursor-pointer gap-2 py-1">
+<<<<<<< HEAD
                     <span class="label-text">${t('map.show_offline_nodes')}</span>
+=======
+                    <span class="label-text">${t('common.show_offline_nodes')}</span>
+>>>>>>> d1f7573 (Hide old nodes from the map, by default)
                     <input type="checkbox" id="filter-show-offline" class="checkbox checkbox-sm" @change=${applyFilters}>
                 </label>
             </div>
