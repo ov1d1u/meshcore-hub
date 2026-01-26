@@ -13,7 +13,7 @@ function formatRelativeTime(timestamp) {
     const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
     if (isNaN(date.getTime())) return '';
 
-    const now = new Date();
+    const now = new Date(new Date().getTime() - getTimezoneOffset("Europe/Bucharest") * 60000);
     const diffMs = now - date;
     const diffSec = Math.floor(diffMs / 1000);
     const diffMin = Math.floor(diffSec / 60);
@@ -25,6 +25,42 @@ function formatRelativeTime(timestamp) {
     if (diffMin > 0) return `${diffMin}m`;
     return '<1m';
 }
+
+/**
+ * Get the timezone offset in minutes for a given time zone and date
+ * @param {string} timeZone - IANA time zone identifier (e.g., "Europe/Bucharest")
+ * @param {Date} [date=new Date()] - Date object to get the offset for
+ * @returns {number} Timezone offset in minutes
+ */
+function getTimezoneOffset(timeZone, date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(
+    parts.map(p => [p.type, p.value])
+  );
+
+  const tzTime = Date.UTC(
+    values.year,
+    values.month - 1,
+    values.day,
+    values.hour,
+    values.minute,
+    values.second
+  );
+
+  tzOffset = (tzTime - date.getTime()) / 60000;
+  return Math.round(tzOffset);
+}
+
 
 /**
  * Populate all elements with data-timestamp attribute with relative time
