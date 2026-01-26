@@ -82,6 +82,7 @@ async def nodes_list(
 
 
 @router.get("/nodes/{public_key}", response_class=HTMLResponse)
+@router.get("/n/{public_key}", response_class=HTMLResponse)
 async def node_detail(request: Request, public_key: str) -> HTMLResponse:
     """Render the node detail page."""
     templates = get_templates(request)
