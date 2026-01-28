@@ -43,7 +43,6 @@ def _get_tag_description(node: Optional[Node]) -> Optional[str]:
             return tag.value
     return None
 
-
 def _fetch_receivers_for_events(
     session: DbSession,
     event_type: str,
