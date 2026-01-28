@@ -28,6 +28,11 @@ def _get_tag_name(node: Optional[Node]) -> Optional[str]:
             return tag.value
     return None
 
+def _get_adv_type(node: Optional[Node]) -> Optional[str]:
+    """Extract adv_type from a node."""
+    if not node:
+        return None
+    return node.adv_type
 
 def _get_tag_description(node: Optional[Node]) -> Optional[str]:
     """Extract description tag from a node's tags."""
@@ -221,7 +226,7 @@ async def list_advertisements(
             "node_name": row.source_name,
             "node_tag_name": _get_tag_name(source_node),
             "node_tag_description": _get_tag_description(source_node),
-            "adv_type": adv.adv_type or row.source_adv_type,
+            "adv_type": adv.adv_type or row.source_adv_type or _get_adv_type(source_node),
             "flags": adv.flags,
             "received_at": adv.received_at,
             "created_at": adv.created_at,
