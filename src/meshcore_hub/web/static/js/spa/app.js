@@ -8,6 +8,7 @@
 import { Router } from './router.js';
 import { getConfig } from './components.js';
 import { loadLocale, t } from './i18n.js';
+import { initNotificationPopup } from './notification-popup.js';
 
 // Page modules (lazy-loaded)
 const pages = {
@@ -180,4 +181,7 @@ router.onNavigate((pathname) => {
 // Load locale then start the router
 const locale = localStorage.getItem('meshcore-locale') || config.locale || 'en';
 await loadLocale(locale);
+initNotificationPopup();
+
+// Start the router when DOM is ready
 router.start();
