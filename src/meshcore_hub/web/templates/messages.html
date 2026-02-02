@@ -495,64 +495,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let socket;
     let retryDelay = 1000;
-    const apiPublicBaseUrl = {{ api_public_base_url | tojson }};
-    const apiInternalBaseUrl = {{ api_base_url | tojson }};
-    const fallbackOrigin = window.location.origin;
-
-    const normalizeBasePath = (path) => {
-        if (!path || path === '/') {
-            return '';
-        }
-        return path.endsWith('/') ? path.slice(0, -1) : path;
-    };
-
-    const parseUrl = (value) => {
-        if (!value) {
-            return null;
-        }
-        try {
-            return new URL(value, fallbackOrigin);
-        } catch (err) {
-            console.warn('Failed to parse API base URL value', value, err);
-            return null;
-        }
-    };
-
-    const isLikelyInternalHost = (hostname) => {
-        if (!hostname) {
-            return false;
-        }
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return false;
-        }
-        return !hostname.includes('.');
-    };
-
-    const deriveBrowserUrl = () => {
-        let baseUrl = parseUrl(apiPublicBaseUrl) || parseUrl(apiInternalBaseUrl);
-
-        if (!baseUrl) {
-            return new URL(fallbackOrigin);
-        }
-
-        if (!apiPublicBaseUrl && isLikelyInternalHost(baseUrl.hostname)) {
-            const adjusted = new URL(fallbackOrigin);
-            adjusted.protocol = baseUrl.protocol;
-            if (baseUrl.port) {
-                adjusted.port = baseUrl.port;
-            }
-            return adjusted;
-        }
-
-        return baseUrl;
-    };
 
     const buildWebSocketUrl = () => {
-        const baseUrl = deriveBrowserUrl();
-        const basePath = normalizeBasePath(baseUrl.pathname);
-        const protocol = baseUrl.protocol === 'https:' ? 'wss' : 'ws';
-        const wsPath = `${basePath}/api/v1/ws/events`;
-        return `${protocol}://${baseUrl.host}${wsPath}`;
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        return `${protocol}://${window.location.host}/ws`;
     };
 
     const connect = () => {
