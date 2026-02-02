@@ -6,6 +6,7 @@
 
 import { Router } from './router.js';
 import { getConfig } from './components.js';
+import { initNotificationPopup } from './notification-popup.js';
 
 // Page modules (lazy-loaded)
 const pages = {
@@ -166,4 +167,5 @@ router.onNavigate((pathname) => {
 });
 
 // Start the router when DOM is ready
+initNotificationPopup();
 router.start();
