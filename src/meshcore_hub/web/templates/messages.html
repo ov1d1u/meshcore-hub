@@ -179,7 +179,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!value) return '-';
         const date = new Date(value);
         if (isNaN(date.getTime())) return '-';
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        // Format timestamp in Europe/Bucharest timezone
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Europe/Bucharest',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(date);
+        const values = {};
+        parts.forEach(({ type, value }) => {
+            values[type] = value;
+        });
+        return `${values.year}-${values.month}-${values.day} ${values.hour}:${values.minute}:${values.second}`;
     };
 
     const getSenderLabel = (msg) => {
