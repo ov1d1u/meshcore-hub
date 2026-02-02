@@ -233,11 +233,17 @@
         </aside>
     </footer>
 
+    <!-- Notification Popup -->
+    {% include 'notification-popup.html' %}
+
     <!-- Leaflet JS for maps -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- Common utilities -->
     <script src="/static/js/utils.js"></script>
+
+    <!-- Notification popup handler -->
+    <script src="/static/js/notification-popup.js"></script>
 
     {% block extra_scripts %}{% endblock %}
 </body>
