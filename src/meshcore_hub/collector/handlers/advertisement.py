@@ -42,6 +42,10 @@ def handle_advertisement(
     flags = payload.get("flags")
     now = datetime.now(timezone.utc)
 
+    logger.debug(
+        f"Processing advertisement: {adv_public_key[:12]}... name={name!r} "
+        f"adv_type={adv_type} flags={flags}")
+
     # Compute event hash for deduplication (30-second time bucket)
     event_hash = compute_advertisement_hash(
         public_key=adv_public_key,
@@ -80,6 +84,8 @@ def handle_advertisement(
             node = session.execute(node_query).scalar_one_or_none()
             if node:
                 node.last_seen = now
+                if adv_type:
+                    node.adv_type = adv_type
 
             # Add this receiver to the junction table
             if receiver_node:
