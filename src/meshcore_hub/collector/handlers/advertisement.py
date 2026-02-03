@@ -128,6 +128,8 @@ def handle_advertisement(
                 if lon is not None:
                     node.lon = lon
                 node.last_seen = now
+                if adv_type:
+                    node.adv_type = adv_type
 
             # Add this receiver to the junction table
             if receiver_node:
