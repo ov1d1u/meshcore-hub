@@ -546,6 +546,8 @@ document.addEventListener('DOMContentLoaded', () => {
         timeEl.textContent = formatTimestamp(ad.received_at);
         right.appendChild(timeEl);
 
+        const hasReceivers = (Array.isArray(ad.receivers) && ad.receivers.length > 0) || !!ad.received_by;
+
         const receiverContainer = document.createElement('div');
         receiverContainer.className = 'flex gap-0.5 justify-end mt-1';
         receiverContainer.dataset.receiverList = 'true';
@@ -554,7 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clickable: false,
             iconClass: 'text-sm',
         });
-        if (receiverIcons && receiverIcons.childNodes.length > 0) {
+        if (hasReceivers && receiverIcons) {
             Array.from(receiverIcons.childNodes).forEach(node => {
                 receiverContainer.appendChild(node);
             });
@@ -567,7 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
         emptyIndicator.className = 'text-sm opacity-50';
         emptyIndicator.dataset.receiversEmpty = 'true';
         emptyIndicator.textContent = '-';
-        if (receiverIcons && receiverIcons.childNodes.length > 0) {
+        if (hasReceivers) {
             emptyIndicator.classList.add('hidden');
         }
         right.appendChild(emptyIndicator);
@@ -628,6 +630,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const receiversCell = document.createElement('td');
         
+        const hasReceivers = (Array.isArray(ad.receivers) && ad.receivers.length > 0) || !!ad.received_by;
+        
         const receiverContainer = document.createElement('div');
         receiverContainer.className = 'flex gap-1';
         receiverContainer.dataset.receiverList = 'true';
@@ -637,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
             iconClass: 'text-lg hover:opacity-70',
             includeTooltip: true,
         });
-        if (receiverIcons && receiverIcons.childNodes.length > 0) {
+        if (hasReceivers && receiverIcons) {
             Array.from(receiverIcons.childNodes).forEach(node => {
                 receiverContainer.appendChild(node);
             });
@@ -650,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
         emptyIndicator.className = 'opacity-50';
         emptyIndicator.dataset.receiversEmpty = 'true';
         emptyIndicator.textContent = '-';
-        if (receiverIcons && receiverIcons.childNodes.length > 0) {
+        if (hasReceivers) {
             emptyIndicator.classList.add('hidden');
         }
         receiversCell.appendChild(emptyIndicator);
