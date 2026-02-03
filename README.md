@@ -80,9 +80,13 @@ The quickest way to get started is running the entire stack on a single machine 
 
 **Steps:**
 ```bash
-# Clone the repository
-git clone https://github.com/ipnet-mesh/meshcore-hub.git
+# Create a directory, download the Docker Compose file and
+# example environment configuration file
+
+mkdir meshcore-hub
 cd meshcore-hub
+wget https://raw.githubusercontent.com/ipnet-mesh/meshcore-hub/refs/heads/main/docker-compose.yml
+wget https://raw.githubusercontent.com/ipnet-mesh/meshcore-hub/refs/heads/main/.env.example
 
 # Copy and configure environment
 cp .env.example .env
@@ -156,9 +160,9 @@ This architecture allows:
 - Community members to contribute coverage with minimal setup
 - The central server to be hosted anywhere with internet access
 
-## Quick Start
+## Deployment
 
-### Using Docker Compose (Recommended)
+### Docker Compose Profiles
 
 Docker Compose uses **profiles** to select which services to run:
 
@@ -175,14 +179,6 @@ Docker Compose uses **profiles** to select which services to run:
 **Note:** Most deployments connect to an external MQTT broker. Add `--profile mqtt` only if you need a local broker.
 
 ```bash
-# Clone the repository
-git clone https://github.com/ipnet-mesh/meshcore-hub.git
-cd meshcore-hub
-
-# Copy and configure environment
-cp .env.example .env
-# Edit .env with your settings (API keys, serial port, network info)
-
 # Create database schema
 docker compose --profile migrate run --rm db-migrate
 
@@ -205,7 +201,7 @@ docker compose logs -f
 docker compose down
 ```
 
-#### Serial Device Access
+### Serial Device Access
 
 For production with real MeshCore devices, ensure the serial port is accessible:
 
@@ -226,8 +222,7 @@ SERIAL_PORT_SENDER=/dev/ttyUSB1  # If using separate sender device
 ```bash
 # Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate   # Windows
+source .venv/bin/activate
 
 # Install the package
 pip install -e ".[dev]"
@@ -240,57 +235,6 @@ meshcore-hub interface --mode receiver --port /dev/ttyUSB0
 meshcore-hub collector
 meshcore-hub api
 meshcore-hub web
-```
-
-## Updating an Existing Installation
-
-To update MeshCore Hub to the latest version:
-
-```bash
-# Navigate to your installation directory
-cd meshcore-hub
-
-# Pull the latest code
-git pull
-
-# Pull latest Docker images
-docker compose --profile all pull
-
-# Recreate and restart services
-# For receiver/sender only installs:
-docker compose --profile receiver up -d --force-recreate
-
-# For core services with MQTT:
-docker compose --profile mqtt --profile core up -d --force-recreate
-
-# For core services without local MQTT:
-docker compose --profile core up -d --force-recreate
-
-# For complete stack (all services):
-docker compose --profile mqtt --profile core --profile receiver up -d --force-recreate
-
-# View logs to verify update
-docker compose logs -f
-```
-
-**Note:** Database migrations run automatically on collector startup, so no manual migration step is needed when using Docker.
-
-For manual installations:
-
-```bash
-# Pull latest code
-git pull
-
-# Activate virtual environment
-source .venv/bin/activate
-
-# Update dependencies
-pip install -e ".[dev]"
-
-# Run database migrations
-meshcore-hub db upgrade
-
-# Restart your services
 ```
 
 ## Configuration
@@ -319,11 +263,7 @@ All components are configured via environment variables. Create a `.env` file or
 | `SERIAL_BAUD` | `115200` | Serial baud rate |
 | `MESHCORE_DEVICE_NAME` | *(none)* | Device/node name set on startup (broadcast in advertisements) |
 
-### Collector Settings
-
-The database is stored in `{DATA_HOME}/collector/meshcore.db` by default.
-
-#### Webhook Configuration
+### Webhooks
 
 The collector can forward certain events to external HTTP endpoints:
 
@@ -348,7 +288,7 @@ Webhook payload format:
 }
 ```
 
-#### Data Retention
+### Data Retention
 
 The collector automatically cleans up old event data and inactive nodes:
 
@@ -386,50 +326,15 @@ The collector automatically cleans up old event data and inactive nodes:
 | `NETWORK_CONTACT_DISCORD` | *(none)* | Discord server link |
 | `NETWORK_CONTACT_GITHUB` | *(none)* | GitHub repository URL |
 
-## CLI Reference
-
-```bash
-# Show help
-meshcore-hub --help
-
-# Interface component
-meshcore-hub interface --mode receiver --port /dev/ttyUSB0
-meshcore-hub interface --mode receiver --device-name "Gateway Node"  # Set device name
-meshcore-hub interface --mode sender --mock  # Use mock device
-
-# Collector component
-meshcore-hub collector                          # Run collector
-meshcore-hub collector seed                     # Import all seed data from SEED_HOME
-meshcore-hub collector import-tags              # Import node tags from SEED_HOME/node_tags.yaml
-meshcore-hub collector import-tags /path/to/file.yaml  # Import from specific file
-meshcore-hub collector import-members           # Import members from SEED_HOME/members.yaml
-meshcore-hub collector import-members /path/to/file.yaml  # Import from specific file
-
-# API component
-meshcore-hub api --host 0.0.0.0 --port 8000
-
-# Web dashboard
-meshcore-hub web --port 8080 --network-name "My Network"
-
-# Database management
-meshcore-hub db upgrade      # Run migrations
-meshcore-hub db downgrade    # Rollback one migration
-meshcore-hub db current      # Show current revision
-```
-
 ## Seed Data
 
 The database can be seeded with node tags and network members from YAML files in the `SEED_HOME` directory (default: `./seed`).
 
-### Running the Seed Process
+#### Running the Seed Process
 
 Seeding is a separate process and must be run explicitly:
 
 ```bash
-# Native CLI
-meshcore-hub collector seed
-
-# With Docker Compose
 docker compose --profile seed up
 ```
 
@@ -437,7 +342,7 @@ This imports data from the following files (if they exist):
 - `{SEED_HOME}/node_tags.yaml` - Node tag definitions
 - `{SEED_HOME}/members.yaml` - Network member definitions
 
-### Directory Structure
+#### Directory Structure
 
 ```
 seed/                          # SEED_HOME (seed data files)
@@ -451,11 +356,11 @@ data/                          # DATA_HOME (runtime data)
 
 Example seed files are provided in `example/seed/`.
 
-## Node Tags
+### Node Tags
 
 Node tags allow you to attach custom metadata to nodes (e.g., location, role, owner). Tags are stored in the database and returned with node data via the API.
 
-### Node Tags YAML Format
+#### Node Tags YAML Format
 
 Tags are keyed by public key in YAML format:
 
@@ -484,24 +389,11 @@ Tag values can be:
 
 Supported types: `string`, `number`, `boolean`
 
-### Import Tags Manually
-
-```bash
-# Import from default location ({SEED_HOME}/node_tags.yaml)
-meshcore-hub collector import-tags
-
-# Import from specific file
-meshcore-hub collector import-tags /path/to/node_tags.yaml
-
-# Skip tags for nodes that don't exist
-meshcore-hub collector import-tags --no-create-nodes
-```
-
-## Network Members
+### Network Members
 
 Network members represent the people operating nodes in your network. Members can optionally be linked to nodes via their public key.
 
-### Members YAML Format
+#### Members YAML Format
 
 ```yaml
 - member_id: walshie86
@@ -525,44 +417,6 @@ Network members represent the people operating nodes in your network. Members ca
 | `description` | No | Additional description |
 | `contact` | No | Contact information |
 | `public_key` | No | Associated node public key (64-char hex) |
-
-### Import Members Manually
-
-```bash
-# Import from default location ({SEED_HOME}/members.yaml)
-meshcore-hub collector import-members
-
-# Import from specific file
-meshcore-hub collector import-members /path/to/members.yaml
-```
-
-### Managing Tags via API
-
-Tags can also be managed via the REST API:
-
-```bash
-# List tags for a node
-curl http://localhost:8000/api/v1/nodes/{public_key}/tags
-
-# Create a tag (requires admin key)
-curl -X POST \
-  -H "Authorization: Bearer <API_ADMIN_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{"key": "location", "value": "Building A"}' \
-  http://localhost:8000/api/v1/nodes/{public_key}/tags
-
-# Update a tag
-curl -X PUT \
-  -H "Authorization: Bearer <API_ADMIN_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{"value": "Building B"}' \
-  http://localhost:8000/api/v1/nodes/{public_key}/tags/location
-
-# Delete a tag
-curl -X DELETE \
-  -H "Authorization: Bearer <API_ADMIN_KEY>" \
-  http://localhost:8000/api/v1/nodes/{public_key}/tags/location
-```
 
 ## API Documentation
 
