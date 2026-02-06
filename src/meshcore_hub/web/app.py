@@ -152,16 +152,24 @@ def create_app(
         except Exception as e:
             return {"status": "not_ready", "api": str(e)}
 
+    def _get_https_base_url(request: Request) -> str:
+        """Get base URL, ensuring HTTPS is used for public-facing URLs."""
+        base_url = str(request.base_url).rstrip("/")
+        # Ensure HTTPS for sitemaps and robots.txt (SEO requires canonical URLs)
+        if base_url.startswith("http://"):
+            base_url = "https://" + base_url[7:]
+        return base_url
+
     @app.get("/robots.txt", response_class=PlainTextResponse)
     async def robots_txt(request: Request) -> str:
         """Serve robots.txt to control search engine crawling."""
-        base_url = str(request.base_url).rstrip("/")
+        base_url = _get_https_base_url(request)
         return f"User-agent: *\nAllow: /\n\nSitemap: {base_url}/sitemap.xml\n"
 
     @app.get("/sitemap.xml")
     async def sitemap_xml(request: Request) -> Response:
         """Generate dynamic sitemap including all node pages."""
-        base_url = str(request.base_url).rstrip("/")
+        base_url = _get_https_base_url(request)
 
         # Static pages
         static_pages = [
