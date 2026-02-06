@@ -22,12 +22,24 @@
         </p>
         {% endif %}
         <div class="flex-1"></div>
-        <div class="flex gap-3 mt-auto">
-            <a href="/dashboard" class="btn btn-neutral">
+        <div class="flex flex-wrap justify-center gap-3 mt-auto">
+            <a href="/dashboard" class="btn btn-outline btn-info">
                 {{ icon_dashboard("h-5 w-5 mr-2") }}
                 Dashboard
             </a>
-            <a href="/map" class="btn btn-neutral">
+            <a href="/nodes" class="btn btn-outline btn-primary">
+                {{ icon_nodes("h-5 w-5 mr-2") }}
+                Nodes
+            </a>
+            <a href="/advertisements" class="btn btn-outline btn-secondary">
+                {{ icon_advertisements("h-5 w-5 mr-2") }}
+                Adverts
+            </a>
+            <a href="/messages" class="btn btn-outline btn-accent">
+                {{ icon_messages("h-5 w-5 mr-2") }}
+                Messages
+            </a>
+            <a href="/map" class="btn btn-outline btn-warning">
                 {{ icon_map("h-5 w-5 mr-2") }}
                 Map
             </a>
@@ -37,36 +49,33 @@
     <!-- Stats Column (stacked vertically) -->
     <div class="flex flex-col gap-4">
         <!-- Total Nodes -->
-        <div class="stat bg-base-200 rounded-box relative">
+        <div class="stat bg-base-200 rounded-box">
             <div class="stat-figure text-primary">
                 {{ icon_nodes("h-8 w-8") }}
             </div>
             <div class="stat-title">Total Nodes</div>
             <div class="stat-value text-primary">{{ stats.total_nodes }}</div>
             <div class="stat-desc">All discovered nodes</div>
-            <a href="/nodes" class="link link-primary text-sm absolute bottom-2 right-4">View Nodes</a>
         </div>
 
         <!-- Advertisements (7 days) -->
-        <div class="stat bg-base-200 rounded-box relative">
+        <div class="stat bg-base-200 rounded-box">
             <div class="stat-figure text-secondary">
                 {{ icon_advertisements("h-8 w-8") }}
             </div>
             <div class="stat-title">Advertisements</div>
             <div class="stat-value text-secondary">{{ stats.advertisements_7d }}</div>
             <div class="stat-desc">Last 7 days</div>
-            <a href="/advertisements" class="link link-secondary text-sm absolute bottom-2 right-4">View Adverts</a>
         </div>
 
         <!-- Messages (7 days) -->
-        <div class="stat bg-base-200 rounded-box relative">
+        <div class="stat bg-base-200 rounded-box">
             <div class="stat-figure text-accent">
                 {{ icon_messages("h-8 w-8") }}
             </div>
             <div class="stat-title">Messages</div>
             <div class="stat-value text-accent">{{ stats.messages_7d }}</div>
             <div class="stat-desc">Last 7 days</div>
-            <a href="/messages" class="link link-accent text-sm absolute bottom-2 right-4">View Messages</a>
         </div>
     </div>
 </div>
