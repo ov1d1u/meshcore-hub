@@ -44,8 +44,8 @@ MeshCore runs on ESP32-based LoRa devices. Popular options include:
 | Device | Manufacturer | Features |
 |--------|--------------|----------|
 | [Heltec V3](https://heltec.org/project/wifi-lora-32-v3/) | Heltec | Budget-friendly, OLED display |
-| [T114](https://www.lilygo.cc/products/t114-lora-gps-meshtastic) | LilyGO | Compact, GPS, colour display |
-| [T1000-E](https://www.seeedstudio.com/SenseCAP-Card-Tracker-T1000-E-p-5913.html) | Seeed Studio | Credit-card sized, GPS, weatherproof |
+| [T114](https://heltec.org/project/mesh-node-t114/) | Heltec | Compact, GPS, colour display |
+| [T1000-E](https://www.seeedstudio.com/SenseCAP-Card-Tracker-T1000-E-for-Meshtastic-p-5913.html) | Seeed Studio | Credit-card sized, GPS, weatherproof |
 | [T-Deck Plus](https://www.lilygo.cc/products/t-deck-plus) | LilyGO | Built-in keyboard, touchscreen, GPS |
 
 Ensure you purchase the correct frequency variant (868MHz for EU/UK, 915MHz for US/AU).
@@ -55,6 +55,7 @@ Ensure you purchase the correct frequency variant (868MHz for EU/UK, 915MHz for 
 - **Heltec**: [Official Store](https://heltec.org/) or AliExpress
 - **LilyGO**: [Official Store](https://lilygo.cc/) or AliExpress
 - **Seeed Studio**: [Official Store](https://www.seeedstudio.com/)
+- **Amazon**: Search for device name + "LoRa 868" (or 915 for US)
 
 ## Mobile Apps
 
@@ -62,8 +63,8 @@ Connect to your Companion node using the official MeshCore apps:
 
 | Platform | App | Link |
 |----------|-----|------|
-| Android | MeshCore | [Google Play](https://play.google.com/store/apps/details?id=com.meshcore.android) |
-| iOS | MeshCore | [App Store](https://apps.apple.com/app/meshcore/id6670395169) |
+| Android | MeshCore | [Google Play](https://play.google.com/store/apps/details?id=com.liamcottle.meshcore.android) |
+| iOS | MeshCore | [App Store](https://apps.apple.com/us/app/meshcore/id6742354151) |
 
 The app connects via Bluetooth to your Companion node, allowing you to send messages, view the network, and configure your device.
 
@@ -73,8 +74,6 @@ The app connects via Bluetooth to your Companion node, allowing you to send mess
 2. Select your device type and region (frequency)
 3. Connect via USB and flash
 
-See the [Flashing Guide](https://github.com/meshcore-dev/MeshCore/blob/main/docs/faq.md#flashing) for detailed instructions.
-
 ## Next Steps
 
 Once your device is flashed and paired:
@@ -82,6 +81,7 @@ Once your device is flashed and paired:
 1. Open the MeshCore app on your phone
 2. Enable Bluetooth and pair with your device
 3. Set your node name in the app settings
+4. Configure your radio settings/profile for your region
 4. You should start seeing other nodes on the network
 
 Welcome to the mesh!
