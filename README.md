@@ -217,6 +217,19 @@ SERIAL_PORT=/dev/ttyUSB0
 SERIAL_PORT_SENDER=/dev/ttyUSB1  # If using separate sender device
 ```
 
+**Tip:** If USB devices reconnect as different numeric IDs (e.g., `/dev/ttyUSB0` becomes `/dev/ttyUSB1`), use the stable `/dev/serial/by-id/` path instead:
+
+```bash
+# List available devices by ID
+ls -la /dev/serial/by-id/
+
+# Example output:
+# usb-Silicon_Labs_CP2102N_USB_to_UART_Bridge_abc123-if00-port0 -> ../../ttyUSB0
+
+# Configure using the stable ID
+SERIAL_PORT=/dev/serial/by-id/usb-Silicon_Labs_CP2102N_USB_to_UART_Bridge_abc123-if00-port0
+```
+
 ### Manual Installation
 
 ```bash
