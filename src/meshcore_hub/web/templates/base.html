@@ -1,3 +1,4 @@
+{% from "macros/icons.html" import icon_home, icon_dashboard, icon_nodes, icon_advertisements, icon_messages, icon_map, icon_members, icon_page %}
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
@@ -24,7 +25,7 @@
     <meta name="twitter:description" content="{% block twitter_description %}{{ self.meta_description() }}{% endblock %}">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/static/img/meshcore.svg">
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
 
     <!-- Tailwind CSS with DaisyUI -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
@@ -98,36 +99,34 @@
                     </svg>
                 </div>
                 <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                    <li><a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Home</a></li>
-                    <li><a href="/network" class="{% if request.url.path == '/network' %}active{% endif %}">Network</a></li>
-                    <li><a href="/nodes" class="{% if '/nodes' in request.url.path %}active{% endif %}">Nodes</a></li>
-                    <li><a href="/advertisements" class="{% if request.url.path == '/advertisements' %}active{% endif %}">Advertisements</a></li>
-                    <li><a href="/messages" class="{% if request.url.path == '/messages' %}active{% endif %}">Messages</a></li>
-                    <li><a href="/map" class="{% if request.url.path == '/map' %}active{% endif %}">Map</a></li>
-                    <li><a href="/members" class="{% if request.url.path == '/members' %}active{% endif %}">Members</a></li>
+                    <li><a href="/" class="{% if request.url.path == '/' %}active{% endif %}">{{ icon_home("h-4 w-4") }} Home</a></li>
+                    <li><a href="/dashboard" class="{% if request.url.path == '/dashboard' %}active{% endif %}">{{ icon_dashboard("h-4 w-4") }} Dashboard</a></li>
+                    <li><a href="/nodes" class="{% if '/nodes' in request.url.path %}active{% endif %}">{{ icon_nodes("h-4 w-4") }} Nodes</a></li>
+                    <li><a href="/advertisements" class="{% if request.url.path == '/advertisements' %}active{% endif %}">{{ icon_advertisements("h-4 w-4") }} Adverts</a></li>
+                    <li><a href="/messages" class="{% if request.url.path == '/messages' %}active{% endif %}">{{ icon_messages("h-4 w-4") }} Messages</a></li>
+                    <li><a href="/map" class="{% if request.url.path == '/map' %}active{% endif %}">{{ icon_map("h-4 w-4") }} Map</a></li>
+                    <li><a href="/members" class="{% if request.url.path == '/members' %}active{% endif %}">{{ icon_members("h-4 w-4") }} Members</a></li>
                     {% for page in custom_pages %}
-                    <li><a href="{{ page.url }}" class="{% if request.url.path == page.url %}active{% endif %}">{{ page.title }}</a></li>
+                    <li><a href="{{ page.url }}" class="{% if request.url.path == page.url %}active{% endif %}">{{ icon_page("h-4 w-4") }} {{ page.title }}</a></li>
                     {% endfor %}
                 </ul>
             </div>
             <a href="/" class="btn btn-ghost text-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-                </svg>
+                <img src="/static/img/logo.svg" alt="{{ network_name }}" class="h-6 w-6 mr-2" />
                 {{ network_name }}
             </a>
         </div>
         <div class="navbar-center hidden lg:flex">
             <ul class="menu menu-horizontal px-1">
-                <li><a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Home</a></li>
-                <li><a href="/network" class="{% if request.url.path == '/network' %}active{% endif %}">Network</a></li>
-                <li><a href="/nodes" class="{% if '/nodes' in request.url.path %}active{% endif %}">Nodes</a></li>
-                <li><a href="/advertisements" class="{% if request.url.path == '/advertisements' %}active{% endif %}">Advertisements</a></li>
-                <li><a href="/messages" class="{% if request.url.path == '/messages' %}active{% endif %}">Messages</a></li>
-                <li><a href="/map" class="{% if request.url.path == '/map' %}active{% endif %}">Map</a></li>
-                <li><a href="/members" class="{% if request.url.path == '/members' %}active{% endif %}">Members</a></li>
+                <li><a href="/" class="{% if request.url.path == '/' %}active{% endif %}">{{ icon_home("h-4 w-4") }} Home</a></li>
+                <li><a href="/dashboard" class="{% if request.url.path == '/dashboard' %}active{% endif %}">{{ icon_dashboard("h-4 w-4") }} Dashboard</a></li>
+                <li><a href="/nodes" class="{% if '/nodes' in request.url.path %}active{% endif %}">{{ icon_nodes("h-4 w-4") }} Nodes</a></li>
+                <li><a href="/advertisements" class="{% if request.url.path == '/advertisements' %}active{% endif %}">{{ icon_advertisements("h-4 w-4") }} Adverts</a></li>
+                <li><a href="/messages" class="{% if request.url.path == '/messages' %}active{% endif %}">{{ icon_messages("h-4 w-4") }} Messages</a></li>
+                <li><a href="/map" class="{% if request.url.path == '/map' %}active{% endif %}">{{ icon_map("h-4 w-4") }} Map</a></li>
+                <li><a href="/members" class="{% if request.url.path == '/members' %}active{% endif %}">{{ icon_members("h-4 w-4") }} Members</a></li>
                 {% for page in custom_pages %}
-                <li><a href="{{ page.url }}" class="{% if request.url.path == page.url %}active{% endif %}">{{ page.title }}</a></li>
+                <li><a href="{{ page.url }}" class="{% if request.url.path == page.url %}active{% endif %}">{{ icon_page("h-4 w-4") }} {{ page.title }}</a></li>
                 {% endfor %}
             </ul>
         </div>

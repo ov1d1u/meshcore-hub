@@ -3,7 +3,7 @@
 from fastapi import APIRouter
 
 from meshcore_hub.web.routes.home import router as home_router
-from meshcore_hub.web.routes.network import router as network_router
+from meshcore_hub.web.routes.dashboard import router as dashboard_router
 from meshcore_hub.web.routes.nodes import router as nodes_router
 from meshcore_hub.web.routes.messages import router as messages_router
 from meshcore_hub.web.routes.advertisements import router as advertisements_router
@@ -17,7 +17,7 @@ web_router = APIRouter()
 
 # Include all sub-routers
 web_router.include_router(home_router)
-web_router.include_router(network_router)
+web_router.include_router(dashboard_router)
 web_router.include_router(nodes_router)
 web_router.include_router(messages_router)
 web_router.include_router(advertisements_router)

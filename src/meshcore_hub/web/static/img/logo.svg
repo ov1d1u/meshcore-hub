@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 145 120" width="145" height="120">
+  <!-- I letter - muted -->
+  <rect x="30" y="10" width="25" height="100" rx="2" fill="#ffffff" opacity="0.5"/>
+
+  <!-- P vertical stem -->
+  <rect x="65" y="10" width="25" height="100" rx="2" fill="#ffffff"/>
+
+  <!-- WiFi arcs: center at mid-stem (90, 60), sweeping from right up to top -->
+  <g fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round">
+    <path d="M 110,65 A 20,20 0 0,0 90,45"/>
+    <path d="M 125,65 A 35,35 0 0,0 90,30"/>
+    <path d="M 140,65 A 50,50 0 0,0 90,15"/>
+  </g>
+</svg>

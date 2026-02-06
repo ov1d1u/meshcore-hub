@@ -180,7 +180,7 @@ def create_app(
         # Static pages
         static_pages = [
             ("", "daily", "1.0"),
-            ("/network", "hourly", "0.9"),
+            ("/dashboard", "hourly", "0.9"),
             ("/nodes", "hourly", "0.9"),
             ("/advertisements", "hourly", "0.8"),
             ("/messages", "hourly", "0.8"),

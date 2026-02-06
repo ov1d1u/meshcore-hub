@@ -1,4 +1,4 @@
-"""Network overview page route."""
+"""Dashboard page route."""
 
 import json
 import logging
@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/network", response_class=HTMLResponse)
-async def network_overview(request: Request) -> HTMLResponse:
-    """Render the network overview page."""
+@router.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request) -> HTMLResponse:
+    """Render the dashboard page."""
     templates = get_templates(request)
     context = get_network_context(request)
     context["request"] = request
@@ -76,4 +76,4 @@ async def network_overview(request: Request) -> HTMLResponse:
     context["message_activity_json"] = json.dumps(message_activity)
     context["node_count_json"] = json.dumps(node_count)
 
-    return templates.TemplateResponse("network.html", context)
+    return templates.TemplateResponse("dashboard.html", context)

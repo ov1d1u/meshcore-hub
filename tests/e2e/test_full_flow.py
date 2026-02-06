@@ -122,9 +122,9 @@ class TestWebDashboard:
         assert response.status_code == 200
         assert "text/html" in response.headers.get("content-type", "")
 
-    def test_network_page(self, web_client: httpx.Client) -> None:
-        """Test network overview page loads."""
-        response = web_client.get("/network")
+    def test_dashboard_page(self, web_client: httpx.Client) -> None:
+        """Test dashboard page loads."""
+        response = web_client.get("/dashboard")
         assert response.status_code == 200
         assert "text/html" in response.headers.get("content-type", "")
 
