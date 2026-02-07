@@ -173,3 +173,248 @@ class TestMapDataFiltering:
 
         # Node with only lat should be excluded
         assert len(data["nodes"]) == 0
+
+    def test_map_data_filters_zero_coordinates(
+        self, web_app: Any, mock_http_client: MockHttpClient
+    ) -> None:
+        """Test that map data filters nodes with (0, 0) coordinates."""
+        mock_http_client.set_response(
+            "GET",
+            "/api/v1/nodes",
+            status_code=200,
+            json_data={
+                "items": [
+                    {
+                        "id": "node-1",
+                        "public_key": "abc123",
+                        "name": "Zero Coord Node",
+                        "lat": 0.0,
+                        "lon": 0.0,
+                        "tags": [],
+                    },
+                ],
+                "total": 1,
+            },
+        )
+        web_app.state.http_client = mock_http_client
+
+        client = TestClient(web_app, raise_server_exceptions=True)
+        response = client.get("/map/data")
+        data = response.json()
+
+        # Node at (0, 0) should be excluded
+        assert len(data["nodes"]) == 0
+
+    def test_map_data_uses_model_coordinates_as_fallback(
+        self, web_app: Any, mock_http_client: MockHttpClient
+    ) -> None:
+        """Test that map data uses model lat/lon when tags are not present."""
+        mock_http_client.set_response(
+            "GET",
+            "/api/v1/nodes",
+            status_code=200,
+            json_data={
+                "items": [
+                    {
+                        "id": "node-1",
+                        "public_key": "abc123",
+                        "name": "Model Coords Node",
+                        "lat": 51.5074,
+                        "lon": -0.1278,
+                        "tags": [],
+                    },
+                ],
+                "total": 1,
+            },
+        )
+        web_app.state.http_client = mock_http_client
+
+        client = TestClient(web_app, raise_server_exceptions=True)
+        response = client.get("/map/data")
+        data = response.json()
+
+        # Node should use model coordinates
+        assert len(data["nodes"]) == 1
+        assert data["nodes"][0]["lat"] == 51.5074
+        assert data["nodes"][0]["lon"] == -0.1278
+
+    def test_map_data_prefers_tag_coordinates_over_model(
+        self, web_app: Any, mock_http_client: MockHttpClient
+    ) -> None:
+        """Test that tag coordinates take priority over model coordinates."""
+        mock_http_client.set_response(
+            "GET",
+            "/api/v1/nodes",
+            status_code=200,
+            json_data={
+                "items": [
+                    {
+                        "id": "node-1",
+                        "public_key": "abc123",
+                        "name": "Both Coords Node",
+                        "lat": 51.5074,
+                        "lon": -0.1278,
+                        "tags": [
+                            {"key": "lat", "value": "40.7128"},
+                            {"key": "lon", "value": "-74.0060"},
+                        ],
+                    },
+                ],
+                "total": 1,
+            },
+        )
+        web_app.state.http_client = mock_http_client
+
+        client = TestClient(web_app, raise_server_exceptions=True)
+        response = client.get("/map/data")
+        data = response.json()
+
+        # Node should use tag coordinates, not model
+        assert len(data["nodes"]) == 1
+        assert data["nodes"][0]["lat"] == 40.7128
+        assert data["nodes"][0]["lon"] == -74.0060
+
+
+class TestMapDataInfrastructure:
+    """Tests for infrastructure node handling in map data."""
+
+    def test_map_data_includes_infra_center(
+        self, web_app: Any, mock_http_client: MockHttpClient
+    ) -> None:
+        """Test that map data includes infrastructure center when infra nodes exist."""
+        mock_http_client.set_response(
+            "GET",
+            "/api/v1/nodes",
+            status_code=200,
+            json_data={
+                "items": [
+                    {
+                        "id": "node-1",
+                        "public_key": "abc123",
+                        "name": "Infra Node",
+                        "lat": 40.0,
+                        "lon": -74.0,
+                        "tags": [{"key": "role", "value": "infra"}],
+                    },
+                    {
+                        "id": "node-2",
+                        "public_key": "def456",
+                        "name": "Regular Node",
+                        "lat": 41.0,
+                        "lon": -75.0,
+                        "tags": [],
+                    },
+                ],
+                "total": 2,
+            },
+        )
+        web_app.state.http_client = mock_http_client
+
+        client = TestClient(web_app, raise_server_exceptions=True)
+        response = client.get("/map/data")
+        data = response.json()
+
+        # Should have infra_center based on infra node only
+        assert data["infra_center"] is not None
+        assert data["infra_center"]["lat"] == 40.0
+        assert data["infra_center"]["lon"] == -74.0
+
+    def test_map_data_infra_center_null_when_no_infra(
+        self, web_app: Any, mock_http_client: MockHttpClient
+    ) -> None:
+        """Test that infra_center is null when no infrastructure nodes exist."""
+        mock_http_client.set_response(
+            "GET",
+            "/api/v1/nodes",
+            status_code=200,
+            json_data={
+                "items": [
+                    {
+                        "id": "node-1",
+                        "public_key": "abc123",
+                        "name": "Regular Node",
+                        "lat": 40.0,
+                        "lon": -74.0,
+                        "tags": [],
+                    },
+                ],
+                "total": 1,
+            },
+        )
+        web_app.state.http_client = mock_http_client
+
+        client = TestClient(web_app, raise_server_exceptions=True)
+        response = client.get("/map/data")
+        data = response.json()
+
+        assert data["infra_center"] is None
+
+    def test_map_data_sets_is_infra_flag(
+        self, web_app: Any, mock_http_client: MockHttpClient
+    ) -> None:
+        """Test that nodes have correct is_infra flag based on role tag."""
+        mock_http_client.set_response(
+            "GET",
+            "/api/v1/nodes",
+            status_code=200,
+            json_data={
+                "items": [
+                    {
+                        "id": "node-1",
+                        "public_key": "abc123",
+                        "name": "Infra Node",
+                        "lat": 40.0,
+                        "lon": -74.0,
+                        "tags": [{"key": "role", "value": "infra"}],
+                    },
+                    {
+                        "id": "node-2",
+                        "public_key": "def456",
+                        "name": "Regular Node",
+                        "lat": 41.0,
+                        "lon": -75.0,
+                        "tags": [{"key": "role", "value": "other"}],
+                    },
+                ],
+                "total": 2,
+            },
+        )
+        web_app.state.http_client = mock_http_client
+
+        client = TestClient(web_app, raise_server_exceptions=True)
+        response = client.get("/map/data")
+        data = response.json()
+
+        nodes_by_name = {n["name"]: n for n in data["nodes"]}
+        assert nodes_by_name["Infra Node"]["is_infra"] is True
+        assert nodes_by_name["Regular Node"]["is_infra"] is False
+
+    def test_map_data_debug_includes_infra_count(
+        self, web_app: Any, mock_http_client: MockHttpClient
+    ) -> None:
+        """Test that debug info includes infrastructure node count."""
+        mock_http_client.set_response(
+            "GET",
+            "/api/v1/nodes",
+            status_code=200,
+            json_data={
+                "items": [
+                    {
+                        "id": "node-1",
+                        "public_key": "abc123",
+                        "name": "Infra Node",
+                        "lat": 40.0,
+                        "lon": -74.0,
+                        "tags": [{"key": "role", "value": "infra"}],
+                    },
+                ],
+                "total": 1,
+            },
+        )
+        web_app.state.http_client = mock_http_client
+
+        client = TestClient(web_app, raise_server_exceptions=True)
+        response = client.get("/map/data")
+        data = response.json()
+
+        assert data["debug"]["infra_nodes"] == 1

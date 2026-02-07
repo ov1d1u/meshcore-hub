@@ -16,6 +16,17 @@
     .leaflet-popup-tip {
         background: oklch(var(--b1));
     }
+    /* Map label visibility */
+    .map-label {
+        opacity: 0;
+        transition: opacity 0.15s ease-in-out;
+    }
+    .map-marker:hover .map-label {
+        opacity: 1;
+    }
+    .show-labels .map-label {
+        opacity: 1;
+    }
 </style>
 {% endblock %}
 
@@ -32,6 +43,15 @@
 <div class="card bg-base-100 shadow mb-6">
     <div class="card-body py-4">
         <div class="flex gap-4 flex-wrap items-end">
+            <div class="form-control">
+                <label class="label py-1">
+                    <span class="label-text">Show</span>
+                </label>
+                <select id="filter-category" class="select select-bordered select-sm">
+                    <option value="">All Nodes</option>
+                    <option value="infra">Infrastructure Only</option>
+                </select>
+            </div>
             <div class="form-control">
                 <label class="label py-1">
                     <span class="label-text">Node Type</span>
@@ -52,6 +72,12 @@
                     <!-- Populated dynamically -->
                 </select>
             </div>
+            <div class="form-control">
+                <label class="label cursor-pointer gap-2 py-1">
+                    <span class="label-text">Show Labels</span>
+                    <input type="checkbox" id="show-labels" class="checkbox checkbox-sm">
+                </label>
+            </div>
             <button id="clear-filters" class="btn btn-ghost btn-sm">Clear Filters</button>
         </div>
     </div>
@@ -66,6 +92,10 @@
 <!-- Legend -->
 <div class="mt-4 flex flex-wrap gap-4 items-center text-sm">
     <span class="opacity-70">Legend:</span>
+    <div class="flex items-center gap-1">
+        <img src="{{ logo_url }}" alt="Infrastructure" class="h-5 w-5">
+        <span>Infrastructure</span>
+    </div>
     <div class="flex items-center gap-1">
         <span class="text-lg">💬</span>
         <span>Chat</span>
@@ -85,12 +115,15 @@
 </div>
 
 <div class="mt-2 text-sm opacity-70">
-    <p>Nodes are placed on the map based on their <code>lat</code> and <code>lon</code> tags.</p>
+    <p>Nodes are placed on the map based on GPS coordinates from node reports or manual tags.</p>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
+    // Logo URL for infrastructure nodes
+    const logoUrl = "{{ logo_url }}";
+
     // Initialize map with world view (will be centered on nodes once loaded)
     const map = L.map('map').setView([0, 0], 2);
 
@@ -104,6 +137,42 @@
     let allMembers = [];
     let markers = [];
     let mapCenter = { lat: 0, lon: 0 };
+    let infraCenter = null;
+
+    // Maximum radius (km) from anchor point for bounds calculation
+    const MAX_BOUNDS_RADIUS_KM = 20;
+
+    // Calculate distance between two points in km (Haversine formula)
+    function getDistanceKm(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    // Filter nodes within radius of anchor point for bounds calculation
+    function getNodesWithinRadius(nodes, anchorLat, anchorLon, radiusKm) {
+        return nodes.filter(n =>
+            getDistanceKm(anchorLat, anchorLon, n.lat, n.lon) <= radiusKm
+        );
+    }
+
+    // Get anchor point for bounds calculation (infra center or nodes center)
+    function getAnchorPoint(nodes) {
+        if (infraCenter) {
+            return infraCenter;
+        }
+        // Fall back to center of provided nodes
+        if (nodes.length === 0) return { lat: 0, lon: 0 };
+        return {
+            lat: nodes.reduce((sum, n) => sum + n.lat, 0) / nodes.length,
+            lon: nodes.reduce((sum, n) => sum + n.lon, 0) / nodes.length
+        };
+    }
 
     // Normalize adv_type to lowercase for consistent comparison
     function normalizeType(type) {
@@ -132,18 +201,27 @@
 
     // Create marker icon for a node
     function createNodeIcon(node) {
-        const emoji = getNodeEmoji(node);
         const displayName = node.name || '';
         const relativeTime = formatRelativeTime(node.last_seen);
         const timeDisplay = relativeTime ? ` (${relativeTime})` : '';
+
+        // Use logo for infrastructure nodes, emoji for others
+        let iconHtml;
+        if (node.is_infra) {
+            iconHtml = `<img src="${logoUrl}" alt="Infra" style="width: 24px; height: 24px; filter: drop-shadow(0 0 2px #1a237e) drop-shadow(0 0 4px #1a237e) drop-shadow(0 1px 2px rgba(0,0,0,0.7));">`;
+        } else {
+            const emoji = getNodeEmoji(node);
+            iconHtml = `<span style="font-size: 24px; text-shadow: 0 0 3px #1a237e, 0 0 6px #1a237e, 0 1px 2px rgba(0,0,0,0.7);">${emoji}</span>`;
+        }
+
         return L.divIcon({
             className: 'custom-div-icon',
-            html: `<div style="display: flex; align-items: center; gap: 2px;">
-                <span style="font-size: 24px; text-shadow: 0 0 3px #1a237e, 0 0 6px #1a237e, 0 1px 2px rgba(0,0,0,0.7);">${emoji}</span>
-                <span style="font-size: 10px; font-weight: bold; color: #000; background: rgba(255,255,255,0.9); padding: 1px 4px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);">${displayName}${timeDisplay}</span>
+            html: `<div class="map-marker" style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                ${iconHtml}
+                <span class="map-label" style="font-size: 10px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.5); padding: 1px 4px; border-radius: 3px; white-space: nowrap; text-align: center;">${displayName}${timeDisplay}</span>
             </div>`,
-            iconSize: [82, 28],
-            iconAnchor: [14, 14]
+            iconSize: [120, 50],
+            iconAnchor: [60, 12]
         });
     }
 
@@ -162,12 +240,16 @@
             roleHtml = `<p><span class="opacity-70">Role:</span> <span class="badge badge-xs badge-ghost">${node.role}</span></p>`;
         }
 
-        const emoji = getNodeEmoji(node);
         const typeDisplay = getTypeDisplay(node);
+
+        // Use logo for infrastructure nodes, emoji for others
+        const iconHtml = node.is_infra
+            ? `<img src="${logoUrl}" alt="Infra" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;">`
+            : getNodeEmoji(node);
 
         return `
             <div class="p-2">
-                <h3 class="font-bold text-lg mb-2">${emoji} ${node.name}</h3>
+                <h3 class="font-bold text-lg mb-2">${iconHtml} ${node.name}</h3>
                 <div class="space-y-1 text-sm">
                     <p><span class="opacity-70">Type:</span> ${typeDisplay}</p>
                     ${roleHtml}
@@ -176,7 +258,7 @@
                     <p><span class="opacity-70">Location:</span> ${node.lat.toFixed(4)}, ${node.lon.toFixed(4)}</p>
                     ${node.last_seen ? `<p><span class="opacity-70">Last seen:</span> ${node.last_seen.substring(0, 19).replace('T', ' ')}</p>` : ''}
                 </div>
-                <a href="/nodes/${node.public_key}" class="btn btn-primary btn-xs mt-3">View Details</a>
+                <a href="/nodes/${node.public_key}" class="btn btn-outline btn-xs mt-3">View Details</a>
             </div>
         `;
     }
@@ -189,11 +271,15 @@
 
     // Core filter logic - returns filtered nodes and updates markers
     function applyFiltersCore() {
+        const categoryFilter = document.getElementById('filter-category').value;
         const typeFilter = document.getElementById('filter-type').value;
         const memberFilter = document.getElementById('filter-member').value;
 
         // Filter nodes
         const filteredNodes = allNodes.filter(node => {
+            // Category filter (infrastructure only)
+            if (categoryFilter === 'infra' && !node.is_infra) return false;
+
             // Type filter (case-insensitive)
             if (typeFilter && normalizeType(node.adv_type) !== typeFilter) return false;
 
@@ -234,11 +320,23 @@
     // Apply filters and recenter map on filtered nodes
     function applyFilters() {
         const filteredNodes = applyFiltersCore();
+        const categoryFilter = document.getElementById('filter-category').value;
 
         // Fit bounds if we have filtered nodes
         if (filteredNodes.length > 0) {
-            const bounds = L.latLngBounds(filteredNodes.map(n => [n.lat, n.lon]));
-            map.fitBounds(bounds, { padding: [50, 50] });
+            let nodesToFit = filteredNodes;
+
+            // Apply radius filter when showing all nodes (not infra-only)
+            if (categoryFilter !== 'infra') {
+                const anchor = getAnchorPoint(filteredNodes);
+                const nearbyNodes = getNodesWithinRadius(filteredNodes, anchor.lat, anchor.lon, MAX_BOUNDS_RADIUS_KM);
+                if (nearbyNodes.length > 0) {
+                    nodesToFit = nearbyNodes;
+                }
+            }
+
+            const bounds = L.latLngBounds(nodesToFit.map(n => [n.lat, n.lon]));
+            map.fitBounds(bounds, { padding: [100, 100] });
         } else if (mapCenter.lat !== 0 || mapCenter.lon !== 0) {
             map.setView([mapCenter.lat, mapCenter.lon], 10);
         }
@@ -271,14 +369,30 @@
 
     // Clear all filters
     function clearFilters() {
+        document.getElementById('filter-category').value = '';
         document.getElementById('filter-type').value = '';
         document.getElementById('filter-member').value = '';
+        document.getElementById('show-labels').checked = false;
+        updateLabelVisibility();
         applyFilters();
     }
 
+    // Toggle label visibility
+    function updateLabelVisibility() {
+        const showLabels = document.getElementById('show-labels').checked;
+        const mapEl = document.getElementById('map');
+        if (showLabels) {
+            mapEl.classList.add('show-labels');
+        } else {
+            mapEl.classList.remove('show-labels');
+        }
+    }
+
     // Event listeners for filters
+    document.getElementById('filter-category').addEventListener('change', applyFilters);
     document.getElementById('filter-type').addEventListener('change', applyFilters);
     document.getElementById('filter-member').addEventListener('change', applyFilters);
+    document.getElementById('show-labels').addEventListener('change', updateLabelVisibility);
     document.getElementById('clear-filters').addEventListener('click', clearFilters);
 
     // Fetch and display nodes
@@ -288,6 +402,7 @@
             allNodes = data.nodes;
             allMembers = data.members || [];
             mapCenter = data.center;
+            infraCenter = data.infra_center;
 
             // Log debug info
             const debug = data.debug || {};
@@ -312,10 +427,18 @@
             // Populate member filter
             populateMemberFilter();
 
-            // Initial display - center map on nodes if available
-            if (allNodes.length > 0) {
-                const bounds = L.latLngBounds(allNodes.map(n => [n.lat, n.lon]));
-                map.fitBounds(bounds, { padding: [50, 50] });
+            // Initial display - center map on infrastructure nodes if available, else nodes within radius
+            const infraNodes = allNodes.filter(n => n.is_infra);
+            if (infraNodes.length > 0) {
+                const bounds = L.latLngBounds(infraNodes.map(n => [n.lat, n.lon]));
+                map.fitBounds(bounds, { padding: [100, 100] });
+            } else if (allNodes.length > 0) {
+                // Use radius filter to exclude outliers
+                const anchor = getAnchorPoint(allNodes);
+                const nearbyNodes = getNodesWithinRadius(allNodes, anchor.lat, anchor.lon, MAX_BOUNDS_RADIUS_KM);
+                const nodesToFit = nearbyNodes.length > 0 ? nearbyNodes : allNodes;
+                const bounds = L.latLngBounds(nodesToFit.map(n => [n.lat, n.lon]));
+                map.fitBounds(bounds, { padding: [100, 100] });
             }
 
             // Apply filters (won't re-center since we just did above)
