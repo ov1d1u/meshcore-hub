@@ -3,6 +3,7 @@
 {% block title %}{{ network_name }} - Node Details{% endblock %}
 
 {% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
     #node-map {
         height: 300px;
@@ -56,36 +57,28 @@
 <!-- Node Info Card -->
 <div class="card bg-base-100 shadow-xl mb-6">
     <div class="card-body">
-        <h1 class="card-title text-2xl">
-            {% if node.adv_type %}
-                {% if node.adv_type|lower == 'chat' %}
-                <span title="Chat">💬</span>
-                {% elif node.adv_type|lower == 'repeater' %}
-                <span title="Repeater">📡</span>
-                {% elif node.adv_type|lower == 'room' %}
-                <span title="Room">🪧</span>
-                {% else %}
-                <span title="{{ node.adv_type }}">📍</span>
+        <!-- Title Row with Activity -->
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <h1 class="card-title text-2xl">
+                {% if node.adv_type %}
+                    {% if node.adv_type|lower == 'chat' %}
+                    <span title="Chat">💬</span>
+                    {% elif node.adv_type|lower == 'repeater' %}
+                    <span title="Repeater">📡</span>
+                    {% elif node.adv_type|lower == 'room' %}
+                    <span title="Room">🪧</span>
+                    {% else %}
+                    <span title="{{ node.adv_type }}">📍</span>
+                    {% endif %}
                 {% endif %}
-            {% endif %}
-            {{ ns.tag_name or node.name or 'Unnamed Node' }}
-        </h1>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-                <h3 class="font-semibold opacity-70 mb-2">Public Key</h3>
-                <code class="text-sm bg-base-200 p-2 rounded block break-all">{{ node.public_key }}</code>
-            </div>
-            <div>
-                <h3 class="font-semibold opacity-70 mb-2">Activity</h3>
-                <div class="space-y-1 text-sm">
-                    <p><span class="opacity-70">First seen:</span> {{ node.first_seen[:19].replace('T', ' ') if node.first_seen else '-' }}</p>
-                    <p><span class="opacity-70">Last seen:</span> {{ node.last_seen[:19].replace('T', ' ') if node.last_seen else '-' }}</p>
-                </div>
+                {{ ns.tag_name or node.name or 'Unnamed Node' }}
+            </h1>
+            <div class="text-sm text-right">
+                <p><span class="opacity-70">First seen:</span> {{ node.first_seen[:19].replace('T', ' ') if node.first_seen else '-' }}</p>
+                <p><span class="opacity-70">Last seen:</span> {{ node.last_seen[:19].replace('T', ' ') if node.last_seen else '-' }}</p>
             </div>
         </div>
 
-        <!-- Tags and Map Grid -->
         {% set ns_map = namespace(lat=none, lon=none) %}
         {% for tag in node.tags or [] %}
             {% if tag.key == 'lat' %}
@@ -95,42 +88,17 @@
             {% endif %}
         {% endfor %}
 
-        <div class="grid grid-cols-1 {% if ns_map.lat and ns_map.lon %}lg:grid-cols-2{% endif %} gap-6 mt-6">
-            <!-- Tags -->
-            {% if node.tags or (admin_enabled and is_authenticated) %}
+        <!-- Public Key + QR Code and Map Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <!-- Public Key and QR Code -->
             <div>
-                <h3 class="font-semibold opacity-70 mb-2">Tags</h3>
-                {% if node.tags %}
-                <div class="overflow-x-auto">
-                    <table class="table table-compact w-full">
-                        <thead>
-                            <tr>
-                                <th>Key</th>
-                                <th>Value</th>
-                                <th>Type</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for tag in node.tags %}
-                            <tr>
-                                <td class="font-mono">{{ tag.key }}</td>
-                                <td>{{ tag.value }}</td>
-                                <td class="opacity-70">{{ tag.value_type or 'string' }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <h3 class="font-semibold opacity-70 mb-2">Public Key</h3>
+                <code class="text-sm bg-base-200 p-2 rounded block break-all">{{ node.public_key }}</code>
+                <div class="mt-4">
+                    <div id="qr-code" class="inline-block bg-white p-3 rounded"></div>
+                    <p class="text-xs opacity-50 mt-2">Scan to add as contact</p>
                 </div>
-                {% else %}
-                <p class="text-sm opacity-70 mb-2">No tags defined.</p>
-                {% endif %}
-                {% if admin_enabled and is_authenticated %}
-                <div class="mt-3">
-                    <a href="/a/node-tags?public_key={{ node.public_key }}" class="btn btn-sm btn-outline">{% if node.tags %}Edit Tags{% else %}Add Tags{% endif %}</a>
-                </div>
-                {% endif %}
             </div>
-            {% endif %}
 
             <!-- Location Map -->
             {% if ns_map.lat and ns_map.lon %}
@@ -143,6 +111,42 @@
             </div>
             {% endif %}
         </div>
+
+        <!-- Tags Section -->
+        {% if node.tags or (admin_enabled and is_authenticated) %}
+        <div class="mt-6">
+            <h3 class="font-semibold opacity-70 mb-2">Tags</h3>
+            {% if node.tags %}
+            <div class="overflow-x-auto">
+                <table class="table table-compact w-full">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tag in node.tags %}
+                        <tr>
+                            <td class="font-mono">{{ tag.key }}</td>
+                            <td>{{ tag.value }}</td>
+                            <td class="opacity-70">{{ tag.value_type or 'string' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-sm opacity-70 mb-2">No tags defined.</p>
+            {% endif %}
+            {% if admin_enabled and is_authenticated %}
+            <div class="mt-3">
+                <a href="/a/node-tags?public_key={{ node.public_key }}" class="btn btn-sm btn-outline">{% if node.tags %}Edit Tags{% else %}Add Tags{% endif %}</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -267,6 +271,51 @@
 
 {% block extra_scripts %}
 {% if node %}
+{% set ns_qr = namespace(tag_name=none) %}
+{% for tag in node.tags or [] %}
+    {% if tag.key == 'name' %}
+        {% set ns_qr.tag_name = tag.value %}
+    {% endif %}
+{% endfor %}
+<script>
+    // Generate QR code for adding contact
+    (function() {
+        const nodeName = {{ (ns_qr.tag_name or node.name or 'Node') | tojson }};
+        const publicKey = {{ node.public_key | tojson }};
+        const advType = {{ (node.adv_type or '') | tojson }};
+
+        // Map adv_type to numeric type for meshcore:// protocol
+        const typeMap = {
+            'chat': 1,
+            'repeater': 2,
+            'room': 3,
+            'sensor': 4
+        };
+        const typeNum = typeMap[advType.toLowerCase()] || 1;
+
+        // Build meshcore:// URL
+        const meshcoreUrl = `meshcore://contact/add?name=${encodeURIComponent(nodeName)}&public_key=${publicKey}&type=${typeNum}`;
+
+        // Generate QR code
+        const qrContainer = document.getElementById('qr-code');
+        if (qrContainer && typeof QRCode !== 'undefined') {
+            try {
+                new QRCode(qrContainer, {
+                    text: meshcoreUrl,
+                    width: 256,
+                    height: 256,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.L
+                });
+            } catch (error) {
+                console.error('QR code generation failed:', error);
+                qrContainer.innerHTML = '<p class="text-sm opacity-50">QR code unavailable</p>';
+            }
+        }
+    })();
+</script>
+
 {% set ns_map = namespace(lat=none, lon=none, name=none) %}
 {% for tag in node.tags or [] %}
     {% if tag.key == 'lat' %}
