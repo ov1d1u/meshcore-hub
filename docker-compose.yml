@@ -14,7 +14,7 @@ services:
       - "${MQTT_EXTERNAL_PORT:-1883}:1883"
       - "${MQTT_WS_PORT:-9001}:9001"
     volumes:
-      # - ./etc/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./etc/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
     healthcheck:
@@ -142,7 +142,7 @@ services:
       db-migrate:
         condition: service_completed_successfully
     volumes:
-      - hub_data:/data
+      - ${DATA_HOME:-./data}:/data
       - ${SEED_HOME:-./seed}:/seed
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
@@ -201,7 +201,7 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
-      - hub_data:/data
+      - ${DATA_HOME:-./data}:/data
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - MQTT_HOST=${MQTT_HOST:-mqtt}
@@ -296,7 +296,7 @@ services:
       - migrate
     restart: "no"
     volumes:
-      - hub_data:/data
+      - ${DATA_HOME:-./data}:/data
     environment:
       - DATA_HOME=/data
     command: ["db", "upgrade"]
@@ -317,7 +317,7 @@ services:
       - seed
     restart: "no"
     volumes:
-      - hub_data:/data
+      - ${DATA_HOME:-./data}:/data
       - ${SEED_HOME:-./seed}:/seed:ro
     environment:
       - DATA_HOME=/data
@@ -330,9 +330,8 @@ services:
 # Volumes
 # ==========================================================================
 volumes:
-  hub_data:
-    name: meshcore_hub_data
   mosquitto_data:
     name: meshcore_mosquitto_data
   mosquitto_log:
     name: meshcore_mosquitto_log
+
