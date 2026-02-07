@@ -65,11 +65,11 @@ async def map_data(request: Request) -> JSONResponse:
             nodes = data.get("items", [])
             total_nodes = len(nodes)
 
-            # Filter nodes with location tags
+            # Filter nodes with location (from tags or model)
             for node in nodes:
                 tags = node.get("tags", [])
-                lat = None
-                lon = None
+                tag_lat = None
+                tag_lon = None
                 friendly_name = None
                 role = None
                 node_member_id = None
@@ -78,12 +78,12 @@ async def map_data(request: Request) -> JSONResponse:
                     key = tag.get("key")
                     if key == "lat":
                         try:
-                            lat = float(tag.get("value"))
+                            tag_lat = float(tag.get("value"))
                         except (ValueError, TypeError):
                             pass
                     elif key == "lon":
                         try:
-                            lon = float(tag.get("value"))
+                            tag_lon = float(tag.get("value"))
                         except (ValueError, TypeError):
                             pass
                     elif key == "friendly_name":
@@ -93,35 +93,40 @@ async def map_data(request: Request) -> JSONResponse:
                     elif key == "member_id":
                         node_member_id = tag.get("value")
 
-                if lat is not None and lon is not None:
-                    nodes_with_coords += 1
-                    # Use friendly_name, then node name, then public key prefix
-                    display_name = (
-                        friendly_name
-                        or node.get("name")
-                        or node.get("public_key", "")[:12]
-                    )
-                    public_key = node.get("public_key")
+                # Use tag coordinates if set, otherwise fall back to model coordinates
+                lat = tag_lat if tag_lat is not None else node.get("lat")
+                lon = tag_lon if tag_lon is not None else node.get("lon")
 
-                    # Find owner member by member_id tag
-                    owner = (
-                        members_by_id.get(node_member_id) if node_member_id else None
-                    )
+                # Skip nodes without coordinates or with (0, 0) which is likely unset
+                if lat is None or lon is None:
+                    continue
+                if lat == 0.0 and lon == 0.0:
+                    continue
 
-                    nodes_with_location.append(
-                        {
-                            "public_key": public_key,
-                            "name": display_name,
-                            "adv_type": node.get("adv_type"),
-                            "lat": lat,
-                            "lon": lon,
-                            "last_seen": node.get("last_seen"),
-                            "role": role,
-                            "is_infra": role == "infra",
-                            "member_id": node_member_id,
-                            "owner": owner,
-                        }
-                    )
+                nodes_with_coords += 1
+                # Use friendly_name, then node name, then public key prefix
+                display_name = (
+                    friendly_name or node.get("name") or node.get("public_key", "")[:12]
+                )
+                public_key = node.get("public_key")
+
+                # Find owner member by member_id tag
+                owner = members_by_id.get(node_member_id) if node_member_id else None
+
+                nodes_with_location.append(
+                    {
+                        "public_key": public_key,
+                        "name": display_name,
+                        "adv_type": node.get("adv_type"),
+                        "lat": lat,
+                        "lon": lon,
+                        "last_seen": node.get("last_seen"),
+                        "role": role,
+                        "is_infra": role == "infra",
+                        "member_id": node_member_id,
+                        "owner": owner,
+                    }
+                )
         else:
             error = f"API returned status {response.status_code}"
             logger.warning(f"Failed to fetch nodes: {error}")
@@ -130,11 +135,17 @@ async def map_data(request: Request) -> JSONResponse:
         error = str(e)
         logger.warning(f"Failed to fetch nodes for map: {e}")
 
+    # Calculate infrastructure node stats
+    infra_nodes = [n for n in nodes_with_location if n.get("is_infra")]
+    infra_count = len(infra_nodes)
+
     logger.info(
-        f"Map data: {total_nodes} total nodes, " f"{nodes_with_coords} with coordinates"
+        f"Map data: {total_nodes} total nodes, "
+        f"{nodes_with_coords} with coordinates, "
+        f"{infra_count} infrastructure"
     )
 
-    # Calculate center from nodes, or use default (0, 0)
+    # Calculate center from all nodes, or use default (0, 0)
     center_lat = 0.0
     center_lon = 0.0
     if nodes_with_location:
@@ -145,6 +156,14 @@ async def map_data(request: Request) -> JSONResponse:
             nodes_with_location
         )
 
+    # Calculate separate center for infrastructure nodes
+    infra_center: dict[str, float] | None = None
+    if infra_nodes:
+        infra_center = {
+            "lat": sum(n["lat"] for n in infra_nodes) / len(infra_nodes),
+            "lon": sum(n["lon"] for n in infra_nodes) / len(infra_nodes),
+        }
+
     return JSONResponse(
         {
             "nodes": nodes_with_location,
@@ -153,9 +172,11 @@ async def map_data(request: Request) -> JSONResponse:
                 "lat": center_lat,
                 "lon": center_lon,
             },
+            "infra_center": infra_center,
             "debug": {
                 "total_nodes": total_nodes,
                 "nodes_with_coords": nodes_with_coords,
+                "infra_nodes": infra_count,
                 "error": error,
             },
         }
