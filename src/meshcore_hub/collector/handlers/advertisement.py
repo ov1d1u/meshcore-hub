@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.hash_utils import compute_advertisement_hash
-from meshcore_hub.common.models import Advertisement, Node, add_event_receiver
+from meshcore_hub.common.models import Advertisement, Blacklist, Node, add_event_receiver
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,16 @@ def handle_advertisement(
     )
 
     with db.session_scope() as session:
+        is_blacklisted = session.execute(
+            select(Blacklist.id).where(Blacklist.public_key == adv_public_key)
+        ).scalar_one_or_none()
+        if is_blacklisted:
+            logger.info(
+                "Skipping advertisement from blacklisted node %s...",
+                adv_public_key[:12],
+            )
+            return
+
         # Find or create receiver node first (needed for both new and duplicate events)
         receiver_node = None
         if public_key:

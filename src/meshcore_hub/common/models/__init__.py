@@ -10,6 +10,7 @@ from meshcore_hub.common.models.telemetry import Telemetry
 from meshcore_hub.common.models.event_log import EventLog
 from meshcore_hub.common.models.member import Member
 from meshcore_hub.common.models.event_receiver import EventReceiver, add_event_receiver
+from meshcore_hub.common.models.blacklist import Blacklist
 
 __all__ = [
     "Base",
@@ -24,4 +25,5 @@ __all__ = [
     "Member",
     "EventReceiver",
     "add_event_receiver",
+    "Blacklist",
 ]

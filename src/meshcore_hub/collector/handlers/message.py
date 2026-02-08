@@ -4,12 +4,12 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.hash_utils import compute_message_hash
-from meshcore_hub.common.models import Message, Node, add_event_receiver
+from meshcore_hub.common.models import Blacklist, Message, Node, add_event_receiver
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +96,56 @@ def _handle_message(
     )
 
     with db.session_scope() as session:
+        sender_public_key: str | None = None
+        if message_type == "contact":
+            sender_public_key = _resolve_sender_public_key(
+                session=session,
+                payload=payload,
+                pubkey_prefix=pubkey_prefix,
+            )
+
+            normalized_text = text.strip().lower()
+            if normalized_text in {"ignoreme", "unignoreme"}:
+                if not sender_public_key:
+                    logger.error(
+                        "Ignore command missing sender public key (prefix=%s)",
+                        pubkey_prefix,
+                    )
+                    return
+
+                try:
+                    if normalized_text == "ignoreme":
+                        existing = session.execute(
+                            select(Blacklist.id).where(
+                                Blacklist.public_key == sender_public_key
+                            )
+                        ).scalar_one_or_none()
+                        if not existing:
+                            session.add(Blacklist(public_key=sender_public_key))
+                            session.flush()
+                    else:
+                        session.execute(
+                            delete(Blacklist).where(
+                                Blacklist.public_key == sender_public_key
+                            )
+                        )
+                        session.flush()
+                except Exception as e:
+                    logger.error("Failed to process ignore command: %s", e)
+                return
+
+            if sender_public_key:
+                is_blacklisted = session.execute(
+                    select(Blacklist.id).where(
+                        Blacklist.public_key == sender_public_key
+                    )
+                ).scalar_one_or_none()
+                if is_blacklisted:
+                    logger.info(
+                        "Skipping message from blacklisted node %s...",
+                        sender_public_key[:12],
+                    )
+                    return
         # Find or create receiver node first (needed for both new and duplicate events)
         receiver_node = None
         if public_key:
@@ -195,3 +245,40 @@ def _handle_message(
             f"Stored channel {channel_idx} message: "
             f"{text[:30]}{'...' if len(text) > 30 else ''}"
         )
+
+
+def _resolve_sender_public_key(
+    session: Any,
+    payload: dict[str, Any],
+    pubkey_prefix: str | None,
+) -> str | None:
+    """Resolve sender public key from message payload or stored nodes.
+
+    Args:
+        session: Database session
+        payload: Message payload
+        pubkey_prefix: Sender's public key prefix (12 chars)
+
+    Returns:
+        Full 64-char public key if resolvable, otherwise None
+    """
+    payload_key = payload.get("public_key") or payload.get("sender_public_key")
+    if isinstance(payload_key, str) and len(payload_key) == 64:
+        return payload_key
+
+    if not pubkey_prefix:
+        return None
+
+    matches = session.execute(
+        select(Node.public_key).where(Node.public_key.like(f"{pubkey_prefix}%"))
+    ).scalars().all()
+
+    if len(matches) == 1:
+        return matches[0]
+
+    if len(matches) > 1:
+        logger.error(
+            "Multiple nodes match prefix %s; cannot resolve sender public key",
+            pubkey_prefix,
+        )
+    return None
