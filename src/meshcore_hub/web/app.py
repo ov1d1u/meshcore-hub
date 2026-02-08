@@ -62,6 +62,7 @@ def create_app(
     network_contact_email: str | None = None,
     network_contact_discord: str | None = None,
     network_contact_github: str | None = None,
+    network_contact_youtube: str | None = None,
     network_welcome_text: str | None = None,
 ) -> FastAPI:
     """Create and configure the web dashboard application.
@@ -80,6 +81,7 @@ def create_app(
         network_contact_email: Contact email address
         network_contact_discord: Discord invite/server info
         network_contact_github: GitHub repository URL
+        network_contact_youtube: YouTube channel URL
         network_welcome_text: Welcome text for homepage
 
     Returns:
@@ -123,6 +125,9 @@ def create_app(
     )
     app.state.network_contact_github = (
         network_contact_github or settings.network_contact_github
+    )
+    app.state.network_contact_youtube = (
+        network_contact_youtube or settings.network_contact_youtube
     )
     app.state.network_welcome_text = (
         network_welcome_text or settings.network_welcome_text
@@ -309,6 +314,7 @@ def get_network_context(request: Request) -> dict:
         "network_contact_email": request.app.state.network_contact_email,
         "network_contact_discord": request.app.state.network_contact_discord,
         "network_contact_github": request.app.state.network_contact_github,
+        "network_contact_youtube": request.app.state.network_contact_youtube,
         "network_welcome_text": request.app.state.network_welcome_text,
         "admin_enabled": request.app.state.admin_enabled,
         "custom_pages": custom_pages,
