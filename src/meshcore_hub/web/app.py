@@ -126,6 +126,7 @@ def create_app(
     api_url: str | None = None,
     api_key: str | None = None,
     admin_enabled: bool | None = None,
+    members_page_enabled: bool | None = None,
     network_name: str | None = None,
     network_city: str | None = None,
     network_country: str | None = None,
@@ -146,6 +147,7 @@ def create_app(
         api_url: Base URL of the MeshCore Hub API
         api_key: API key for authentication
         admin_enabled: Enable admin interface at /a/
+        members_page_enabled: Enable members page at /members
         network_name: Display name for the network
         network_city: City where the network is located
         network_country: Country where the network is located
@@ -193,6 +195,11 @@ def create_app(
     app.state.admin_enabled = (
         admin_enabled if admin_enabled is not None else settings.web_admin_enabled
     )
+    app.state.members_page_enabled = (
+        members_page_enabled
+        if members_page_enabled is not None
+        else settings.members_page_enabled
+    )
     app.state.network_name = network_name or settings.network_name
     app.state.network_city = network_city or settings.network_city
     app.state.network_country = network_country or settings.network_country
@@ -229,6 +236,8 @@ def create_app(
         overrides["dashboard"] = False
     if not effective_features.get("nodes", True):
         overrides["map"] = False
+    if not app.state.members_page_enabled:
+        overrides["members"] = False
     if overrides:
         effective_features = {**effective_features, **overrides}
     app.state.features = effective_features
@@ -629,6 +638,8 @@ def create_app(
         """Serve the SPA shell for all non-API routes."""
         templates_inst: Jinja2Templates = request.app.state.templates
         features = request.app.state.features
+        if not features.get("members", True) and path.startswith("members"):
+            return HTMLResponse(status_code=404, content="Not Found")
         page_loader = request.app.state.page_loader
         custom_pages = (
             page_loader.get_menu_pages() if features.get("pages", True) else []
