@@ -347,3 +347,19 @@ footer {
 .leaflet-marker-icon:hover {
     z-index: 10000 !important;
 }
+
+/* ==========================================================================
+   Node Header Hero Map Background
+   ========================================================================== */
+
+#header-map {
+    height: 100%;
+    width: 100%;
+    z-index: 0;
+}
+
+/* Ensure Leaflet elements stay within the map layer */
+#header-map .leaflet-pane,
+#header-map .leaflet-control {
+    z-index: auto !important;
+}

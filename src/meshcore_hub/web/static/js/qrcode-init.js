@@ -9,6 +9,7 @@
  * - publicKey: 64-char hex public key (required)
  * - advType: Node advertisement type (optional)
  * - containerId: ID of container element (default: 'qr-code')
+ * - size: QR code size in pixels (default: 128)
  */
 
 (function() {
@@ -25,6 +26,7 @@
     var publicKey = config.publicKey;
     var advType = config.advType || '';
     var containerId = config.containerId || 'qr-code';
+    var size = config.size || 128;
 
     // Map adv_type to numeric type for meshcore:// protocol
     var typeMap = {
@@ -46,8 +48,8 @@
         try {
             new QRCode(qrContainer, {
                 text: meshcoreUrl,
-                width: 256,
-                height: 256,
+                width: size,
+                height: size,
                 colorDark: '#000000',
                 colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.L
