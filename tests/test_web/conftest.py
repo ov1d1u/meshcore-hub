@@ -286,6 +286,7 @@ def web_app(mock_http_client: MockHttpClient) -> Any:
     app = create_app(
         api_url="http://localhost:8000",
         api_key="test-api-key",
+        members_page_enabled=True,
         network_name="Test Network",
         network_city="Test City",
         network_country="Test Country",

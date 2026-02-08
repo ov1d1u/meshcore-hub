@@ -259,6 +259,11 @@ class WebSettings(CommonSettings):
         description="Enable admin interface at /a/ (requires OAuth2Proxy in front)",
     )
 
+    members_page_enabled: bool = Field(
+        default=False,
+        description="Enable members page at /members (default: disabled)",
+    )
+
     # API connection
     api_base_url: str = Field(
         default="http://localhost:8000",

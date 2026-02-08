@@ -172,7 +172,9 @@
                     <li><a href="/advertisements" class="{% if request.url.path == '/advertisements' %}active{% endif %}">{{ icon_advertisements("h-4 w-4") }} Adverts</a></li>
                     <li><a href="/messages" class="{% if request.url.path == '/messages' %}active{% endif %}">{{ icon_messages("h-4 w-4") }} Messages</a></li>
                     <li><a href="/map" class="{% if request.url.path == '/map' %}active{% endif %}">{{ icon_map("h-4 w-4") }} Map</a></li>
+                    {% if members_page_enabled %}
                     <li><a href="/members" class="{% if request.url.path == '/members' %}active{% endif %}">{{ icon_members("h-4 w-4") }} Members</a></li>
+                    {% endif %}
                     {% for page in custom_pages %}
                     <li><a href="{{ page.url }}" class="{% if request.url.path == page.url %}active{% endif %}">{{ icon_page("h-4 w-4") }} {{ page.title }}</a></li>
                     {% endfor %}
@@ -191,7 +193,9 @@
                 <li><a href="/advertisements" class="{% if request.url.path == '/advertisements' %}active{% endif %}">{{ icon_advertisements("h-4 w-4") }} Adverts</a></li>
                 <li><a href="/messages" class="{% if request.url.path == '/messages' %}active{% endif %}">{{ icon_messages("h-4 w-4") }} Messages</a></li>
                 <li><a href="/map" class="{% if request.url.path == '/map' %}active{% endif %}">{{ icon_map("h-4 w-4") }} Map</a></li>
+                {% if members_page_enabled %}
                 <li><a href="/members" class="{% if request.url.path == '/members' %}active{% endif %}">{{ icon_members("h-4 w-4") }} Members</a></li>
+                {% endif %}
                 {% for page in custom_pages %}
                 <li><a href="{{ page.url }}" class="{% if request.url.path == page.url %}active{% endif %}">{{ icon_page("h-4 w-4") }} {{ page.title }}</a></li>
                 {% endfor %}

@@ -91,6 +91,7 @@ def create_app(
     api_url: str | None = None,
     api_key: str | None = None,
     admin_enabled: bool | None = None,
+    members_page_enabled: bool | None = None,
     network_name: str | None = None,
     network_city: str | None = None,
     network_country: str | None = None,
@@ -109,6 +110,7 @@ def create_app(
         api_url: Base URL of the MeshCore Hub API
         api_key: API key for authentication
         admin_enabled: Enable admin interface at /a/
+        members_page_enabled: Enable members page at /members
         network_name: Display name for the network
         network_city: City where the network is located
         network_country: Country where the network is located
@@ -140,6 +142,11 @@ def create_app(
     app.state.api_key = api_key or settings.api_key
     app.state.admin_enabled = (
         admin_enabled if admin_enabled is not None else settings.web_admin_enabled
+    )
+    app.state.members_page_enabled = (
+        members_page_enabled
+        if members_page_enabled is not None
+        else settings.members_page_enabled
     )
     app.state.network_name = network_name or settings.network_name
     app.state.network_city = network_city or settings.network_city
@@ -342,6 +349,7 @@ def get_network_context(request: Request) -> dict:
         "network_contact_github": request.app.state.network_contact_github,
         "network_welcome_text": request.app.state.network_welcome_text,
         "admin_enabled": request.app.state.admin_enabled,
+        "members_page_enabled": request.app.state.members_page_enabled,
         "custom_pages": custom_pages,
         "logo_url": request.app.state.logo_url,
         "version": __version__,

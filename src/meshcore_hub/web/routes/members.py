@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from meshcore_hub.web.app import get_network_context, get_templates
@@ -14,6 +14,9 @@ router = APIRouter()
 @router.get("/members", response_class=HTMLResponse)
 async def members_page(request: Request) -> HTMLResponse:
     """Render the members page."""
+    if not request.app.state.members_page_enabled:
+        raise HTTPException(status_code=404, detail="Members page disabled")
+
     templates = get_templates(request)
     context = get_network_context(request)
     context["request"] = request
