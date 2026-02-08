@@ -291,6 +291,9 @@ class WebSettings(CommonSettings):
     network_contact_github: Optional[str] = Field(
         default=None, description="GitHub repository URL"
     )
+    network_contact_youtube: Optional[str] = Field(
+        default=None, description="YouTube channel URL"
+    )
     network_welcome_text: Optional[str] = Field(
         default=None, description="Welcome text for homepage"
     )

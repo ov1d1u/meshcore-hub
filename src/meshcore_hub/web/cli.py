@@ -89,6 +89,13 @@ import click
     help="GitHub repository URL",
 )
 @click.option(
+    "--network-contact-youtube",
+    type=str,
+    default=None,
+    envvar="NETWORK_CONTACT_YOUTUBE",
+    help="YouTube channel URL",
+)
+@click.option(
     "--network-welcome-text",
     type=str,
     default=None,
@@ -116,6 +123,7 @@ def web(
     network_contact_email: str | None,
     network_contact_discord: str | None,
     network_contact_github: str | None,
+    network_contact_youtube: str | None,
     network_welcome_text: str | None,
     reload: bool,
 ) -> None:
@@ -201,6 +209,7 @@ def web(
             network_contact_email=network_contact_email,
             network_contact_discord=network_contact_discord,
             network_contact_github=network_contact_github,
+            network_contact_youtube=network_contact_youtube,
             network_welcome_text=network_welcome_text,
         )
 
