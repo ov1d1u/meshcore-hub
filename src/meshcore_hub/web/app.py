@@ -5,7 +5,6 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-<<<<<<< HEAD
 from typing import Any, AsyncGenerator
 from zoneinfo import ZoneInfo
 
