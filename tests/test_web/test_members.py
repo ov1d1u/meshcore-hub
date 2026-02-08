@@ -4,6 +4,8 @@ import json
 
 from fastapi.testclient import TestClient
 
+from meshcore_hub.web.app import create_app
+
 
 class TestMembersPage:
     """Tests for the members page."""
@@ -12,6 +14,20 @@ class TestMembersPage:
         """Test that members page returns 200 status code."""
         response = client.get("/members")
         assert response.status_code == 200
+
+    def test_members_disabled_returns_404(self, mock_http_client: object) -> None:
+        """Test that members page returns 404 when disabled."""
+        app = create_app(
+            api_url="http://localhost:8000",
+            api_key="test-api-key",
+            members_page_enabled=False,
+            network_name="Test Network",
+        )
+        app.state.http_client = mock_http_client
+
+        client = TestClient(app, raise_server_exceptions=True)
+        response = client.get("/members")
+        assert response.status_code == 404
 
     def test_members_returns_html(self, client: TestClient) -> None:
         """Test that members page returns HTML content."""
