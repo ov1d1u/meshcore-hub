@@ -1,22 +1,10 @@
 {% extends "base.html" %}
+{% from "macros/icons.html" import icon_alert, icon_error %}
 
-{% block title %}{{ network_name }} - Node Details{% endblock %}
+{% block title %}{% if node %}{{ node.name or ('Node ' ~ public_key[:8] ~ '...') }} - {{ network_name }}{% else %}Node Not Found - {{ network_name }}{% endif %}{% endblock %}
 
 {% block extra_head %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<style>
-    #node-map {
-        height: 300px;
-        border-radius: var(--rounded-box);
-    }
-    .leaflet-popup-content-wrapper {
-        background: oklch(var(--b1));
-        color: oklch(var(--bc));
-    }
-    .leaflet-popup-tip {
-        background: oklch(var(--b1));
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -40,9 +28,7 @@
 
 {% if api_error %}
 <div class="alert alert-warning mb-6">
-    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
+    {{ icon_alert("stroke-current shrink-0 h-6 w-6") }}
     <span>Could not fetch data from API: {{ api_error }}</span>
 </div>
 {% endif %}
@@ -260,9 +246,7 @@
 
 {% else %}
 <div class="alert alert-error">
-    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
+    {{ icon_error("stroke-current shrink-0 h-6 w-6") }}
     <span>Node not found: {{ public_key }}</span>
 </div>
 <a href="/nodes" class="btn btn-primary mt-4">Back to Nodes</a>
@@ -278,43 +262,13 @@
     {% endif %}
 {% endfor %}
 <script>
-    // Generate QR code for adding contact
-    (function() {
-        const nodeName = {{ (ns_qr.tag_name or node.name or 'Node') | tojson }};
-        const publicKey = {{ node.public_key | tojson }};
-        const advType = {{ (node.adv_type or '') | tojson }};
-
-        // Map adv_type to numeric type for meshcore:// protocol
-        const typeMap = {
-            'chat': 1,
-            'repeater': 2,
-            'room': 3,
-            'sensor': 4
-        };
-        const typeNum = typeMap[advType.toLowerCase()] || 1;
-
-        // Build meshcore:// URL
-        const meshcoreUrl = `meshcore://contact/add?name=${encodeURIComponent(nodeName)}&public_key=${publicKey}&type=${typeNum}`;
-
-        // Generate QR code
-        const qrContainer = document.getElementById('qr-code');
-        if (qrContainer && typeof QRCode !== 'undefined') {
-            try {
-                new QRCode(qrContainer, {
-                    text: meshcoreUrl,
-                    width: 256,
-                    height: 256,
-                    colorDark: '#000000',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.L
-                });
-            } catch (error) {
-                console.error('QR code generation failed:', error);
-                qrContainer.innerHTML = '<p class="text-sm opacity-50">QR code unavailable</p>';
-            }
-        }
-    })();
+    window.qrCodeConfig = {
+        name: {{ (ns_qr.tag_name or node.name or 'Node') | tojson }},
+        publicKey: {{ node.public_key | tojson }},
+        advType: {{ (node.adv_type or '') | tojson }}
+    };
 </script>
+<script src="{{ url_for('static', path='js/qrcode-init.js') }}"></script>
 
 {% set ns_map = namespace(lat=none, lon=none, name=none) %}
 {% for tag in node.tags or [] %}
@@ -328,52 +282,14 @@
 {% endfor %}
 {% if ns_map.lat and ns_map.lon %}
 <script>
-    // Initialize map centered on the node's location
-    const nodeLat = {{ ns_map.lat }};
-    const nodeLon = {{ ns_map.lon }};
-    const nodeName = {{ (ns_map.name or node.name or 'Unnamed Node') | tojson }};
-    const nodeType = {{ (node.adv_type or '') | tojson }};
-    const publicKey = {{ node.public_key | tojson }};
-
-    const map = L.map('node-map').setView([nodeLat, nodeLon], 15);
-
-    // Add tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    // Get emoji marker based on node type
-    function getNodeEmoji(type) {
-        const normalizedType = type ? type.toLowerCase() : null;
-        if (normalizedType === 'chat') return '💬';
-        if (normalizedType === 'repeater') return '📡';
-        if (normalizedType === 'room') return '🪧';
-        return '📍';
-    }
-
-    // Create marker icon (just the emoji, no label)
-    const emoji = getNodeEmoji(nodeType);
-    const icon = L.divIcon({
-        className: 'custom-div-icon',
-        html: `<span style="font-size: 32px; text-shadow: 0 0 3px #1a237e, 0 0 6px #1a237e, 0 1px 2px rgba(0,0,0,0.7);">${emoji}</span>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-    });
-
-    // Add marker
-    const marker = L.marker([nodeLat, nodeLon], { icon: icon }).addTo(map);
-
-    // Add popup (shown on click, not by default)
-    marker.bindPopup(`
-        <div class="p-2">
-            <h3 class="font-bold text-lg mb-2">${emoji} ${nodeName}</h3>
-            <div class="space-y-1 text-sm">
-                ${nodeType ? `<p><span class="opacity-70">Type:</span> ${nodeType}</p>` : ''}
-                <p><span class="opacity-70">Coordinates:</span> ${nodeLat.toFixed(4)}, ${nodeLon.toFixed(4)}</p>
-            </div>
-        </div>
-    `);
+    window.nodeMapConfig = {
+        lat: {{ ns_map.lat }},
+        lon: {{ ns_map.lon }},
+        name: {{ (ns_map.name or node.name or 'Unnamed Node') | tojson }},
+        type: {{ (node.adv_type or '') | tojson }}
+    };
 </script>
+<script src="{{ url_for('static', path='js/map-node.js') }}"></script>
 {% endif %}
 {% endif %}
 {% endblock %}
