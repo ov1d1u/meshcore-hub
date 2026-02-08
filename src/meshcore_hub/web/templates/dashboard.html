@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/icons.html" import icon_nodes, icon_advertisements, icon_messages, icon_alert, icon_refresh, icon_channel %}
 
 {% block title %}{{ network_name }} - Network Overview{% endblock %}
 
@@ -6,18 +7,14 @@
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-3xl font-bold">Network Overview</h1>
     <button onclick="location.reload()" class="btn btn-ghost btn-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
+        {{ icon_refresh("h-5 w-5") }}
         Refresh
     </button>
 </div>
 
 {% if api_error %}
 <div class="alert alert-warning mb-6">
-    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
+    {{ icon_alert("stroke-current shrink-0 h-6 w-6") }}
     <span>Could not fetch data from API: {{ api_error }}</span>
 </div>
 {% endif %}
@@ -27,9 +24,7 @@
     <!-- Total Nodes -->
     <div class="stat bg-base-100 rounded-box shadow">
         <div class="stat-figure text-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
+            {{ icon_nodes("h-8 w-8") }}
         </div>
         <div class="stat-title">Total Nodes</div>
         <div class="stat-value text-primary">{{ stats.total_nodes }}</div>
@@ -39,9 +34,7 @@
     <!-- Advertisements (7 days) -->
     <div class="stat bg-base-100 rounded-box shadow">
         <div class="stat-figure text-secondary">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-            </svg>
+            {{ icon_advertisements("h-8 w-8") }}
         </div>
         <div class="stat-title">Advertisements</div>
         <div class="stat-value text-secondary">{{ stats.advertisements_7d }}</div>
@@ -51,9 +44,7 @@
     <!-- Messages (7 days) -->
     <div class="stat bg-base-100 rounded-box shadow">
         <div class="stat-figure text-accent">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
+            {{ icon_messages("h-8 w-8") }}
         </div>
         <div class="stat-title">Messages</div>
         <div class="stat-value text-accent">{{ stats.messages_7d }}</div>
@@ -67,9 +58,7 @@
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
             <h2 class="card-title text-base">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
+                {{ icon_nodes("h-5 w-5") }}
                 Total Nodes
             </h2>
             <p class="text-xs opacity-70">Over time (last 7 days)</p>
@@ -83,9 +72,7 @@
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
             <h2 class="card-title text-base">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                </svg>
+                {{ icon_advertisements("h-5 w-5") }}
                 Advertisements
             </h2>
             <p class="text-xs opacity-70">Per day (last 7 days)</p>
@@ -99,9 +86,7 @@
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
             <h2 class="card-title text-base">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
+                {{ icon_messages("h-5 w-5") }}
                 Messages
             </h2>
             <p class="text-xs opacity-70">Per day (last 7 days)</p>
@@ -118,9 +103,7 @@
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
             <h2 class="card-title">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                </svg>
+                {{ icon_advertisements("h-6 w-6") }}
                 Recent Advertisements
             </h2>
             {% if stats.recent_advertisements %}
@@ -174,9 +157,7 @@
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
             <h2 class="card-title">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                </svg>
+                {{ icon_channel("h-6 w-6") }}
                 Recent Channel Messages
             </h2>
             <div class="space-y-4">
@@ -206,115 +187,13 @@
 
 {% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', path='js/charts.js') }}"></script>
 <script>
 (function() {
-    const advertData = {{ advert_activity_json | safe }};
-    const messageData = {{ message_activity_json | safe }};
-    const nodeData = {{ node_count_json | safe }};
-
-    // Common chart options
-    const commonOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                mode: 'index',
-                intersect: false,
-                backgroundColor: 'oklch(0.25 0 0)',
-                titleColor: 'oklch(0.9 0 0)',
-                bodyColor: 'oklch(0.9 0 0)',
-                borderColor: 'oklch(0.4 0 0)',
-                borderWidth: 1
-            }
-        },
-        scales: {
-            x: {
-                grid: { color: 'oklch(0.4 0 0 / 0.2)' },
-                ticks: { color: 'oklch(0.7 0 0)', maxRotation: 45, minRotation: 45 }
-            },
-            y: {
-                beginAtZero: true,
-                grid: { color: 'oklch(0.4 0 0 / 0.2)' },
-                ticks: { color: 'oklch(0.7 0 0)', precision: 0 }
-            }
-        },
-        interaction: { mode: 'nearest', axis: 'x', intersect: false }
-    };
-
-    // Helper to format dates
-    function formatLabels(data) {
-        return data.map(d => {
-            const date = new Date(d.date);
-            return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-        });
-    }
-
-    // Advertisements chart (secondary color - pink/magenta)
-    const advertCtx = document.getElementById('advertChart');
-    if (advertCtx && advertData.data && advertData.data.length > 0) {
-        new Chart(advertCtx, {
-            type: 'line',
-            data: {
-                labels: formatLabels(advertData.data),
-                datasets: [{
-                    label: 'Advertisements',
-                    data: advertData.data.map(d => d.count),
-                    borderColor: 'oklch(0.7 0.17 330)',
-                    backgroundColor: 'oklch(0.7 0.17 330 / 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 2,
-                    pointHoverRadius: 5
-                }]
-            },
-            options: commonOptions
-        });
-    }
-
-    // Messages chart (accent color - teal/cyan)
-    const messageCtx = document.getElementById('messageChart');
-    if (messageCtx && messageData.data && messageData.data.length > 0) {
-        new Chart(messageCtx, {
-            type: 'line',
-            data: {
-                labels: formatLabels(messageData.data),
-                datasets: [{
-                    label: 'Messages',
-                    data: messageData.data.map(d => d.count),
-                    borderColor: 'oklch(0.75 0.18 180)',
-                    backgroundColor: 'oklch(0.75 0.18 180 / 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 2,
-                    pointHoverRadius: 5
-                }]
-            },
-            options: commonOptions
-        });
-    }
-
-    // Node count chart (primary color - purple/blue)
-    const nodeCtx = document.getElementById('nodeChart');
-    if (nodeCtx && nodeData.data && nodeData.data.length > 0) {
-        new Chart(nodeCtx, {
-            type: 'line',
-            data: {
-                labels: formatLabels(nodeData.data),
-                datasets: [{
-                    label: 'Total Nodes',
-                    data: nodeData.data.map(d => d.count),
-                    borderColor: 'oklch(0.65 0.24 265)',
-                    backgroundColor: 'oklch(0.65 0.24 265 / 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 2,
-                    pointHoverRadius: 5
-                }]
-            },
-            options: commonOptions
-        });
-    }
+    var nodeData = {{ node_count_json | safe }};
+    var advertData = {{ advert_activity_json | safe }};
+    var messageData = {{ message_activity_json | safe }};
+    initDashboardCharts(nodeData, advertData, messageData);
 })();
 </script>
 {% endblock %}

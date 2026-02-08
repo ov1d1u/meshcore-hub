@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/icons.html" import icon_info %}
 
 {% block title %}{{ network_name }} - Members{% endblock %}
 
@@ -71,9 +72,7 @@
 </div>
 {% else %}
 <div class="alert alert-info">
-    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
+    {{ icon_info("stroke-current shrink-0 h-6 w-6") }}
     <div>
         <h3 class="font-bold">No members configured</h3>
         <p class="text-sm">To display network members, create a members.yaml file in your seed directory.</p>
