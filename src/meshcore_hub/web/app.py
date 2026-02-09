@@ -44,7 +44,7 @@ def _create_timezone_filters(tz_name: str) -> dict:
 
     def format_datetime(
         value: str | datetime | None,
-        fmt: str = "%Y-%m-%d %H:%M:%S %Z",
+        fmt: str = "%Y-%m-%d %H:%M:%S",
     ) -> str:
         """Format a UTC datetime string or object to the configured timezone.
 
@@ -79,7 +79,7 @@ def _create_timezone_filters(tz_name: str) -> dict:
             # Fallback to original value if parsing fails
             return str(value)[:19].replace("T", " ") if value else "-"
 
-    def format_time(value: str | datetime | None, fmt: str = "%H:%M:%S %Z") -> str:
+    def format_time(value: str | datetime | None, fmt: str = "%H:%M:%S") -> str:
         """Format just the time portion in the configured timezone."""
         return format_datetime(value, fmt)
 
@@ -89,10 +89,10 @@ def _create_timezone_filters(tz_name: str) -> dict:
 
     return {
         "localtime": format_datetime,
-        "localtime_short": lambda v: format_datetime(v, "%Y-%m-%d %H:%M %Z"),
+        "localtime_short": lambda v: format_datetime(v, "%Y-%m-%d %H:%M"),
         "localdate": format_date,
         "localtimeonly": format_time,
-        "localtimeonly_short": lambda v: format_time(v, "%H:%M %Z"),
+        "localtimeonly_short": lambda v: format_time(v, "%H:%M"),
     }
 
 
@@ -214,6 +214,13 @@ def create_app(
     tz_filters = _create_timezone_filters(settings.tz)
     for name, func in tz_filters.items():
         templates.env.filters[name] = func
+
+    # Compute timezone abbreviation (e.g., "GMT", "EST", "PST")
+    try:
+        tz = ZoneInfo(settings.tz)
+        app.state.timezone_abbr = datetime.now(tz).strftime("%Z")
+    except Exception:
+        app.state.timezone_abbr = "UTC"
 
     app.state.templates = templates
 
@@ -398,5 +405,5 @@ def get_network_context(request: Request) -> dict:
         "custom_pages": custom_pages,
         "logo_url": request.app.state.logo_url,
         "version": __version__,
-        "timezone": request.app.state.timezone,
+        "timezone": request.app.state.timezone_abbr,
     }
