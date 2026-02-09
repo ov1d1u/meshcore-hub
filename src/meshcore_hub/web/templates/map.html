@@ -6,6 +6,7 @@
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-3xl font-bold">Map</h1>
     <div class="flex items-center gap-2">
+        {% if timezone and timezone != 'UTC' %}<span class="text-sm opacity-60">{{ timezone }}</span>{% endif %}
         <span id="node-count" class="badge badge-lg">Loading...</span>
         <span id="filtered-count" class="badge badge-lg badge-ghost hidden"></span>
     </div>

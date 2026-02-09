@@ -7,7 +7,10 @@
 {% block content %}
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-3xl font-bold">Messages</h1>
-    <span class="badge badge-lg">{{ total }} total</span>
+    <div class="flex items-center gap-2">
+        {% if timezone and timezone != 'UTC' %}<span class="text-sm opacity-60">{{ timezone }}</span>{% endif %}
+        <span class="badge badge-lg">{{ total }} total</span>
+    </div>
 </div>
 
 {% if api_error %}

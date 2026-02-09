@@ -44,7 +44,7 @@ def _create_timezone_filters(tz_name: str) -> dict:
 
     def format_datetime(
         value: str | datetime | None,
-        fmt: str = "%Y-%m-%d %H:%M:%S %Z",
+        fmt: str = "%Y-%m-%d %H:%M:%S",
     ) -> str:
         """Format a UTC datetime string or object to the configured timezone.
 
@@ -79,7 +79,7 @@ def _create_timezone_filters(tz_name: str) -> dict:
             # Fallback to original value if parsing fails
             return str(value)[:19].replace("T", " ") if value else "-"
 
-    def format_time(value: str | datetime | None, fmt: str = "%H:%M:%S %Z") -> str:
+    def format_time(value: str | datetime | None, fmt: str = "%H:%M:%S") -> str:
         """Format just the time portion in the configured timezone."""
         return format_datetime(value, fmt)
 
@@ -89,10 +89,10 @@ def _create_timezone_filters(tz_name: str) -> dict:
 
     return {
         "localtime": format_datetime,
-        "localtime_short": lambda v: format_datetime(v, "%Y-%m-%d %H:%M %Z"),
+        "localtime_short": lambda v: format_datetime(v, "%Y-%m-%d %H:%M"),
         "localdate": format_date,
         "localtimeonly": format_time,
-        "localtimeonly_short": lambda v: format_time(v, "%H:%M %Z"),
+        "localtimeonly_short": lambda v: format_time(v, "%H:%M"),
     }
 
 
