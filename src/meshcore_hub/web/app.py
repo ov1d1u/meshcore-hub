@@ -215,6 +215,13 @@ def create_app(
     for name, func in tz_filters.items():
         templates.env.filters[name] = func
 
+    # Compute timezone abbreviation (e.g., "GMT", "EST", "PST")
+    try:
+        tz = ZoneInfo(settings.tz)
+        app.state.timezone_abbr = datetime.now(tz).strftime("%Z")
+    except Exception:
+        app.state.timezone_abbr = "UTC"
+
     app.state.templates = templates
 
     # Initialize page loader for custom markdown pages
@@ -398,5 +405,5 @@ def get_network_context(request: Request) -> dict:
         "custom_pages": custom_pages,
         "logo_url": request.app.state.logo_url,
         "version": __version__,
-        "timezone": request.app.state.timezone,
+        "timezone": request.app.state.timezone_abbr,
     }
