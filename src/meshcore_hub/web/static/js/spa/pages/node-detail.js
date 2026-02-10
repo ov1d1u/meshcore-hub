@@ -199,17 +199,20 @@ ${heroHtml}
             cleanupFns.push(() => map.remove());
         }
 
-        // Initialize QR code
-        if (typeof QRCode !== 'undefined') {
-            const typeMap = { chat: 1, repeater: 2, room: 3, sensor: 4 };
-            const typeNum = typeMap[(node.adv_type || '').toLowerCase()] || 1;
-            const url = 'meshcore://contact/add?name=' + encodeURIComponent(displayName) + '&public_key=' + node.public_key + '&type=' + typeNum;
-            new QRCode(document.getElementById('qr-code'), {
-                text: url, width: 140, height: 140,
-                colorDark: '#000000', colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.L,
-            });
-        }
+        // Initialize QR code (defer to next frame so layout settles after map init)
+        requestAnimationFrame(() => {
+            const qrEl = document.getElementById('qr-code');
+            if (qrEl && typeof QRCode !== 'undefined') {
+                const typeMap = { chat: 1, repeater: 2, room: 3, sensor: 4 };
+                const typeNum = typeMap[(node.adv_type || '').toLowerCase()] || 1;
+                const url = 'meshcore://contact/add?name=' + encodeURIComponent(displayName) + '&public_key=' + node.public_key + '&type=' + typeNum;
+                new QRCode(qrEl, {
+                    text: url, width: 140, height: 140,
+                    colorDark: '#000000', colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.L,
+                });
+            }
+        });
 
         return () => {
             cleanupFns.forEach(fn => fn());
