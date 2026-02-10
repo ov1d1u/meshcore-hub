@@ -27,9 +27,6 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ logo_url }}">
 
-    <!-- Enable View Transitions API for smooth page navigation -->
-    <meta name="view-transition" content="same-origin">
-
     <!-- Tailwind CSS with DaisyUI -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -42,7 +39,7 @@
 
     {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-screen bg-base-200">
+<body class="min-h-screen bg-base-200 flex flex-col">
     <!-- Navbar -->
     <div class="navbar bg-base-100 shadow-lg">
         <div class="navbar-start">
@@ -52,12 +49,12 @@
                 </div>
                 <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
                     <li><a href="/" class="{% if request.url.path == '/' %}active{% endif %}">{{ icon_home("h-4 w-4") }} Home</a></li>
-                    <li><a href="/dashboard" class="{% if request.url.path == '/dashboard' %}active{% endif %}">{{ icon_dashboard("h-4 w-4") }} Dashboard</a></li>
-                    <li><a href="/nodes" class="{% if '/nodes' in request.url.path %}active{% endif %}">{{ icon_nodes("h-4 w-4") }} Nodes</a></li>
-                    <li><a href="/advertisements" class="{% if request.url.path == '/advertisements' %}active{% endif %}">{{ icon_advertisements("h-4 w-4") }} Advertisements</a></li>
-                    <li><a href="/messages" class="{% if request.url.path == '/messages' %}active{% endif %}">{{ icon_messages("h-4 w-4") }} Messages</a></li>
-                    <li><a href="/map" class="{% if request.url.path == '/map' %}active{% endif %}">{{ icon_map("h-4 w-4") }} Map</a></li>
-                    <li><a href="/members" class="{% if request.url.path == '/members' %}active{% endif %}">{{ icon_members("h-4 w-4") }} Members</a></li>
+                    <li><a href="/dashboard" class="{% if request.url.path == '/dashboard' %}active{% endif %}">{{ icon_dashboard("h-4 w-4 nav-icon-dashboard") }} Dashboard</a></li>
+                    <li><a href="/nodes" class="{% if '/nodes' in request.url.path %}active{% endif %}">{{ icon_nodes("h-4 w-4 nav-icon-nodes") }} Nodes</a></li>
+                    <li><a href="/advertisements" class="{% if request.url.path == '/advertisements' %}active{% endif %}">{{ icon_advertisements("h-4 w-4 nav-icon-adverts") }} Advertisements</a></li>
+                    <li><a href="/messages" class="{% if request.url.path == '/messages' %}active{% endif %}">{{ icon_messages("h-4 w-4 nav-icon-messages") }} Messages</a></li>
+                    <li><a href="/map" class="{% if request.url.path == '/map' %}active{% endif %}">{{ icon_map("h-4 w-4 nav-icon-map") }} Map</a></li>
+                    <li><a href="/members" class="{% if request.url.path == '/members' %}active{% endif %}">{{ icon_members("h-4 w-4 nav-icon-members") }} Members</a></li>
                     {% for page in custom_pages %}
                     <li><a href="{{ page.url }}" class="{% if request.url.path == page.url %}active{% endif %}">{{ icon_page("h-4 w-4") }} {{ page.title }}</a></li>
                     {% endfor %}
@@ -71,24 +68,23 @@
         <div class="navbar-center hidden lg:flex">
             <ul class="menu menu-horizontal px-1">
                 <li><a href="/" class="{% if request.url.path == '/' %}active{% endif %}">{{ icon_home("h-4 w-4") }} Home</a></li>
-                <li><a href="/dashboard" class="{% if request.url.path == '/dashboard' %}active{% endif %}">{{ icon_dashboard("h-4 w-4") }} Dashboard</a></li>
-                <li><a href="/nodes" class="{% if '/nodes' in request.url.path %}active{% endif %}">{{ icon_nodes("h-4 w-4") }} Nodes</a></li>
-                <li><a href="/advertisements" class="{% if request.url.path == '/advertisements' %}active{% endif %}">{{ icon_advertisements("h-4 w-4") }} Advertisements</a></li>
-                <li><a href="/messages" class="{% if request.url.path == '/messages' %}active{% endif %}">{{ icon_messages("h-4 w-4") }} Messages</a></li>
-                <li><a href="/map" class="{% if request.url.path == '/map' %}active{% endif %}">{{ icon_map("h-4 w-4") }} Map</a></li>
-                <li><a href="/members" class="{% if request.url.path == '/members' %}active{% endif %}">{{ icon_members("h-4 w-4") }} Members</a></li>
+                <li><a href="/dashboard" class="{% if request.url.path == '/dashboard' %}active{% endif %}">{{ icon_dashboard("h-4 w-4 nav-icon-dashboard") }} Dashboard</a></li>
+                <li><a href="/nodes" class="{% if '/nodes' in request.url.path %}active{% endif %}">{{ icon_nodes("h-4 w-4 nav-icon-nodes") }} Nodes</a></li>
+                <li><a href="/advertisements" class="{% if request.url.path == '/advertisements' %}active{% endif %}">{{ icon_advertisements("h-4 w-4 nav-icon-adverts") }} Advertisements</a></li>
+                <li><a href="/messages" class="{% if request.url.path == '/messages' %}active{% endif %}">{{ icon_messages("h-4 w-4 nav-icon-messages") }} Messages</a></li>
+                <li><a href="/map" class="{% if request.url.path == '/map' %}active{% endif %}">{{ icon_map("h-4 w-4 nav-icon-map") }} Map</a></li>
+                <li><a href="/members" class="{% if request.url.path == '/members' %}active{% endif %}">{{ icon_members("h-4 w-4 nav-icon-members") }} Members</a></li>
                 {% for page in custom_pages %}
                 <li><a href="{{ page.url }}" class="{% if request.url.path == page.url %}active{% endif %}">{{ icon_page("h-4 w-4") }} {{ page.title }}</a></li>
                 {% endfor %}
             </ul>
         </div>
         <div class="navbar-end">
-            <div class="badge badge-outline badge-sm">{{ version }}</div>
         </div>
     </div>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-6">
+    <main class="container mx-auto px-4 py-6 flex-1">
         {% block content %}{% endblock %}
     </main>
 
@@ -124,9 +120,6 @@
 
     <!-- Leaflet JS for maps -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Common utilities -->
-    <script src="/static/js/utils.js"></script>
 
     {% block extra_scripts %}{% endblock %}
 </body>
