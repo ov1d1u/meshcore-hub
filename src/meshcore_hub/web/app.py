@@ -68,10 +68,12 @@ def _build_config_json(app: FastAPI, request: Request) -> str:
     radio_config_dict = None
     if radio_config:
         radio_config_dict = {
+            "profile": radio_config.profile,
             "frequency": radio_config.frequency,
             "bandwidth": radio_config.bandwidth,
             "spreading_factor": radio_config.spreading_factor,
             "coding_rate": radio_config.coding_rate,
+            "tx_power": radio_config.tx_power,
         }
 
     # Get feature flags
