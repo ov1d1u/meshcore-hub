@@ -42,7 +42,7 @@ ${content}`, container);
     }
 
     const buildWebSocketUrl = () => {
-        const url = new URL('/api/v1/ws/events', window.location.origin);
+        const url = new URL('/ws', window.location.origin);
         url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
         return url.toString();
     };
