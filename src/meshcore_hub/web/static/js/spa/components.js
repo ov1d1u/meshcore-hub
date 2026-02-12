@@ -84,23 +84,31 @@ export function getNodeEmoji(nodeName, advType) {
  * @returns {string} Formatted datetime string
  */
 export function formatDateTime(isoString, options) {
-    if (!isoString) return '-';
-    try {
-        const config = getConfig();
-        const tz = config.timezone_iana || 'UTC';
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return '-';
-        const opts = options || {
-            timeZone: tz,
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
-            hour12: false,
-        };
-        if (!opts.timeZone) opts.timeZone = tz;
-        return date.toLocaleString('en-GB', opts);
-    } catch {
-        return isoString ? isoString.slice(0, 19).replace('T', ' ') : '-';
-    }
+  if (!isoString) return '-';
+  try {
+    const config = getConfig();
+    const tz = config.timezone_iana || 'UTC';
+
+    // Check if the input already ends with 'Z' or has a timezone offset
+    const hasTimeZone = isoString.endsWith('Z') || isoString.match(/[+-]\d{2}:\d{2}$/);
+    const adjustedISOString = hasTimeZone ? isoString : isoString + 'Z';  
+    
+    const date = new Date(adjustedISOString);
+    if (isNaN(date.getTime())) return '-';
+
+    const opts = options || {
+      timeZone: tz,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false,
+    };
+
+    if (!opts.timeZone) opts.timeZone = tz;
+
+    return date.toLocaleString('en-GB', opts);
+  } catch {
+    return isoString ? isoString.slice(0, 19).replace('T', ' ') : '-';
+  }
 }
 
 /**
@@ -113,14 +121,20 @@ export function formatDateTimeShort(isoString) {
     try {
         const config = getConfig();
         const tz = config.timezone_iana || 'UTC';
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return '-';
-        return date.toLocaleString('en-GB', {
-            timeZone: tz,
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit',
-            hour12: false,
-        });
+
+        // Check if the input already ends with 'Z' or has a timezone offset
+        const hasTimeZone = isoString.endsWith('Z') || isoString.match(/[+-]\d{2}:\d{2}$/);
+        const adjustedISOString = hasTimeZone ? isoString : isoString + 'Z';  
+        
+        const date = new Date(adjustedISOString);
+        if (isNaN(date.getTime())) return '-';  
+        
+        return date.toLocaleString('en-GB', {  
+        timeZone: tz,  
+        year: 'numeric', month: '2-digit', day: '2-digit',  
+        hour: '2-digit', minute: '2-digit',  
+        hour12: false,  
+        });  
     } catch {
         return isoString ? isoString.slice(0, 16).replace('T', ' ') : '-';
     }
