@@ -49,9 +49,15 @@ function createNodeIcon(node) {
     const relativeTime = formatRelativeTime(node.last_seen);
     const timeDisplay = relativeTime ? ' (' + relativeTime + ')' : '';
 
-    const iconHtml = node.is_infra
-        ? '<div style="width: 12px; height: 12px; background: #ef4444; border: 2px solid #b91c1c; border-radius: 50%; box-shadow: 0 0 4px rgba(239,68,68,0.6), 0 1px 2px rgba(0,0,0,0.5);"></div>'
-        : '<div style="width: 12px; height: 12px; background: #3b82f6; border: 2px solid #1e40af; border-radius: 50%; box-shadow: 0 0 4px rgba(59,130,246,0.6), 0 1px 2px rgba(0,0,0,0.5);"></div>';
+    var iconHtml;
+
+    if (node.adv_type === 'repeater') {
+        iconHtml = '<div style="width: 12px; height: 12px; background: #3b82f6; border: 2px solid #1e40af; border-radius: 50%; box-shadow: 0 0 4px rgba(59,130,246,0.6), 0 1px 2px rgba(0,0,0,0.5);"></div>';
+    } else if (node.adv_type === 'chat') {
+        iconHtml = '<div style="width: 12px; height: 12px; background: #f59e0b; border: 2px solid #b45309; border-radius: 50%; box-shadow: 0 0 4px rgba(245,158,11,0.6), 0 1px 2px rgba(0,0,0,0.5);"></div>';
+    } else if (node.adv_type === 'room') {
+        iconHtml = '<div style="width: 12px; height: 12px; background: #8b5cf6; border: 2px solid #6d28d9; border-radius: 50%; box-shadow: 0 0 4px rgba(139,92,246,0.6), 0 1px 2px rgba(0,0,0,0.5);"></div>';
+    }
 
     return L.divIcon({
         className: 'custom-div-icon',
@@ -83,12 +89,23 @@ function createPopupContent(node) {
     const typeDisplay = getTypeDisplay(node);
     const nodeTypeEmoji = typeEmoji(node.adv_type);
 
-    let infraIndicatorHtml = '';
-    if (typeof node.is_infra !== 'undefined') {
-        const dotColor = node.is_infra ? '#ef4444' : '#3b82f6';
-        const borderColor = node.is_infra ? '#b91c1c' : '#1e40af';
-        const title = node.is_infra ? ((window.t && window.t('map.infrastructure')) || 'Infrastructure') : ((window.t && window.t('map.public')) || 'Public');
-        infraIndicatorHtml = ' <span style="display: inline-block; width: 10px; height: 10px; background: ' + dotColor + '; border: 2px solid ' + borderColor + '; border-radius: 50%; vertical-align: middle;" title="' + title + '"></span>';
+    let nodeTypeIndicatorHtml = '';
+    
+    if (node.adv_type === 'repeater') {
+        const dotColor = '#3b82f6';
+        const borderColor = '#1e40af';
+        const nodeTypeName = (window.t && window.t('node_types.repeater')) || 'Repeater';
+        nodeTypeIndicatorHtml = ' <span style="display: inline-block; width: 10px; height: 10px; background: ' + dotColor + '; border: 2px solid ' + borderColor + '; border-radius: 50%; vertical-align: middle;" title="' + nodeTypeName + '"></span>';
+    } else if (node.adv_type === 'chat') {
+        const dotColor = '#f59e0b';
+        const borderColor = '#b45309';
+        const nodeTypeName = (window.t && window.t('node_types.chat')) || 'Chat';
+        nodeTypeIndicatorHtml = ' <span style="display: inline-block; width: 10px; height: 10px; background: ' + dotColor + '; border: 2px solid ' + borderColor + '; border-radius: 50%; vertical-align: middle;" title="' + nodeTypeName + '"></span>';
+    } else if (node.adv_type === 'room') {
+        const dotColor = '#8b5cf6';
+        const borderColor = '#6d28d9';
+        const nodeTypeName = (window.t && window.t('node_types.room')) || 'Room';
+        nodeTypeIndicatorHtml = ' <span style="display: inline-block; width: 10px; height: 10px; background: ' + dotColor + '; border: 2px solid ' + borderColor + '; border-radius: 50%; vertical-align: middle;" title="' + nodeTypeName + '"></span>';
     }
 
     const lastSeenLabel = (window.t && window.t('common.last_seen_label')) || 'Last seen:';
@@ -103,7 +120,7 @@ function createPopupContent(node) {
     const viewDetailsLabel = (window.t && window.t('common.view_details')) || 'View Details';
 
     return '<div class="p-2">' +
-        '<h3 class="font-bold text-lg mb-2">' + nodeTypeEmoji + ' ' + escapeHtml(node.name || unknownLabel) + infraIndicatorHtml + '</h3>' +
+        '<h3 class="font-bold text-lg mb-2">' + nodeTypeEmoji + ' ' + escapeHtml(node.name || unknownLabel) + nodeTypeIndicatorHtml + '</h3>' +
         '<div class="space-y-1 text-sm">' +
         '<p><span class="opacity-70">' + typeLabel + '</span> ' + escapeHtml(typeDisplay) + '</p>' +
         roleHtml +
@@ -142,17 +159,14 @@ export async function render(container, params, router) {
 
         function applyFilters() {
             const filteredNodes = applyFiltersCore();
-            const categoryFilter = container.querySelector('#filter-category').value;
 
             if (filteredNodes.length > 0) {
                 let nodesToFit = filteredNodes;
 
-                if (categoryFilter !== 'infra') {
-                    const anchor = getAnchorPoint(filteredNodes, infraCenter);
-                    const nearbyNodes = getNodesWithinRadius(filteredNodes, anchor.lat, anchor.lon, MAX_BOUNDS_RADIUS_KM);
-                    if (nearbyNodes.length > 0) {
-                        nodesToFit = nearbyNodes;
-                    }
+                const anchor = getAnchorPoint(filteredNodes, infraCenter);
+                const nearbyNodes = getNodesWithinRadius(filteredNodes, anchor.lat, anchor.lon, MAX_BOUNDS_RADIUS_KM);
+                if (nearbyNodes.length > 0) {
+                    nodesToFit = nearbyNodes;
                 }
 
                 const bounds = L.latLngBounds(nodesToFit.map(n => [n.lat, n.lon]));
@@ -172,7 +186,6 @@ export async function render(container, params, router) {
         }
 
         function clearFiltersHandler() {
-            container.querySelector('#filter-category').value = '';
             container.querySelector('#filter-type').value = '';
             container.querySelector('#filter-member').value = '';
             container.querySelector('#show-labels').checked = false;
@@ -198,10 +211,6 @@ export async function render(container, params, router) {
                 <label class="label py-1">
                     <span class="label-text">${t('common.show')}</span>
                 </label>
-                <select id="filter-category" class="select select-bordered select-sm" @change=${applyFilters}>
-                    <option value="">${t('common.all_entity', { entity: t('entities.nodes') })}</option>
-                    <option value="infra">${t('map.infrastructure_only')}</option>
-                </select>
             </div>
             <div class="form-control">
                 <label class="label py-1">
@@ -256,12 +265,16 @@ export async function render(container, params, router) {
 <div class="mt-4 flex flex-wrap gap-4 items-center text-sm">
     <span class="opacity-70">${t('map.legend')}</span>
     <div class="flex items-center gap-1">
-        <div style="width: 10px; height: 10px; background: #ef4444; border: 2px solid #b91c1c; border-radius: 50%;"></div>
-        <span>${t('map.infrastructure')}</span>
+        <div style="width: 10px; height: 10px; background: #3b82f6; border: 2px solid #1e40af; border-radius: 50%;"></div>
+        <span>${t('node_types.repeater')}</span>
     </div>
     <div class="flex items-center gap-1">
-        <div style="width: 10px; height: 10px; background: #3b82f6; border: 2px solid #1e40af; border-radius: 50%;"></div>
-        <span>${t('map.public')}</span>
+        <div style="width: 10px; height: 10px; background: #f59e0b; border: 2px solid #b45309; border-radius: 50%;"></div>
+        <span>${t('node_types.chat')}</span>
+    </div>
+    <div class="flex items-center gap-1">
+        <div style="width: 10px; height: 10px; background: #8b5cf6; border: 2px solid #6d28d9; border-radius: 50%;"></div>
+        <span>${t('node_types.room')}</span>
     </div>
 </div>
 
@@ -284,13 +297,11 @@ export async function render(container, params, router) {
         }
 
         function applyFiltersCore() {
-            const categoryFilter = container.querySelector('#filter-category').value;
             const typeFilter = container.querySelector('#filter-type').value;
             const memberFilter = container.querySelector('#filter-member').value;
             const showOffline = container.querySelector('#filter-show-offline').checked;
 
             const filteredNodes = allNodes.filter(node => {
-                if (categoryFilter === 'infra' && !node.is_infra) return false;
                 const nodeType = normalizeType(node.adv_type);
                 if (typeFilter && nodeType !== typeFilter) return false;
                 if (memberFilter && node.member_id !== memberFilter) return false;
