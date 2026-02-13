@@ -514,7 +514,6 @@ ${DATA_HOME}/
 | NETWORK_RADIO_CONFIG | | Radio config details |
 | NETWORK_CONTACT_EMAIL | | Contact email |
 | NETWORK_CONTACT_DISCORD | | Discord link |
-| MEMBERS_PAGE_ENABLED | false | Enable members page at /members |
 | MEMBERS_FILE | {DATA_HOME}/web/members.json | Path to members JSON |
 
 ---
