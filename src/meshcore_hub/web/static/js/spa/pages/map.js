@@ -91,6 +91,7 @@ function createPopupContent(node) {
 
     let nodeTypeIndicatorHtml = '';
     
+<<<<<<< HEAD
     if (node.adv_type === 'repeater') {
         const dotColor = '#3b82f6';
         const borderColor = '#1e40af';
@@ -106,6 +107,27 @@ function createPopupContent(node) {
         const borderColor = '#6d28d9';
         const nodeTypeName = (window.t && window.t('node_types.room')) || 'Room';
         nodeTypeIndicatorHtml = ' <span style="display: inline-block; width: 10px; height: 10px; background: ' + dotColor + '; border: 2px solid ' + borderColor + '; border-radius: 50%; vertical-align: middle;" title="' + nodeTypeName + '"></span>';
+=======
+    const typeTitleMap = {
+        repeater: ((window.t && window.t('map.repeater')) || 'Repeater'),
+        chat: ((window.t && window.t('map.chat')) || 'Chat'),
+        room: ((window.t && window.t('map.room')) || 'Room'),
+    };
+    const title = typeTitleMap[node.adv_type] || ((window.t && window.t('map.public')) || 'Public');
+
+    if (node.adv_type === 'repeater') {
+        const dotColor = '#3b82f6';
+        const borderColor = '#1e40af';
+        nodeTypeIndicatorHtml = ' <span style="display: inline-block; width: 10px; height: 10px; background: ' + dotColor + '; border: 2px solid ' + borderColor + '; border-radius: 50%; vertical-align: middle;" title="' + title + '"></span>';
+    } else if (node.adv_type === 'chat') {
+        const dotColor = '#f59e0b';
+        const borderColor = '#b45309';
+        nodeTypeIndicatorHtml = ' <span style="display: inline-block; width: 10px; height: 10px; background: ' + dotColor + '; border: 2px solid ' + borderColor + '; border-radius: 50%; vertical-align: middle;" title="' + title + '"></span>';
+    } else if (node.adv_type === 'room') {
+        const dotColor = '#8b5cf6';
+        const borderColor = '#6d28d9';
+        nodeTypeIndicatorHtml = ' <span style="display: inline-block; width: 10px; height: 10px; background: ' + dotColor + '; border: 2px solid ' + borderColor + '; border-radius: 50%; vertical-align: middle;" title="' + title + '"></span>';
+>>>>>>> 1ed80f5 (Update map to show node by adv_type)
     }
 
     const lastSeenLabel = (window.t && window.t('common.last_seen_label')) || 'Last seen:';
@@ -120,7 +142,11 @@ function createPopupContent(node) {
     const viewDetailsLabel = (window.t && window.t('common.view_details')) || 'View Details';
 
     return '<div class="p-2">' +
+<<<<<<< HEAD
         '<h3 class="font-bold text-lg mb-2">' + nodeTypeEmoji + ' ' + escapeHtml(node.name || unknownLabel) + nodeTypeIndicatorHtml + '</h3>' +
+=======
+        '<h3 class="font-bold text-lg mb-2">' + nodeTypeEmoji + ' ' + escapeHtml(node.name || 'Unknown') + nodeTypeIndicatorHtml + '</h3>' +
+>>>>>>> 1ed80f5 (Update map to show node by adv_type)
         '<div class="space-y-1 text-sm">' +
         '<p><span class="opacity-70">' + typeLabel + '</span> ' + escapeHtml(typeDisplay) + '</p>' +
         roleHtml +
@@ -209,6 +235,14 @@ export async function render(container, params, router) {
         <div class="flex gap-4 flex-wrap items-end">
             <div class="form-control">
                 <label class="label py-1">
+<<<<<<< HEAD
+=======
+                    <span class="label-text">${t('common.show')}</span>
+                </label>
+            </div>
+            <div class="form-control">
+                <label class="label py-1">
+>>>>>>> 1ed80f5 (Update map to show node by adv_type)
                     <span class="label-text">${t('common.node_type')}</span>
                 </label>
                 <select id="filter-type" class="select select-bordered select-sm" @change=${applyFilters}>
@@ -265,6 +299,7 @@ export async function render(container, params, router) {
     <span class="opacity-70">${t('map.legend')}</span>
     <div class="flex items-center gap-1">
         <div style="width: 10px; height: 10px; background: #3b82f6; border: 2px solid #1e40af; border-radius: 50%;"></div>
+<<<<<<< HEAD
         <span>${t('node_types.repeater')}</span>
     </div>
     <div class="flex items-center gap-1">
@@ -274,6 +309,17 @@ export async function render(container, params, router) {
     <div class="flex items-center gap-1">
         <div style="width: 10px; height: 10px; background: #8b5cf6; border: 2px solid #6d28d9; border-radius: 50%;"></div>
         <span>${t('node_types.room')}</span>
+=======
+        <span>${t('map.repeater')}</span>
+    </div>
+    <div class="flex items-center gap-1">
+        <div style="width: 10px; height: 10px; background: #f59e0b; border: 2px solid #b45309; border-radius: 50%;"></div>
+        <span>${t('map.chat')}</span>
+    </div>
+    <div class="flex items-center gap-1">
+        <div style="width: 10px; height: 10px; background: #8b5cf6; border: 2px solid #6d28d9; border-radius: 50%;"></div>
+        <span>${t('map.room')}</span>
+>>>>>>> 1ed80f5 (Update map to show node by adv_type)
     </div>
 </div>
 
