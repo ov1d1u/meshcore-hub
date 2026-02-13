@@ -1,5 +1,5 @@
 import { apiGet } from '../api.js';
-import { html, litRender, unsafeHTML, getConfig, errorAlert } from '../components.js';
+import { html, litRender, unsafeHTML, getConfig, errorAlert, t } from '../components.js';
 
 export async function render(container, params, router) {
     try {
@@ -20,9 +20,9 @@ export async function render(container, params, router) {
 
     } catch (e) {
         if (e.message && e.message.includes('404')) {
-            litRender(errorAlert('Page not found'), container);
+            litRender(errorAlert(t('common.page_not_found')), container);
         } else {
-            litRender(errorAlert(e.message || 'Failed to load page'), container);
+            litRender(errorAlert(e.message || t('custom_page.failed_to_load')), container);
         }
     }
 }

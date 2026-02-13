@@ -1,6 +1,6 @@
 import { apiGet } from '../api.js';
 import {
-    html, litRender, nothing,
+    html, litRender, nothing, t, unsafeHTML,
     formatRelativeTime, formatDateTime, errorAlert,
 } from '../components.js';
 import { iconInfo } from '../icons.js';
@@ -61,7 +61,7 @@ function renderMemberCard(member, nodes) {
         : nothing;
 
     const contactBlock = member.contact
-        ? html`<p class="text-sm mt-2"><span class="opacity-70">Contact:</span> ${member.contact}</p>`
+        ? html`<p class="text-sm mt-2"><span class="opacity-70">${t('common.contact')}:</span> ${member.contact}</p>`
         : nothing;
 
     return html`<div class="card bg-base-100 shadow-xl">
@@ -85,22 +85,22 @@ export async function render(container, params, router) {
         if (members.length === 0) {
             litRender(html`
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-3xl font-bold">Members</h1>
-    <span class="badge badge-lg">0 members</span>
+    <h1 class="text-3xl font-bold">${t('entities.members')}</h1>
+    <span class="badge badge-lg">${t('common.count_entity', { count: 0, entity: t('entities.members').toLowerCase() })}</span>
 </div>
 
 <div class="alert alert-info">
     ${iconInfo('stroke-current shrink-0 h-6 w-6')}
     <div>
-        <h3 class="font-bold">No members configured</h3>
-        <p class="text-sm">To display network members, create a members.yaml file in your seed directory.</p>
+        <h3 class="font-bold">${t('common.no_entity_configured', { entity: t('entities.members').toLowerCase() })}</h3>
+        <p class="text-sm">${t('members.empty_state_description')}</p>
     </div>
 </div>
 
 <div class="mt-6 card bg-base-100 shadow-xl">
     <div class="card-body">
-        <h2 class="card-title">Members File Format</h2>
-        <p class="mb-4">Create a YAML file at <code>$SEED_HOME/members.yaml</code> with the following structure:</p>
+        <h2 class="card-title">${t('members.members_file_format')}</h2>
+        <p class="mb-4">${unsafeHTML(t('members.members_file_description'))}</p>
         <pre class="bg-base-200 p-4 rounded-box text-sm overflow-x-auto"><code>members:
   - member_id: johndoe
     name: John Doe
@@ -113,8 +113,7 @@ export async function render(container, params, router) {
     role: Member
     description: Regular user in the downtown area.</code></pre>
         <p class="mt-4 text-sm opacity-70">
-            Run <code>meshcore-hub collector seed</code> to import members.<br/>
-            To associate nodes with members, add a <code>member_id</code> tag to nodes in <code>node_tags.yaml</code>.
+            ${unsafeHTML(t('members.members_import_instructions'))}
         </p>
     </div>
 </div>`, container);
@@ -139,8 +138,8 @@ export async function render(container, params, router) {
 
         litRender(html`
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-3xl font-bold">Members</h1>
-    <span class="badge badge-lg">${members.length} members</span>
+    <h1 class="text-3xl font-bold">${t('entities.members')}</h1>
+    <span class="badge badge-lg">${t('common.count_entity', { count: members.length, entity: t('entities.members').toLowerCase() })}</span>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
@@ -148,6 +147,6 @@ export async function render(container, params, router) {
 </div>`, container);
 
     } catch (e) {
-        litRender(errorAlert(e.message || 'Failed to load members'), container);
+        litRender(errorAlert(e.message || t('common.failed_to_load_page')), container);
     }
 }

@@ -4,7 +4,7 @@ import {
     getConfig, typeEmoji, formatDateTime, formatDateTimeShort,
     truncateKey, errorAlert,
     pagination, timezoneIndicator,
-    createFilterHandler, autoSubmit, submitOnEnter
+    createFilterHandler, autoSubmit, submitOnEnter, t
 } from '../components.js';
 
 export async function render(container, params, router) {
@@ -24,10 +24,10 @@ export async function render(container, params, router) {
     function renderPage(content, { total = null } = {}) {
         litRender(html`
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-3xl font-bold">Nodes</h1>
+    <h1 class="text-3xl font-bold">${t('entities.nodes')}</h1>
     <div class="flex items-center gap-2">
         ${tzBadge}
-        ${total !== null ? html`<span class="badge badge-lg">${total} total</span>` : nothing}
+        ${total !== null ? html`<span class="badge badge-lg">${t('common.total', { count: total })}</span>` : nothing}
     </div>
 </div>
 ${content}`, container);
@@ -51,19 +51,19 @@ ${content}`, container);
             ? html`
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Member</span>
+                    <span class="label-text">${t('entities.member')}</span>
                 </label>
                 <select name="member_id" class="select select-bordered select-sm" @change=${autoSubmit}>
-                    <option value="">All Members</option>
+                    <option value="">${t('common.all_entity', { entity: t('entities.members') })}</option>
                     ${members.map(m => html`<option value=${m.member_id} ?selected=${member_id === m.member_id}>${m.name}${m.callsign ? ` (${m.callsign})` : ''}</option>`)}
                 </select>
             </div>`
             : nothing;
 
         const mobileCards = nodes.length === 0
-            ? html`<div class="text-center py-8 opacity-70">No nodes found.</div>`
+            ? html`<div class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.nodes').toLowerCase() })}</div>`
             : nodes.map(node => {
-                const tagName = node.tags?.find(t => t.key === 'name')?.value;
+                const tagName = node.tags?.find(tag => tag.key === 'name')?.value;
                 const displayName = tagName || node.name;
                 const emoji = typeEmoji(node.adv_type);
                 const nameBlock = displayName
@@ -74,7 +74,7 @@ ${content}`, container);
                 const tags = node.tags || [];
                 const tagsBlock = tags.length > 0
                     ? html`<div class="flex gap-1 justify-end mt-1">
-                        ${tags.slice(0, 2).map(t => html`<span class="badge badge-ghost badge-xs">${t.key}</span>`)}
+                        ${tags.slice(0, 2).map(tag => html`<span class="badge badge-ghost badge-xs">${tag.key}</span>`)}
                         ${tags.length > 2 ? html`<span class="badge badge-ghost badge-xs">+${tags.length - 2}</span>` : nothing}
                     </div>`
                     : nothing;
@@ -82,7 +82,7 @@ ${content}`, container);
         <div class="card-body p-3">
             <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-lg flex-shrink-0" title=${node.adv_type || 'Unknown'}>${emoji}</span>
+                    <span class="text-lg flex-shrink-0" title=${node.adv_type || t('node_types.unknown')}>${emoji}</span>
                     <div class="min-w-0">
                         ${nameBlock}
                     </div>
@@ -97,9 +97,9 @@ ${content}`, container);
             });
 
         const tableRows = nodes.length === 0
-            ? html`<tr><td colspan="3" class="text-center py-8 opacity-70">No nodes found.</td></tr>`
+            ? html`<tr><td colspan="3" class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.nodes').toLowerCase() })}</td></tr>`
             : nodes.map(node => {
-                const tagName = node.tags?.find(t => t.key === 'name')?.value;
+                const tagName = node.tags?.find(tag => tag.key === 'name')?.value;
                 const displayName = tagName || node.name;
                 const emoji = typeEmoji(node.adv_type);
                 const nameBlock = displayName
@@ -110,14 +110,14 @@ ${content}`, container);
                 const tags = node.tags || [];
                 const tagsBlock = tags.length > 0
                     ? html`<div class="flex gap-1 flex-wrap">
-                        ${tags.slice(0, 3).map(t => html`<span class="badge badge-ghost badge-xs">${t.key}</span>`)}
+                        ${tags.slice(0, 3).map(tag => html`<span class="badge badge-ghost badge-xs">${tag.key}</span>`)}
                         ${tags.length > 3 ? html`<span class="badge badge-ghost badge-xs">+${tags.length - 3}</span>` : nothing}
                     </div>`
                     : html`<span class="opacity-50">-</span>`;
                 return html`<tr class="hover">
                 <td>
                     <a href="/nodes/${node.public_key}" class="link link-hover flex items-center gap-2">
-                        <span class="text-lg" title=${node.adv_type || 'Unknown'}>${emoji}</span>
+                        <span class="text-lg" title=${node.adv_type || t('node_types.unknown')}>${emoji}</span>
                         <div>
                             ${nameBlock}
                         </div>
@@ -138,25 +138,25 @@ ${content}`, container);
         <form method="GET" action="/nodes" class="flex gap-4 flex-wrap items-end" @submit=${createFilterHandler('/nodes', navigate)}>
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Search</span>
+                    <span class="label-text">${t('common.search')}</span>
                 </label>
-                <input type="text" name="search" .value=${search} placeholder="Search by name, ID, or public key..." class="input input-bordered input-sm w-80" @keydown=${submitOnEnter} />
+                <input type="text" name="search" .value=${search} placeholder="${t('common.search_placeholder')}" class="input input-bordered input-sm w-80" @keydown=${submitOnEnter} />
             </div>
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Type</span>
+                    <span class="label-text">${t('common.type')}</span>
                 </label>
                 <select name="adv_type" class="select select-bordered select-sm" @change=${autoSubmit}>
-                    <option value="">All Types</option>
-                    <option value="chat" ?selected=${adv_type === 'chat'}>Chat</option>
-                    <option value="repeater" ?selected=${adv_type === 'repeater'}>Repeater</option>
-                    <option value="room" ?selected=${adv_type === 'room'}>Room</option>
+                    <option value="">${t('common.all_types')}</option>
+                    <option value="chat" ?selected=${adv_type === 'chat'}>${t('node_types.chat')}</option>
+                    <option value="repeater" ?selected=${adv_type === 'repeater'}>${t('node_types.repeater')}</option>
+                    <option value="room" ?selected=${adv_type === 'room'}>${t('node_types.room')}</option>
                 </select>
             </div>
             ${membersFilter}
             <div class="flex gap-2 w-full sm:w-auto">
-                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-                <a href="/nodes" class="btn btn-ghost btn-sm">Clear</a>
+                <button type="submit" class="btn btn-primary btn-sm">${t('common.filter')}</button>
+                <a href="/nodes" class="btn btn-ghost btn-sm">${t('common.clear')}</a>
             </div>
         </form>
     </div>
@@ -170,9 +170,9 @@ ${content}`, container);
     <table class="table table-zebra">
         <thead>
             <tr>
-                <th>Node</th>
-                <th>Last Seen</th>
-                <th>Tags</th>
+                <th>${t('entities.node')}</th>
+                <th>${t('common.last_seen')}</th>
+                <th>${t('common.tags')}</th>
             </tr>
         </thead>
         <tbody>

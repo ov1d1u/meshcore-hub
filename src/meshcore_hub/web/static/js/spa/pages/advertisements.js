@@ -1,6 +1,6 @@
 import { apiGet } from '../api.js';
 import {
-    html, litRender, nothing,
+    html, litRender, nothing, t,
     getConfig, typeEmoji, formatDateTime, formatDateTimeShort,
     truncateKey, errorAlert,
     pagination, createFilterHandler, autoSubmit, submitOnEnter
@@ -23,10 +23,10 @@ export async function render(container, params, router) {
     function renderPage(content, { total = null } = {}) {
         litRender(html`
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-3xl font-bold">Advertisements</h1>
+    <h1 class="text-3xl font-bold">${t('entities.advertisements')}</h1>
     <div class="flex items-center gap-2">
         ${tzBadge}
-        ${total !== null ? html`<span class="badge badge-lg">${total} total</span>` : nothing}
+        ${total !== null ? html`<span class="badge badge-lg">${t('common.total', { count: total })}</span>` : nothing}
     </div>
 </div>
 ${content}`, container);
@@ -57,10 +57,10 @@ ${content}`, container);
             ? html`
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Node</span>
+                    <span class="label-text">${t('entities.node')}</span>
                 </label>
                 <select name="public_key" class="select select-bordered select-sm" @change=${autoSubmit}>
-                    <option value="">All Nodes</option>
+                    <option value="">${t('common.all_entity', { entity: t('entities.nodes') })}</option>
                     ${sortedNodes.map(n => html`<option value=${n.public_key} ?selected=${public_key === n.public_key}>${n._displayName}</option>`)}
                 </select>
             </div>`
@@ -70,17 +70,17 @@ ${content}`, container);
             ? html`
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Member</span>
+                    <span class="label-text">${t('entities.member')}</span>
                 </label>
                 <select name="member_id" class="select select-bordered select-sm" @change=${autoSubmit}>
-                    <option value="">All Members</option>
+                    <option value="">${t('common.all_entity', { entity: t('entities.members') })}</option>
                     ${members.map(m => html`<option value=${m.member_id} ?selected=${member_id === m.member_id}>${m.name}${m.callsign ? ` (${m.callsign})` : ''}</option>`)}
                 </select>
             </div>`
             : nothing;
 
         const mobileCards = advertisements.length === 0
-            ? html`<div class="text-center py-8 opacity-70">No advertisements found.</div>`
+            ? html`<div class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.advertisements').toLowerCase() })}</div>`
             : advertisements.map(ad => {
                 const emoji = typeEmoji(ad.adv_type);
                 const adName = ad.node_tag_name || ad.node_name || ad.name;
@@ -104,7 +104,7 @@ ${content}`, container);
         <div class="card-body p-3">
             <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-lg flex-shrink-0" title=${ad.adv_type || 'Unknown'}>${emoji}</span>
+                    <span class="text-lg flex-shrink-0" title=${ad.adv_type || t('node_types.unknown')}>${emoji}</span>
                     <div class="min-w-0">
                         ${nameBlock}
                     </div>
@@ -119,7 +119,7 @@ ${content}`, container);
             });
 
         const tableRows = advertisements.length === 0
-            ? html`<tr><td colspan="3" class="text-center py-8 opacity-70">No advertisements found.</td></tr>`
+            ? html`<tr><td colspan="3" class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.advertisements').toLowerCase() })}</td></tr>`
             : advertisements.map(ad => {
                 const emoji = typeEmoji(ad.adv_type);
                 const adName = ad.node_tag_name || ad.node_name || ad.name;
@@ -144,7 +144,7 @@ ${content}`, container);
                 return html`<tr class="hover">
                 <td>
                     <a href="/nodes/${ad.public_key}" class="link link-hover flex items-center gap-2">
-                        <span class="text-lg" title=${ad.adv_type || 'Unknown'}>${emoji}</span>
+                        <span class="text-lg" title=${ad.adv_type || t('node_types.unknown')}>${emoji}</span>
                         <div>
                             ${nameBlock}
                         </div>
@@ -165,15 +165,15 @@ ${content}`, container);
         <form method="GET" action="/advertisements" class="flex gap-4 flex-wrap items-end" @submit=${createFilterHandler('/advertisements', navigate)}>
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Search</span>
+                    <span class="label-text">${t('common.search')}</span>
                 </label>
-                <input type="text" name="search" .value=${search} placeholder="Search by name, ID, or public key..." class="input input-bordered input-sm w-80" @keydown=${submitOnEnter} />
+                <input type="text" name="search" .value=${search} placeholder="${t('common.search_placeholder')}" class="input input-bordered input-sm w-80" @keydown=${submitOnEnter} />
             </div>
             ${nodesFilter}
             ${membersFilter}
             <div class="flex gap-2 w-full sm:w-auto">
-                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-                <a href="/advertisements" class="btn btn-ghost btn-sm">Clear</a>
+                <button type="submit" class="btn btn-primary btn-sm">${t('common.filter')}</button>
+                <a href="/advertisements" class="btn btn-ghost btn-sm">${t('common.clear')}</a>
             </div>
         </form>
     </div>
@@ -187,9 +187,9 @@ ${content}`, container);
     <table class="table table-zebra">
         <thead>
             <tr>
-                <th>Node</th>
-                <th>Time</th>
-                <th>Receivers</th>
+                <th>${t('entities.node')}</th>
+                <th>${t('common.time')}</th>
+                <th>${t('common.receivers')}</th>
             </tr>
         </thead>
         <tbody>

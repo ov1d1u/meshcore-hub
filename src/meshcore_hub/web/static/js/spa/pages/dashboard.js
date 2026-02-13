@@ -1,7 +1,7 @@
 import { apiGet } from '../api.js';
 import {
     html, litRender, nothing,
-    getConfig, typeEmoji, errorAlert, pageColors,
+    getConfig, typeEmoji, errorAlert, pageColors, t,
 } from '../components.js';
 import {
     iconNodes, iconAdvertisements, iconMessages, iconChannel,
@@ -43,7 +43,7 @@ function formatTimeShort(isoString) {
 
 function renderRecentAds(ads) {
     if (!ads || ads.length === 0) {
-        return html`<p class="text-sm opacity-70">No advertisements recorded yet.</p>`;
+        return html`<p class="text-sm opacity-70">${t('common.no_entity_yet', { entity: t('entities.advertisements').toLowerCase() })}</p>`;
     }
     const rows = ads.slice(0, 5).map(ad => {
         const friendlyName = ad.tag_name || ad.name;
@@ -67,9 +67,9 @@ function renderRecentAds(ads) {
         <table class="table table-compact w-full">
             <thead>
                 <tr>
-                    <th>Node</th>
-                    <th>Type</th>
-                    <th class="text-right">Received</th>
+                    <th>${t('entities.node')}</th>
+                    <th>${t('common.type')}</th>
+                    <th class="text-right">${t('common.received')}</th>
                 </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -90,7 +90,7 @@ function renderChannelMessages(channelMessages) {
         return html`<div>
             <h3 class="font-semibold text-sm mb-2 flex items-center gap-2">
                 <span class="badge badge-info badge-sm">CH${String(channel)}</span>
-                Channel ${String(channel)}
+                ${t('dashboard.channel', { number: String(channel) })}
             </h3>
             <div class="space-y-1 pl-2 border-l-2 border-base-300">
                 ${msgLines}
@@ -102,7 +102,7 @@ function renderChannelMessages(channelMessages) {
         <div class="card-body">
             <h2 class="card-title">
                 ${iconChannel('h-6 w-6')}
-                Recent Channel Messages
+                ${t('dashboard.recent_channel_messages')}
             </h2>
             <div class="space-y-4">
                 ${channels}
@@ -142,7 +142,7 @@ export async function render(container, params, router) {
 
         litRender(html`
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-3xl font-bold">Dashboard</h1>
+    <h1 class="text-3xl font-bold">${t('entities.dashboard')}</h1>
 </div>
 
 ${topCount > 0 ? html`
@@ -152,9 +152,9 @@ ${topCount > 0 ? html`
         <div class="stat-figure" style="color: ${pageColors.nodes}">
             ${iconNodes('h-8 w-8')}
         </div>
-        <div class="stat-title">Total Nodes</div>
+        <div class="stat-title">${t('common.total_entity', { entity: t('entities.nodes') })}</div>
         <div class="stat-value" style="color: ${pageColors.nodes}">${stats.total_nodes}</div>
-        <div class="stat-desc">All discovered nodes</div>
+        <div class="stat-desc">${t('dashboard.all_discovered_nodes')}</div>
     </div>` : nothing}
 
     ${showAdverts ? html`
@@ -162,9 +162,9 @@ ${topCount > 0 ? html`
         <div class="stat-figure" style="color: ${pageColors.adverts}">
             ${iconAdvertisements('h-8 w-8')}
         </div>
-        <div class="stat-title">Advertisements</div>
+        <div class="stat-title">${t('entities.advertisements')}</div>
         <div class="stat-value" style="color: ${pageColors.adverts}">${stats.advertisements_7d}</div>
-        <div class="stat-desc">Last 7 days</div>
+        <div class="stat-desc">${t('time.last_7_days')}</div>
     </div>` : nothing}
 
     ${showMessages ? html`
@@ -172,9 +172,9 @@ ${topCount > 0 ? html`
         <div class="stat-figure" style="color: ${pageColors.messages}">
             ${iconMessages('h-8 w-8')}
         </div>
-        <div class="stat-title">Messages</div>
+        <div class="stat-title">${t('entities.messages')}</div>
         <div class="stat-value" style="color: ${pageColors.messages}">${stats.messages_7d}</div>
-        <div class="stat-desc">Last 7 days</div>
+        <div class="stat-desc">${t('time.last_7_days')}</div>
     </div>` : nothing}
 </div>
 
@@ -184,9 +184,9 @@ ${topCount > 0 ? html`
         <div class="card-body">
             <h2 class="card-title text-base">
                 ${iconNodes('h-5 w-5')}
-                Total Nodes
+                ${t('common.total_entity', { entity: t('entities.nodes') })}
             </h2>
-            <p class="text-xs opacity-70">Over time (last 7 days)</p>
+            <p class="text-xs opacity-70">${t('time.over_time_last_7_days')}</p>
             <div class="h-32">
                 <canvas id="nodeChart"></canvas>
             </div>
@@ -198,9 +198,9 @@ ${topCount > 0 ? html`
         <div class="card-body">
             <h2 class="card-title text-base">
                 ${iconAdvertisements('h-5 w-5')}
-                Advertisements
+                ${t('entities.advertisements')}
             </h2>
-            <p class="text-xs opacity-70">Per day (last 7 days)</p>
+            <p class="text-xs opacity-70">${t('time.per_day_last_7_days')}</p>
             <div class="h-32">
                 <canvas id="advertChart"></canvas>
             </div>
@@ -212,9 +212,9 @@ ${topCount > 0 ? html`
         <div class="card-body">
             <h2 class="card-title text-base">
                 ${iconMessages('h-5 w-5')}
-                Messages
+                ${t('entities.messages')}
             </h2>
-            <p class="text-xs opacity-70">Per day (last 7 days)</p>
+            <p class="text-xs opacity-70">${t('time.per_day_last_7_days')}</p>
             <div class="h-32">
                 <canvas id="messageChart"></canvas>
             </div>
@@ -229,7 +229,7 @@ ${bottomCount > 0 ? html`
         <div class="card-body">
             <h2 class="card-title">
                 ${iconAdvertisements('h-6 w-6')}
-                Recent Advertisements
+                ${t('common.recent_entity', { entity: t('entities.advertisements') })}
             </h2>
             ${renderRecentAds(stats.recent_advertisements)}
         </div>
@@ -256,6 +256,6 @@ ${bottomCount > 0 ? html`
         };
 
     } catch (e) {
-        litRender(errorAlert(e.message || 'Failed to load dashboard'), container);
+        litRender(errorAlert(e.message || t('common.failed_to_load_page')), container);
     }
 }

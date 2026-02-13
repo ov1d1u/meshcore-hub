@@ -1,6 +1,6 @@
 import { apiGet } from '../api.js';
 import {
-    html, litRender, nothing,
+    html, litRender, nothing, t,
     getConfig, formatDateTime, formatDateTimeShort,
     truncateKey, errorAlert,
     pagination, timezoneIndicator,
@@ -22,10 +22,10 @@ export async function render(container, params, router) {
     function renderPage(content, { total = null } = {}) {
         litRender(html`
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-3xl font-bold">Messages</h1>
+    <h1 class="text-3xl font-bold">${t('entities.messages')}</h1>
     <div class="flex items-center gap-2">
         ${tzBadge}
-        ${total !== null ? html`<span class="badge badge-lg">${total} total</span>` : nothing}
+        ${total !== null ? html`<span class="badge badge-lg">${t('common.total', { count: total })}</span>` : nothing}
     </div>
 </div>
 ${content}`, container);
@@ -41,14 +41,14 @@ ${content}`, container);
         const totalPages = Math.ceil(total / limit);
 
         const mobileCards = messages.length === 0
-            ? html`<div class="text-center py-8 opacity-70">No messages found.</div>`
+            ? html`<div class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.messages').toLowerCase() })}</div>`
             : messages.map(msg => {
                 const isChannel = msg.message_type === 'channel';
                 const typeIcon = isChannel ? '\u{1F4FB}' : '\u{1F464}';
-                const typeTitle = isChannel ? 'Channel' : 'Contact';
+                const typeTitle = isChannel ? t('messages.type_channel') : t('messages.type_contact');
                 let senderBlock;
                 if (isChannel) {
-                    senderBlock = html`<span class="opacity-60">Public</span>`;
+                    senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
                 } else {
                     const senderName = msg.sender_tag_name || msg.sender_name;
                     if (senderName) {
@@ -95,14 +95,14 @@ ${content}`, container);
             });
 
         const tableRows = messages.length === 0
-            ? html`<tr><td colspan="5" class="text-center py-8 opacity-70">No messages found.</td></tr>`
+            ? html`<tr><td colspan="5" class="text-center py-8 opacity-70">${t('common.no_entity_found', { entity: t('entities.messages').toLowerCase() })}</td></tr>`
             : messages.map(msg => {
                 const isChannel = msg.message_type === 'channel';
                 const typeIcon = isChannel ? '\u{1F4FB}' : '\u{1F464}';
-                const typeTitle = isChannel ? 'Channel' : 'Contact';
+                const typeTitle = isChannel ? t('messages.type_channel') : t('messages.type_contact');
                 let senderBlock;
                 if (isChannel) {
-                    senderBlock = html`<span class="opacity-60">Public</span>`;
+                    senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
                 } else {
                     const senderName = msg.sender_tag_name || msg.sender_name;
                     if (senderName) {
@@ -144,17 +144,17 @@ ${content}`, container);
         <form method="GET" action="/messages" class="flex gap-4 flex-wrap items-end" @submit=${createFilterHandler('/messages', navigate)}>
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Type</span>
+                    <span class="label-text">${t('common.type')}</span>
                 </label>
                 <select name="message_type" class="select select-bordered select-sm" @change=${autoSubmit}>
-                    <option value="">All Types</option>
-                    <option value="contact" ?selected=${message_type === 'contact'}>Direct</option>
-                    <option value="channel" ?selected=${message_type === 'channel'}>Channel</option>
+                    <option value="">${t('common.all_types')}</option>
+                    <option value="contact" ?selected=${message_type === 'contact'}>${t('messages.type_direct')}</option>
+                    <option value="channel" ?selected=${message_type === 'channel'}>${t('messages.type_channel')}</option>
                 </select>
             </div>
             <div class="flex gap-2 w-full sm:w-auto">
-                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-                <a href="/messages" class="btn btn-ghost btn-sm">Clear</a>
+                <button type="submit" class="btn btn-primary btn-sm">${t('common.filter')}</button>
+                <a href="/messages" class="btn btn-ghost btn-sm">${t('common.clear')}</a>
             </div>
         </form>
     </div>
@@ -168,11 +168,11 @@ ${content}`, container);
     <table class="table table-zebra">
         <thead>
             <tr>
-                <th>Type</th>
-                <th>Time</th>
-                <th>From</th>
-                <th>Message</th>
-                <th>Receivers</th>
+                <th>${t('common.type')}</th>
+                <th>${t('common.time')}</th>
+                <th>${t('common.from')}</th>
+                <th>${t('entities.message')}</th>
+                <th>${t('common.receivers')}</th>
             </tr>
         </thead>
         <tbody>

@@ -7,10 +7,12 @@
 import { html, nothing } from 'lit-html';
 import { render } from 'lit-html';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
+import { t } from './i18n.js';
 
 // Re-export lit-html utilities for page modules
 export { html, nothing, unsafeHTML };
 export { render as litRender } from 'lit-html';
+export { t } from './i18n.js';
 
 /**
  * Get app config from the embedded window object.
@@ -113,10 +115,10 @@ export function formatRelativeTime(isoString) {
     const diffMin = Math.floor(diffSec / 60);
     const diffHour = Math.floor(diffMin / 60);
     const diffDay = Math.floor(diffHour / 24);
-    if (diffDay > 0) return `${diffDay}d ago`;
-    if (diffHour > 0) return `${diffHour}h ago`;
-    if (diffMin > 0) return `${diffMin}m ago`;
-    return '<1m ago';
+    if (diffDay > 0) return t('time.days_ago', { count: diffDay });
+    if (diffHour > 0) return t('time.hours_ago', { count: diffHour });
+    if (diffMin > 0) return t('time.minutes_ago', { count: diffMin });
+    return t('time.less_than_minute');
 }
 
 /**
@@ -226,12 +228,12 @@ export function pagination(page, totalPages, basePath, params = {}) {
 
     return html`<div class="flex justify-center mt-6"><div class="join">
         ${page > 1
-            ? html`<a href=${pageUrl(page - 1)} class="join-item btn btn-sm">Previous</a>`
-            : html`<button class="join-item btn btn-sm btn-disabled" disabled>Previous</button>`}
+            ? html`<a href=${pageUrl(page - 1)} class="join-item btn btn-sm">${t('common.previous')}</a>`
+            : html`<button class="join-item btn btn-sm btn-disabled" disabled>${t('common.previous')}</button>`}
         ${pageNumbers}
         ${page < totalPages
-            ? html`<a href=${pageUrl(page + 1)} class="join-item btn btn-sm">Next</a>`
-            : html`<button class="join-item btn btn-sm btn-disabled" disabled>Next</button>`}
+            ? html`<a href=${pageUrl(page + 1)} class="join-item btn btn-sm">${t('common.next')}</a>`
+            : html`<button class="join-item btn btn-sm btn-disabled" disabled>${t('common.next')}</button>`}
     </div></div>`;
 }
 

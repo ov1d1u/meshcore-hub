@@ -1,6 +1,6 @@
 import { apiGet } from '../api.js';
 import {
-    html, litRender, nothing,
+    html, litRender, nothing, t,
     typeEmoji, formatRelativeTime, escapeHtml, errorAlert,
     timezoneIndicator,
 } from '../components.js';
@@ -37,10 +37,10 @@ function normalizeType(type) {
 
 function getTypeDisplay(node) {
     const type = normalizeType(node.adv_type);
-    if (type === 'chat') return 'Chat';
-    if (type === 'repeater') return 'Repeater';
-    if (type === 'room') return 'Room';
-    return type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Unknown';
+    if (type === 'chat') return (window.t && window.t('node_types.chat')) || 'Chat';
+    if (type === 'repeater') return (window.t && window.t('node_types.repeater')) || 'Repeater';
+    if (type === 'room') return (window.t && window.t('node_types.room')) || 'Room';
+    return type ? type.charAt(0).toUpperCase() + type.slice(1) : (window.t && window.t('node_types.unknown')) || 'Unknown';
 }
 
 // Leaflet DivIcon requires plain HTML strings, so keep escapeHtml here
@@ -72,12 +72,12 @@ function createPopupContent(node) {
         const ownerDisplay = node.owner.callsign
             ? escapeHtml(node.owner.name) + ' (' + escapeHtml(node.owner.callsign) + ')'
             : escapeHtml(node.owner.name);
-        ownerHtml = '<p><span class="opacity-70">Owner:</span> ' + ownerDisplay + '</p>';
+        ownerHtml = '<p><span class="opacity-70">' + ((window.t && window.t('map.owner')) || 'Owner:') + '</span> ' + ownerDisplay + '</p>';
     }
 
     let roleHtml = '';
     if (node.role) {
-        roleHtml = '<p><span class="opacity-70">Role:</span> <span class="badge badge-xs badge-ghost">' + escapeHtml(node.role) + '</span></p>';
+        roleHtml = '<p><span class="opacity-70">' + ((window.t && window.t('map.role')) || 'Role:') + '</span> <span class="badge badge-xs badge-ghost">' + escapeHtml(node.role) + '</span></p>';
     }
 
     const typeDisplay = getTypeDisplay(node);
@@ -87,25 +87,32 @@ function createPopupContent(node) {
     if (typeof node.is_infra !== 'undefined') {
         const dotColor = node.is_infra ? '#ef4444' : '#3b82f6';
         const borderColor = node.is_infra ? '#b91c1c' : '#1e40af';
-        const title = node.is_infra ? 'Infrastructure' : 'Public';
+        const title = node.is_infra ? ((window.t && window.t('map.infrastructure')) || 'Infrastructure') : ((window.t && window.t('map.public')) || 'Public');
         infraIndicatorHtml = ' <span style="display: inline-block; width: 10px; height: 10px; background: ' + dotColor + '; border: 2px solid ' + borderColor + '; border-radius: 50%; vertical-align: middle;" title="' + title + '"></span>';
     }
 
+    const lastSeenLabel = (window.t && window.t('common.last_seen_label')) || 'Last seen:';
     const lastSeenHtml = node.last_seen
-        ? '<p><span class="opacity-70">Last seen:</span> ' + node.last_seen.substring(0, 19).replace('T', ' ') + '</p>'
+        ? '<p><span class="opacity-70">' + lastSeenLabel + '</span> ' + node.last_seen.substring(0, 19).replace('T', ' ') + '</p>'
         : '';
 
+    const typeLabel = (window.t && window.t('common.type')) || 'Type:';
+    const keyLabel = (window.t && window.t('common.key')) || 'Key:';
+    const locationLabel = (window.t && window.t('common.location')) || 'Location:';
+    const unknownLabel = (window.t && window.t('node_types.unknown')) || 'Unknown';
+    const viewDetailsLabel = (window.t && window.t('common.view_details')) || 'View Details';
+
     return '<div class="p-2">' +
-        '<h3 class="font-bold text-lg mb-2">' + nodeTypeEmoji + ' ' + escapeHtml(node.name || 'Unknown') + infraIndicatorHtml + '</h3>' +
+        '<h3 class="font-bold text-lg mb-2">' + nodeTypeEmoji + ' ' + escapeHtml(node.name || unknownLabel) + infraIndicatorHtml + '</h3>' +
         '<div class="space-y-1 text-sm">' +
-        '<p><span class="opacity-70">Type:</span> ' + escapeHtml(typeDisplay) + '</p>' +
+        '<p><span class="opacity-70">' + typeLabel + '</span> ' + escapeHtml(typeDisplay) + '</p>' +
         roleHtml +
         ownerHtml +
-        '<p><span class="opacity-70">Key:</span> <code class="text-xs">' + escapeHtml(node.public_key.substring(0, 16)) + '...</code></p>' +
-        '<p><span class="opacity-70">Location:</span> ' + node.lat.toFixed(4) + ', ' + node.lon.toFixed(4) + '</p>' +
+        '<p><span class="opacity-70">' + keyLabel + '</span> <code class="text-xs">' + escapeHtml(node.public_key.substring(0, 16)) + '...</code></p>' +
+        '<p><span class="opacity-70">' + locationLabel + '</span> ' + node.lat.toFixed(4) + ', ' + node.lon.toFixed(4) + '</p>' +
         lastSeenHtml +
         '</div>' +
-        '<a href="/nodes/' + encodeURIComponent(node.public_key) + '" class="btn btn-outline btn-xs mt-3">View Details</a>' +
+        '<a href="/nodes/' + encodeURIComponent(node.public_key) + '" class="btn btn-outline btn-xs mt-3">' + viewDetailsLabel + '</a>' +
         '</div>';
 }
 
@@ -166,10 +173,10 @@ export async function render(container, params, router) {
 
         litRender(html`
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-3xl font-bold">Map</h1>
+    <h1 class="text-3xl font-bold">${t('entities.map')}</h1>
     <div class="flex items-center gap-2">
         ${timezoneIndicator()}
-        <span id="node-count" class="badge badge-lg">Loading...</span>
+        <span id="node-count" class="badge badge-lg">${t('common.loading')}</span>
         <span id="filtered-count" class="badge badge-lg badge-ghost hidden"></span>
     </div>
 </div>
@@ -179,30 +186,30 @@ export async function render(container, params, router) {
         <div class="flex gap-4 flex-wrap items-end">
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Show</span>
+                    <span class="label-text">${t('common.show')}</span>
                 </label>
                 <select id="filter-category" class="select select-bordered select-sm" @change=${applyFilters}>
-                    <option value="">All Nodes</option>
-                    <option value="infra">Infrastructure Only</option>
+                    <option value="">${t('common.all_entity', { entity: t('entities.nodes') })}</option>
+                    <option value="infra">${t('map.infrastructure_only')}</option>
                 </select>
             </div>
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Node Type</span>
+                    <span class="label-text">${t('common.node_type')}</span>
                 </label>
                 <select id="filter-type" class="select select-bordered select-sm" @change=${applyFilters}>
-                    <option value="">All Types</option>
-                    <option value="chat">Chat</option>
-                    <option value="repeater">Repeater</option>
-                    <option value="room">Room</option>
+                    <option value="">${t('common.all_types')}</option>
+                    <option value="chat">${t('node_types.chat')}</option>
+                    <option value="repeater">${t('node_types.repeater')}</option>
+                    <option value="room">${t('node_types.room')}</option>
                 </select>
             </div>
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Member</span>
+                    <span class="label-text">${t('entities.member')}</span>
                 </label>
                 <select id="filter-member" class="select select-bordered select-sm" @change=${applyFilters}>
-                    <option value="">All Members</option>
+                    <option value="">${t('common.all_entity', { entity: t('entities.members') })}</option>
                     ${sortedMembers
                         .filter(m => m.member_id)
                         .map(m => {
@@ -215,11 +222,11 @@ export async function render(container, params, router) {
             </div>
             <div class="form-control">
                 <label class="label cursor-pointer gap-2 py-1">
-                    <span class="label-text">Show Labels</span>
+                    <span class="label-text">${t('map.show_labels')}</span>
                     <input type="checkbox" id="show-labels" class="checkbox checkbox-sm" @change=${updateLabelVisibility}>
                 </label>
             </div>
-            <button id="clear-filters" class="btn btn-ghost btn-sm" @click=${clearFiltersHandler}>Clear Filters</button>
+            <button id="clear-filters" class="btn btn-ghost btn-sm" @click=${clearFiltersHandler}>${t('common.clear_filters')}</button>
         </div>
     </div>
 </div>
@@ -231,19 +238,19 @@ export async function render(container, params, router) {
 </div>
 
 <div class="mt-4 flex flex-wrap gap-4 items-center text-sm">
-    <span class="opacity-70">Legend:</span>
+    <span class="opacity-70">${t('map.legend')}</span>
     <div class="flex items-center gap-1">
         <div style="width: 10px; height: 10px; background: #ef4444; border: 2px solid #b91c1c; border-radius: 50%;"></div>
-        <span>Infrastructure</span>
+        <span>${t('map.infrastructure')}</span>
     </div>
     <div class="flex items-center gap-1">
         <div style="width: 10px; height: 10px; background: #3b82f6; border: 2px solid #1e40af; border-radius: 50%;"></div>
-        <span>Public</span>
+        <span>${t('map.public')}</span>
     </div>
 </div>
 
 <div class="mt-2 text-sm opacity-70">
-    <p>Nodes are placed on the map based on GPS coordinates from node reports or manual tags.</p>
+    <p>${t('map.gps_description')}</p>
 </div>`, container);
 
         const mapEl = container.querySelector('#spa-map');
@@ -285,11 +292,11 @@ export async function render(container, params, router) {
             const filteredEl = container.querySelector('#filtered-count');
 
             if (filteredNodes.length === allNodes.length) {
-                countEl.textContent = allNodes.length + ' nodes on map';
+                countEl.textContent = t('map.nodes_on_map', { count: allNodes.length });
                 filteredEl.classList.add('hidden');
             } else {
-                countEl.textContent = allNodes.length + ' total';
-                filteredEl.textContent = filteredNodes.length + ' shown';
+                countEl.textContent = t('common.total', { count: allNodes.length });
+                filteredEl.textContent = t('common.shown', { count: filteredNodes.length });
                 filteredEl.classList.remove('hidden');
             }
 
@@ -302,12 +309,12 @@ export async function render(container, params, router) {
         }
 
         if (debug.total_nodes === 0) {
-            container.querySelector('#node-count').textContent = 'No nodes in database';
+            container.querySelector('#node-count').textContent = t('common.no_entity_in_database', { entity: t('entities.nodes').toLowerCase() });
             return () => map.remove();
         }
 
         if (debug.nodes_with_coords === 0) {
-            container.querySelector('#node-count').textContent = debug.total_nodes + ' nodes (none have coordinates)';
+            container.querySelector('#node-count').textContent = t('map.nodes_none_have_coordinates', { count: debug.total_nodes });
             return () => map.remove();
         }
 
@@ -328,6 +335,6 @@ export async function render(container, params, router) {
         return () => map.remove();
 
     } catch (e) {
-        litRender(errorAlert(e.message || 'Failed to load map'), container);
+        litRender(errorAlert(e.message || t('common.failed_to_load_page')), container);
     }
 }

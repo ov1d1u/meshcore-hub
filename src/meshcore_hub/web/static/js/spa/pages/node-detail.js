@@ -2,7 +2,7 @@ import { apiGet } from '../api.js';
 import {
     html, litRender, nothing,
     getConfig, typeEmoji, formatDateTime,
-    truncateKey, errorAlert,
+    truncateKey, errorAlert, t,
 } from '../components.js';
 import { iconError } from '../icons.js';
 
@@ -30,7 +30,7 @@ export async function render(container, params, router) {
 
         const config = getConfig();
         const tagName = node.tags?.find(t => t.key === 'name')?.value;
-        const displayName = tagName || node.name || 'Unnamed Node';
+        const displayName = tagName || node.name || t('common.unnamed_node');
         const emoji = typeEmoji(node.adv_type);
 
         let lat = node.lat;
@@ -57,12 +57,12 @@ export async function render(container, params, router) {
 <div class="card bg-base-100 shadow-xl mb-6">
     <div class="card-body flex-row items-center gap-4">
         <div id="qr-code" class="bg-white p-1 rounded"></div>
-        <p class="text-sm opacity-70">Scan to add as contact</p>
+        <p class="text-sm opacity-70">${t('nodes.scan_to_add')}</p>
     </div>
 </div>`;
 
         const coordsHtml = hasCoords
-            ? html`<div><span class="opacity-70">Location:</span> ${lat}, ${lon}</div>`
+            ? html`<div><span class="opacity-70">${t('common.location')}:</span> ${lat}, ${lon}</div>`
             : nothing;
 
         const adsTableHtml = advertisements.length > 0
@@ -70,9 +70,9 @@ export async function render(container, params, router) {
                 <table class="table table-compact w-full">
                     <thead>
                         <tr>
-                            <th>Time</th>
-                            <th>Type</th>
-                            <th>Received By</th>
+                            <th>${t('common.time')}</th>
+                            <th>${t('common.type')}</th>
+                            <th>${t('common.received_by')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,7 +101,7 @@ export async function render(container, params, router) {
                     </tbody>
                 </table>
             </div>`
-            : html`<p class="opacity-70">No advertisements recorded.</p>`;
+            : html`<p class="opacity-70">${t('common.no_entity_recorded', { entity: t('entities.advertisements').toLowerCase() })}</p>`;
 
         const tags = node.tags || [];
         const tagsTableHtml = tags.length > 0
@@ -109,9 +109,9 @@ export async function render(container, params, router) {
                 <table class="table table-compact w-full">
                     <thead>
                         <tr>
-                            <th>Key</th>
-                            <th>Value</th>
-                            <th>Type</th>
+                            <th>${t('common.key')}</th>
+                            <th>${t('common.value')}</th>
+                            <th>${t('common.type')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -123,25 +123,25 @@ export async function render(container, params, router) {
                     </tbody>
                 </table>
             </div>`
-            : html`<p class="opacity-70">No tags defined.</p>`;
+            : html`<p class="opacity-70">${t('common.no_entity_defined', { entity: t('entities.tags').toLowerCase() })}</p>`;
 
         const adminTagsHtml = (config.admin_enabled && config.is_authenticated)
             ? html`<div class="mt-3">
-                <a href="/a/node-tags?public_key=${node.public_key}" class="btn btn-sm btn-outline">${tags.length > 0 ? 'Edit Tags' : 'Add Tags'}</a>
+                <a href="/a/node-tags?public_key=${node.public_key}" class="btn btn-sm btn-outline">${tags.length > 0 ? t('common.edit_entity', { entity: t('entities.tags') }) : t('common.add_entity', { entity: t('entities.tags') })}</a>
             </div>`
             : nothing;
 
         litRender(html`
 <div class="breadcrumbs text-sm mb-4">
     <ul>
-        <li><a href="/">Home</a></li>
-        <li><a href="/nodes">Nodes</a></li>
+        <li><a href="/">${t('entities.home')}</a></li>
+        <li><a href="/nodes">${t('entities.nodes')}</a></li>
         <li>${tagName || node.name || node.public_key.slice(0, 12) + '...'}</li>
     </ul>
 </div>
 
 <h1 class="text-3xl font-bold mb-6">
-    <span title=${node.adv_type || 'Unknown'}>${emoji}</span>
+    <span title=${node.adv_type || t('node_types.unknown')}>${emoji}</span>
     ${displayName}
 </h1>
 
@@ -150,12 +150,12 @@ ${heroHtml}
 <div class="card bg-base-100 shadow-xl mb-6">
     <div class="card-body">
         <div>
-            <h3 class="font-semibold opacity-70 mb-2">Public Key</h3>
+            <h3 class="font-semibold opacity-70 mb-2">${t('common.public_key')}</h3>
             <code class="text-sm bg-base-200 p-2 rounded block break-all">${node.public_key}</code>
         </div>
         <div class="flex flex-wrap gap-x-8 gap-y-2 mt-4 text-sm">
-            <div><span class="opacity-70">First seen:</span> ${formatDateTime(node.first_seen)}</div>
-            <div><span class="opacity-70">Last seen:</span> ${formatDateTime(node.last_seen)}</div>
+            <div><span class="opacity-70">${t('common.first_seen_label')}</span> ${formatDateTime(node.first_seen)}</div>
+            <div><span class="opacity-70">${t('common.last_seen_label')}</span> ${formatDateTime(node.last_seen)}</div>
             ${coordsHtml}
         </div>
     </div>
@@ -164,14 +164,14 @@ ${heroHtml}
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-            <h2 class="card-title">Recent Advertisements</h2>
+            <h2 class="card-title">${t('common.recent_entity', { entity: t('entities.advertisements') })}</h2>
             ${adsTableHtml}
         </div>
     </div>
 
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-            <h2 class="card-title">Tags</h2>
+            <h2 class="card-title">${t('nodes.tags')}</h2>
             ${tagsTableHtml}
             ${adminTagsHtml}
         </div>
@@ -237,14 +237,14 @@ function renderNotFound(publicKey) {
     return html`
 <div class="breadcrumbs text-sm mb-4">
     <ul>
-        <li><a href="/">Home</a></li>
-        <li><a href="/nodes">Nodes</a></li>
-        <li>Not Found</li>
+        <li><a href="/">${t('entities.home')}</a></li>
+        <li><a href="/nodes">${t('entities.nodes')}</a></li>
+        <li>${t('common.page_not_found')}</li>
     </ul>
 </div>
 <div class="alert alert-error">
     ${iconError('stroke-current shrink-0 h-6 w-6')}
-    <span>Node not found: ${publicKey}</span>
+    <span>${t('common.entity_not_found_details', { entity: t('entities.node'), details: publicKey })}</span>
 </div>
-<a href="/nodes" class="btn btn-primary mt-4">Back to Nodes</a>`;
+<a href="/nodes" class="btn btn-primary mt-4">${t('common.view_entity', { entity: t('entities.nodes') })}</a>`;
 }

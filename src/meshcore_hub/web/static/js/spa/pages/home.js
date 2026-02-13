@@ -1,7 +1,7 @@
 import { apiGet } from '../api.js';
 import {
     html, litRender, nothing,
-    getConfig, errorAlert, pageColors,
+    getConfig, errorAlert, pageColors, t,
 } from '../components.js';
 import {
     iconDashboard, iconNodes, iconAdvertisements, iconMessages, iconMap,
@@ -11,12 +11,12 @@ import {
 function renderRadioConfig(rc) {
     if (!rc) return nothing;
     const fields = [
-        ['Profile', rc.profile],
-        ['Frequency', rc.frequency],
-        ['Bandwidth', rc.bandwidth],
-        ['Spreading Factor', rc.spreading_factor],
-        ['Coding Rate', rc.coding_rate],
-        ['TX Power', rc.tx_power],
+        [t('links.profile'), rc.profile],
+        [t('home.frequency'), rc.frequency],
+        [t('home.bandwidth'), rc.bandwidth],
+        [t('home.spreading_factor'), rc.spreading_factor],
+        [t('home.coding_rate'), rc.coding_rate],
+        [t('home.tx_power'), rc.tx_power],
     ];
     return fields
         .filter(([, v]) => v)
@@ -49,8 +49,7 @@ export async function render(container, params, router) {
         const welcomeText = config.network_welcome_text
             ? html`<p class="py-4 max-w-[70%]">${config.network_welcome_text}</p>`
             : html`<p class="py-4 max-w-[70%]">
-                Welcome to the ${networkName} mesh network dashboard.
-                Monitor network activity, view connected nodes, and explore message history.
+                ${t('home.welcome_default', { network_name: networkName })}
             </p>`;
 
         const customPageButtons = features.pages !== false
@@ -82,27 +81,27 @@ export async function render(container, params, router) {
             ${features.dashboard !== false ? html`
             <a href="/dashboard" class="btn btn-outline btn-info">
                 ${iconDashboard('h-5 w-5 mr-2')}
-                Dashboard
+                ${t('entities.dashboard')}
             </a>` : nothing}
             ${features.nodes !== false ? html`
             <a href="/nodes" class="btn btn-outline btn-primary">
                 ${iconNodes('h-5 w-5 mr-2')}
-                Nodes
+                ${t('entities.nodes')}
             </a>` : nothing}
             ${features.advertisements !== false ? html`
             <a href="/advertisements" class="btn btn-outline btn-secondary">
                 ${iconAdvertisements('h-5 w-5 mr-2')}
-                Adverts
+                ${t('entities.advertisements')}
             </a>` : nothing}
             ${features.messages !== false ? html`
             <a href="/messages" class="btn btn-outline btn-accent">
                 ${iconMessages('h-5 w-5 mr-2')}
-                Messages
+                ${t('entities.messages')}
             </a>` : nothing}
             ${features.map !== false ? html`
             <a href="/map" class="btn btn-outline btn-warning">
                 ${iconMap('h-5 w-5 mr-2')}
-                Map
+                ${t('entities.map')}
             </a>` : nothing}
             ${customPageButtons}
         </div>
@@ -115,9 +114,9 @@ export async function render(container, params, router) {
             <div class="stat-figure" style="color: ${pageColors.nodes}">
                 ${iconNodes('h-8 w-8')}
             </div>
-            <div class="stat-title">Total Nodes</div>
+            <div class="stat-title">${t('common.total_entity', { entity: t('entities.nodes') })}</div>
             <div class="stat-value" style="color: ${pageColors.nodes}">${stats.total_nodes}</div>
-            <div class="stat-desc">All discovered nodes</div>
+            <div class="stat-desc">${t('home.all_discovered_nodes')}</div>
         </div>` : nothing}
 
         ${features.advertisements !== false ? html`
@@ -125,9 +124,9 @@ export async function render(container, params, router) {
             <div class="stat-figure" style="color: ${pageColors.adverts}">
                 ${iconAdvertisements('h-8 w-8')}
             </div>
-            <div class="stat-title">Advertisements</div>
+            <div class="stat-title">${t('entities.advertisements')}</div>
             <div class="stat-value" style="color: ${pageColors.adverts}">${stats.advertisements_7d}</div>
-            <div class="stat-desc">Last 7 days</div>
+            <div class="stat-desc">${t('time.last_7_days')}</div>
         </div>` : nothing}
 
         ${features.messages !== false ? html`
@@ -135,9 +134,9 @@ export async function render(container, params, router) {
             <div class="stat-figure" style="color: ${pageColors.messages}">
                 ${iconMessages('h-8 w-8')}
             </div>
-            <div class="stat-title">Messages</div>
+            <div class="stat-title">${t('entities.messages')}</div>
             <div class="stat-value" style="color: ${pageColors.messages}">${stats.messages_7d}</div>
-            <div class="stat-desc">Last 7 days</div>
+            <div class="stat-desc">${t('time.last_7_days')}</div>
         </div>` : nothing}
     </div>` : nothing}
 </div>
@@ -147,7 +146,7 @@ export async function render(container, params, router) {
         <div class="card-body">
             <h2 class="card-title">
                 ${iconInfo('h-6 w-6')}
-                Network Info
+                ${t('home.network_info')}
             </h2>
             <div class="space-y-2">
                 ${renderRadioConfig(rc)}
@@ -157,7 +156,7 @@ export async function render(container, params, router) {
 
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body flex flex-col items-center justify-center">
-            <p class="text-sm opacity-70 mb-4 text-center">Our local off-grid mesh network is made possible by</p>
+            <p class="text-sm opacity-70 mb-4 text-center">${t('home.meshcore_attribution')}</p>
             <a href="https://meshcore.co.uk/" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition-opacity">
                 <img src="/static/img/meshcore.svg" alt="MeshCore" class="theme-logo h-8" />
             </a>
@@ -165,11 +164,11 @@ export async function render(container, params, router) {
             <div class="flex gap-2 mt-4">
                 <a href="https://meshcore.co.uk/" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
                     ${iconGlobe('h-4 w-4 mr-1')}
-                    Website
+                    ${t('links.website')}
                 </a>
                 <a href="https://github.com/meshcore-dev/MeshCore" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
                     ${iconGithub('h-4 w-4 mr-1')}
-                    GitHub
+                    ${t('links.github')}
                 </a>
             </div>
         </div>
@@ -180,9 +179,9 @@ export async function render(container, params, router) {
         <div class="card-body">
             <h2 class="card-title">
                 ${iconChart('h-6 w-6')}
-                Network Activity
+                ${t('home.network_activity')}
             </h2>
-            <p class="text-sm opacity-70 mb-2">Activity per day (last 7 days)</p>
+            <p class="text-sm opacity-70 mb-2">${t('time.activity_per_day_last_7_days')}</p>
             <div class="h-48">
                 <canvas id="activityChart"></canvas>
             </div>
@@ -204,6 +203,6 @@ export async function render(container, params, router) {
         };
 
     } catch (e) {
-        litRender(errorAlert(e.message || 'Failed to load home page'), container);
+        litRender(errorAlert(e.message || t('common.failed_to_load_page')), container);
     }
 }

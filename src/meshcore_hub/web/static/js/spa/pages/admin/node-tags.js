@@ -1,8 +1,8 @@
 import { apiGet, apiPost, apiPut, apiDelete } from '../../api.js';
 import {
-    html, litRender, nothing,
+    html, litRender, nothing, unsafeHTML,
     getConfig, typeEmoji, formatDateTimeShort, errorAlert,
-    successAlert, truncateKey,
+    successAlert, truncateKey, t,
 } from '../../components.js';
 import { iconTag, iconLock } from '../../icons.js';
 
@@ -14,9 +14,9 @@ export async function render(container, params, router) {
             litRender(html`
 <div class="flex flex-col items-center justify-center py-20">
     ${iconLock('h-16 w-16 opacity-30 mb-4')}
-    <h1 class="text-3xl font-bold mb-2">Access Denied</h1>
-    <p class="opacity-70">The admin interface is not enabled.</p>
-    <a href="/" class="btn btn-primary mt-6">Go Home</a>
+    <h1 class="text-3xl font-bold mb-2">${t('admin.access_denied')}</h1>
+    <p class="opacity-70">${t('admin.admin_not_enabled')}</p>
+    <a href="/" class="btn btn-primary mt-6">${t('common.go_home')}</a>
 </div>`, container);
             return;
         }
@@ -25,9 +25,9 @@ export async function render(container, params, router) {
             litRender(html`
 <div class="flex flex-col items-center justify-center py-20">
     ${iconLock('h-16 w-16 opacity-30 mb-4')}
-    <h1 class="text-3xl font-bold mb-2">Authentication Required</h1>
-    <p class="opacity-70">You must sign in to access the admin interface.</p>
-    <a href="/oauth2/start?rd=${encodeURIComponent(window.location.pathname)}" class="btn btn-primary mt-6">Sign In</a>
+    <h1 class="text-3xl font-bold mb-2">${t('admin.auth_required')}</h1>
+    <p class="opacity-70">${t('admin.auth_required_description')}</p>
+    <a href="/oauth2/start?rd=${encodeURIComponent(window.location.pathname)}" class="btn btn-primary mt-6">${t('common.sign_in')}</a>
 </div>`, container);
             return;
         }
@@ -57,7 +57,7 @@ export async function render(container, params, router) {
 
         if (selectedPublicKey && selectedNode) {
             const nodeEmoji = typeEmoji(selectedNode.adv_type);
-            const nodeName = selectedNode.name || 'Unnamed Node';
+            const nodeName = selectedNode.name || t('common.unnamed_node');
             const otherNodes = allNodes.filter(n => n.public_key !== selectedPublicKey);
 
             const tagsTableHtml = tags.length > 0
@@ -66,11 +66,11 @@ export async function render(container, params, router) {
                     <table class="table table-zebra">
                         <thead>
                             <tr>
-                                <th>Key</th>
-                                <th>Value</th>
-                                <th>Type</th>
-                                <th>Updated</th>
-                                <th class="w-48">Actions</th>
+                                <th>${t('common.key')}</th>
+                                <th>${t('common.value')}</th>
+                                <th>${t('common.type')}</th>
+                                <th>${t('common.updated')}</th>
+                                <th class="w-48">${t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>${tags.map(tag => html`
@@ -83,9 +83,9 @@ export async function render(container, params, router) {
                                 <td class="text-sm opacity-70">${formatDateTimeShort(tag.updated_at)}</td>
                                 <td>
                                     <div class="flex gap-1">
-                                        <button class="btn btn-ghost btn-xs btn-edit">Edit</button>
-                                        <button class="btn btn-ghost btn-xs btn-move">Move</button>
-                                        <button class="btn btn-ghost btn-xs text-error btn-delete">Delete</button>
+                                        <button class="btn btn-ghost btn-xs btn-edit">${t('common.edit')}</button>
+                                        <button class="btn btn-ghost btn-xs btn-move">${t('common.move')}</button>
+                                        <button class="btn btn-ghost btn-xs text-error btn-delete">${t('common.delete')}</button>
                                     </div>
                                 </td>
                             </tr>`)}</tbody>
@@ -93,14 +93,14 @@ export async function render(container, params, router) {
                 </div>`
                 : html`
                 <div class="text-center py-8 text-base-content/60">
-                    <p>No tags found for this node.</p>
-                    <p class="text-sm mt-2">Add a new tag below.</p>
+                    <p>${t('common.no_entity_found', { entity: t('entities.tags').toLowerCase() }) + ' ' + t('admin_node_tags.for_this_node')}</p>
+                    <p class="text-sm mt-2">${t('admin_node_tags.empty_state_hint')}</p>
                 </div>`;
 
             const bulkButtons = tags.length > 0
                 ? html`
-                <button id="btn-copy-all" class="btn btn-outline btn-sm">Copy All</button>
-                <button id="btn-delete-all" class="btn btn-outline btn-error btn-sm">Delete All</button>`
+                <button id="btn-copy-all" class="btn btn-outline btn-sm">${t('admin_node_tags.copy_all')}</button>
+                <button id="btn-delete-all" class="btn btn-outline btn-error btn-sm">${t('admin_node_tags.delete_all')}</button>`
                 : nothing;
 
             contentHtml = html`
@@ -116,7 +116,7 @@ export async function render(container, params, router) {
             </div>
             <div class="flex gap-2">
                 ${bulkButtons}
-                <a href="/nodes/${encodeURIComponent(selectedPublicKey)}" class="btn btn-ghost btn-sm">View Node</a>
+                <a href="/nodes/${encodeURIComponent(selectedPublicKey)}" class="btn btn-ghost btn-sm">${t('common.view_entity', { entity: t('entities.node') })}</a>
             </div>
         </div>
     </div>
@@ -124,25 +124,25 @@ export async function render(container, params, router) {
 
 <div class="card bg-base-100 shadow-xl mb-6">
     <div class="card-body">
-        <h2 class="card-title">Tags (${tags.length})</h2>
+        <h2 class="card-title">${t('entities.tags')} (${tags.length})</h2>
         ${tagsTableHtml}
     </div>
 </div>
 
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
-        <h2 class="card-title">Add New Tag</h2>
+        <h2 class="card-title">${t('common.add_new_entity', { entity: t('entities.tag') })}</h2>
         <form id="add-tag-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="form-control">
-                <label class="label"><span class="label-text">Key</span></label>
+                <label class="label"><span class="label-text">${t('common.key')}</span></label>
                 <input type="text" name="key" class="input input-bordered" placeholder="tag_name" required maxlength="100">
             </div>
             <div class="form-control">
-                <label class="label"><span class="label-text">Value</span></label>
+                <label class="label"><span class="label-text">${t('common.value')}</span></label>
                 <input type="text" name="value" class="input input-bordered" placeholder="tag value">
             </div>
             <div class="form-control">
-                <label class="label"><span class="label-text">Type</span></label>
+                <label class="label"><span class="label-text">${t('common.type')}</span></label>
                 <select name="value_type" class="select select-bordered">
                     <option value="string">string</option>
                     <option value="number">number</option>
@@ -151,7 +151,7 @@ export async function render(container, params, router) {
             </div>
             <div class="form-control">
                 <label class="label"><span class="label-text">&nbsp;</span></label>
-                <button type="submit" class="btn btn-primary">Add Tag</button>
+                <button type="submit" class="btn btn-primary">${t('common.add_entity', { entity: t('entities.tag') })}</button>
             </div>
         </form>
     </div>
@@ -159,18 +159,18 @@ export async function render(container, params, router) {
 
 <dialog id="editModal" class="modal">
     <div class="modal-box">
-        <h3 class="font-bold text-lg">Edit Tag</h3>
+        <h3 class="font-bold text-lg">${t('common.edit_entity', { entity: t('entities.tag') })}</h3>
         <form id="edit-tag-form" class="py-4">
             <div class="form-control mb-4">
-                <label class="label"><span class="label-text">Key</span></label>
+                <label class="label"><span class="label-text">${t('common.key')}</span></label>
                 <input type="text" id="editKeyDisplay" class="input input-bordered" disabled>
             </div>
             <div class="form-control mb-4">
-                <label class="label"><span class="label-text">Value</span></label>
+                <label class="label"><span class="label-text">${t('common.value')}</span></label>
                 <input type="text" id="editValue" class="input input-bordered">
             </div>
             <div class="form-control mb-4">
-                <label class="label"><span class="label-text">Type</span></label>
+                <label class="label"><span class="label-text">${t('common.type')}</span></label>
                 <select id="editValueType" class="select select-bordered w-full">
                     <option value="string">string</option>
                     <option value="number">number</option>
@@ -178,28 +178,28 @@ export async function render(container, params, router) {
                 </select>
             </div>
             <div class="modal-action">
-                <button type="button" class="btn" id="editCancel">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn" id="editCancel">${t('common.cancel')}</button>
+                <button type="submit" class="btn btn-primary">${t('common.save_changes')}</button>
             </div>
         </form>
     </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    <form method="dialog" class="modal-backdrop"><button>${t('common.close')}</button></form>
 </dialog>
 
 <dialog id="moveModal" class="modal">
     <div class="modal-box">
-        <h3 class="font-bold text-lg">Move Tag to Another Node</h3>
+        <h3 class="font-bold text-lg">${t('common.move_entity_to_another_node', { entity: t('entities.tag') })}</h3>
         <form id="move-tag-form" class="py-4">
             <div class="form-control mb-4">
-                <label class="label"><span class="label-text">Tag Key</span></label>
+                <label class="label"><span class="label-text">${t('admin_node_tags.tag_key')}</span></label>
                 <input type="text" id="moveKeyDisplay" class="input input-bordered" disabled>
             </div>
             <div class="form-control mb-4">
-                <label class="label"><span class="label-text">Destination Node</span></label>
+                <label class="label"><span class="label-text">${t('admin_node_tags.destination_node')}</span></label>
                 <select id="moveDestination" class="select select-bordered w-full" required>
-                    <option value="">-- Select destination node --</option>
+                    <option value="">${t('map.select_destination_node')}</option>
                     ${otherNodes.map(n => {
-                        const name = n.name || 'Unnamed';
+                        const name = n.name || t('common.unnamed');
                         const keyPreview = n.public_key.slice(0, 8) + '...' + n.public_key.slice(-4);
                         return html`<option value=${n.public_key}>${name} (${keyPreview})</option>`;
                     })}
@@ -207,46 +207,46 @@ export async function render(container, params, router) {
             </div>
             <div class="alert alert-warning mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <span>This will move the tag from the current node to the destination node.</span>
+                <span>${t('admin_node_tags.move_warning')}</span>
             </div>
             <div class="modal-action">
-                <button type="button" class="btn" id="moveCancel">Cancel</button>
-                <button type="submit" class="btn btn-warning">Move Tag</button>
+                <button type="button" class="btn" id="moveCancel">${t('common.cancel')}</button>
+                <button type="submit" class="btn btn-warning">${t('common.move_entity', { entity: t('entities.tag') })}</button>
             </div>
         </form>
     </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    <form method="dialog" class="modal-backdrop"><button>${t('common.close')}</button></form>
 </dialog>
 
 <dialog id="deleteModal" class="modal">
     <div class="modal-box">
-        <h3 class="font-bold text-lg">Delete Tag</h3>
+        <h3 class="font-bold text-lg">${t('common.delete_entity', { entity: t('entities.tag') })}</h3>
         <div class="py-4">
-            <p class="py-4">Are you sure you want to delete the tag "<span id="deleteKeyDisplay" class="font-mono font-semibold"></span>"?</p>
+            <p class="py-4" id="delete_tag_confirm_message"></p>
             <div class="alert alert-error mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <span>This action cannot be undone.</span>
+                <span>${t('common.cannot_be_undone')}</span>
             </div>
             <div class="modal-action">
-                <button type="button" class="btn" id="deleteCancel">Cancel</button>
-                <button type="button" class="btn btn-error" id="deleteConfirm">Delete</button>
+                <button type="button" class="btn" id="deleteCancel">${t('common.cancel')}</button>
+                <button type="button" class="btn btn-error" id="deleteConfirm">${t('common.delete')}</button>
             </div>
         </div>
     </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    <form method="dialog" class="modal-backdrop"><button>${t('common.close')}</button></form>
 </dialog>
 
 <dialog id="copyAllModal" class="modal">
     <div class="modal-box">
-        <h3 class="font-bold text-lg">Copy All Tags to Another Node</h3>
+        <h3 class="font-bold text-lg">${t('common.copy_all_entity_to_another_node', { entity: t('entities.tags') })}</h3>
         <form id="copy-all-form" class="py-4">
-            <p class="mb-4">Copy all ${tags.length} tag(s) from <strong>${nodeName}</strong> to another node.</p>
+            <p class="mb-4">${unsafeHTML(t('common.copy_all_entity_description', { count: tags.length, entity: t('entities.tags').toLowerCase(), name: nodeName }))}</p>
             <div class="form-control mb-4">
-                <label class="label"><span class="label-text">Destination Node</span></label>
+                <label class="label"><span class="label-text">${t('admin_node_tags.destination_node')}</span></label>
                 <select id="copyAllDestination" class="select select-bordered w-full" required>
-                    <option value="">-- Select destination node --</option>
+                    <option value="">${t('map.select_destination_node')}</option>
                     ${otherNodes.map(n => {
-                        const name = n.name || 'Unnamed';
+                        const name = n.name || t('common.unnamed');
                         const keyPreview = n.public_key.slice(0, 8) + '...' + n.public_key.slice(-4);
                         return html`<option value=${n.public_key}>${name} (${keyPreview})</option>`;
                     })}
@@ -254,33 +254,33 @@ export async function render(container, params, router) {
             </div>
             <div class="alert alert-info mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span>Tags that already exist on the destination node will be skipped. Original tags remain on this node.</span>
+                <span>${t('admin_node_tags.copy_all_info')}</span>
             </div>
             <div class="modal-action">
-                <button type="button" class="btn" id="copyAllCancel">Cancel</button>
-                <button type="submit" class="btn btn-primary">Copy Tags</button>
+                <button type="button" class="btn" id="copyAllCancel">${t('common.cancel')}</button>
+                <button type="submit" class="btn btn-primary">${t('common.copy_entity', { entity: t('entities.tags') })}</button>
             </div>
         </form>
     </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    <form method="dialog" class="modal-backdrop"><button>${t('common.close')}</button></form>
 </dialog>
 
 <dialog id="deleteAllModal" class="modal">
     <div class="modal-box">
-        <h3 class="font-bold text-lg">Delete All Tags</h3>
+        <h3 class="font-bold text-lg">${t('common.delete_all_entity', { entity: t('entities.tags') })}</h3>
         <div class="py-4">
-            <p class="mb-4">Are you sure you want to delete all ${tags.length} tag(s) from <strong>${nodeName}</strong>?</p>
+            <p class="mb-4">${unsafeHTML(t('common.delete_all_entity_confirm', { count: tags.length, entity: t('entities.tags').toLowerCase(), name: nodeName }))}</p>
             <div class="alert alert-error mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <span>This action cannot be undone. All tags will be permanently deleted.</span>
+                <span>${t('admin_node_tags.delete_all_warning')}</span>
             </div>
             <div class="modal-action">
-                <button type="button" class="btn" id="deleteAllCancel">Cancel</button>
-                <button type="button" class="btn btn-error" id="deleteAllConfirm">Delete All Tags</button>
+                <button type="button" class="btn" id="deleteAllCancel">${t('common.cancel')}</button>
+                <button type="button" class="btn btn-error" id="deleteAllConfirm">${t('common.delete_all_entity', { entity: t('entities.tags') })}</button>
             </div>
         </div>
     </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    <form method="dialog" class="modal-backdrop"><button>${t('common.close')}</button></form>
 </dialog>`;
         } else if (selectedPublicKey && !selectedNode) {
             contentHtml = html`
@@ -293,8 +293,8 @@ export async function render(container, params, router) {
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body text-center py-12">
         ${iconTag('h-16 w-16 mx-auto mb-4 opacity-30')}
-        <h2 class="text-xl font-semibold mb-2">Select a Node</h2>
-        <p class="opacity-70">Choose a node from the dropdown above to view and manage its tags.</p>
+        <h2 class="text-xl font-semibold mb-2">${t('admin_node_tags.select_a_node')}</h2>
+        <p class="opacity-70">${t('admin_node_tags.select_a_node_description')}</p>
     </div>
 </div>`;
         }
@@ -302,36 +302,36 @@ export async function render(container, params, router) {
         litRender(html`
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="text-3xl font-bold">Node Tags</h1>
+        <h1 class="text-3xl font-bold">${t('entities.tags')}</h1>
         <div class="text-sm breadcrumbs">
             <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/a/">Admin</a></li>
-                <li>Node Tags</li>
+                <li><a href="/">${t('entities.home')}</a></li>
+                <li><a href="/a/">${t('entities.admin')}</a></li>
+                <li>${t('entities.tags')}</li>
             </ul>
         </div>
     </div>
-    <a href="/oauth2/sign_out" target="_blank" class="btn btn-outline btn-sm">Sign Out</a>
+    <a href="/oauth2/sign_out" target="_blank" class="btn btn-outline btn-sm">${t('common.sign_out')}</a>
 </div>
 
 ${flashHtml}
 
 <div class="card bg-base-100 shadow-xl mb-6">
     <div class="card-body">
-        <h2 class="card-title">Select Node</h2>
+        <h2 class="card-title">${t('admin_node_tags.select_node')}</h2>
         <div class="flex gap-4 items-end">
             <div class="form-control flex-1">
-                <label class="label"><span class="label-text">Node</span></label>
+                <label class="label"><span class="label-text">${t('entities.node')}</span></label>
                 <select id="node-selector" class="select select-bordered w-full">
-                    <option value="">-- Select a node --</option>
+                    <option value="">${t('admin_node_tags.select_node_placeholder')}</option>
                     ${allNodes.map(n => {
-                        const name = n.name || 'Unnamed';
+                        const name = n.name || t('common.unnamed');
                         const keyPreview = n.public_key.slice(0, 8) + '...' + n.public_key.slice(-4);
                         return html`<option value=${n.public_key} ?selected=${n.public_key === selectedPublicKey}>${name} (${keyPreview})</option>`;
                     })}
                 </select>
             </div>
-            <button id="load-tags-btn" class="btn btn-primary">Load Tags</button>
+            <button id="load-tags-btn" class="btn btn-primary">${t('admin_node_tags.load_tags')}</button>
         </div>
     </div>
 </div>
@@ -371,7 +371,7 @@ ${contentHtml}`, container);
                     await apiPost('/api/v1/nodes/' + encodeURIComponent(selectedPublicKey) + '/tags', {
                         key, value, value_type,
                     });
-                    router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent('Tag added successfully'));
+                    router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent(t('common.entity_added_success', { entity: t('entities.tag') })));
                 } catch (err) {
                     router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&error=' + encodeURIComponent(err.message));
                 }
@@ -403,7 +403,7 @@ ${contentHtml}`, container);
                         value, value_type,
                     });
                     container.querySelector('#editModal').close();
-                    router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent('Tag updated successfully'));
+                    router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent(t('common.entity_updated_success', { entity: t('entities.tag') })));
                 } catch (err) {
                     container.querySelector('#editModal').close();
                     router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&error=' + encodeURIComponent(err.message));
@@ -435,7 +435,7 @@ ${contentHtml}`, container);
                         new_public_key: newPublicKey,
                     });
                     container.querySelector('#moveModal').close();
-                    router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent('Tag moved successfully'));
+                    router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent(t('common.entity_moved_success', { entity: t('entities.tag') })));
                 } catch (err) {
                     container.querySelector('#moveModal').close();
                     router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&error=' + encodeURIComponent(err.message));
@@ -447,7 +447,11 @@ ${contentHtml}`, container);
                 btn.addEventListener('click', () => {
                     const row = btn.closest('tr');
                     activeTagKey = row.dataset.tagKey;
-                    container.querySelector('#deleteKeyDisplay').textContent = activeTagKey;
+                    const confirmMsg = t('common.delete_entity_confirm', {
+                        entity: t('entities.tag').toLowerCase(),
+                        name: `"<span class="font-mono font-semibold">${activeTagKey}</span>"`
+                    });
+                    container.querySelector('#delete_tag_confirm_message').innerHTML = confirmMsg;
                     container.querySelector('#deleteModal').showModal();
                 });
             });
@@ -460,7 +464,7 @@ ${contentHtml}`, container);
                 try {
                     await apiDelete('/api/v1/nodes/' + encodeURIComponent(selectedPublicKey) + '/tags/' + encodeURIComponent(activeTagKey));
                     container.querySelector('#deleteModal').close();
-                    router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent('Tag deleted successfully'));
+                    router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent(t('common.entity_deleted_success', { entity: t('entities.tag') })));
                 } catch (err) {
                     container.querySelector('#deleteModal').close();
                     router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&error=' + encodeURIComponent(err.message));
@@ -487,7 +491,7 @@ ${contentHtml}`, container);
                     try {
                         const result = await apiPost('/api/v1/nodes/' + encodeURIComponent(selectedPublicKey) + '/tags/copy-to/' + encodeURIComponent(destKey));
                         container.querySelector('#copyAllModal').close();
-                        const msg = `Copied ${result.copied} tag(s), skipped ${result.skipped}`;
+                        const msg = t('admin_node_tags.copied_entities', { copied: result.copied, skipped: result.skipped });
                         router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent(msg));
                     } catch (err) {
                         container.querySelector('#copyAllModal').close();
@@ -511,7 +515,7 @@ ${contentHtml}`, container);
                     try {
                         await apiDelete('/api/v1/nodes/' + encodeURIComponent(selectedPublicKey) + '/tags');
                         container.querySelector('#deleteAllModal').close();
-                        router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent('All tags deleted successfully'));
+                        router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&message=' + encodeURIComponent(t('common.all_entity_deleted_success', { entity: t('entities.tags').toLowerCase() })));
                     } catch (err) {
                         container.querySelector('#deleteAllModal').close();
                         router.navigate('/a/node-tags?public_key=' + encodeURIComponent(selectedPublicKey) + '&error=' + encodeURIComponent(err.message));
@@ -521,6 +525,6 @@ ${contentHtml}`, container);
         }
 
     } catch (e) {
-        litRender(errorAlert(e.message || 'Failed to load node tags'), container);
+        litRender(errorAlert(e.message || t('common.failed_to_load_page')), container);
     }
 }

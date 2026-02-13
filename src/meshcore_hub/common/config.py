@@ -262,6 +262,12 @@ class WebSettings(CommonSettings):
         description="Default theme for the web dashboard (dark or light)",
     )
 
+    # Locale / language (default: English)
+    web_locale: str = Field(
+        default="en",
+        description="Locale/language for the web dashboard (e.g. 'en')",
+    )
+
     # Admin interface (disabled by default for security)
     web_admin_enabled: bool = Field(
         default=False,
