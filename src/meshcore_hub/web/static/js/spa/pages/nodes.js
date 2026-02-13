@@ -51,10 +51,10 @@ ${content}`, container);
             ? html`
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">${t('common.member')}</span>
+                    <span class="label-text">${t('entities.member')}</span>
                 </label>
                 <select name="member_id" class="select select-bordered select-sm" @change=${autoSubmit}>
-                    <option value="">${t('common.all_members')}</option>
+                    <option value="">${t('common.all_entity', { entity: t('entities.members') })}</option>
                     ${members.map(m => html`<option value=${m.member_id} ?selected=${member_id === m.member_id}>${m.name}${m.callsign ? ` (${m.callsign})` : ''}</option>`)}
                 </select>
             </div>`
@@ -170,7 +170,7 @@ ${content}`, container);
     <table class="table table-zebra">
         <thead>
             <tr>
-                <th>${t('common.node')}</th>
+                <th>${t('entities.node')}</th>
                 <th>${t('common.last_seen')}</th>
                 <th>${t('common.tags')}</th>
             </tr>

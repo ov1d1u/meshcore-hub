@@ -206,10 +206,10 @@ export async function render(container, params, router) {
             </div>
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">${t('common.member')}</span>
+                    <span class="label-text">${t('entities.member')}</span>
                 </label>
                 <select id="filter-member" class="select select-bordered select-sm" @change=${applyFilters}>
-                    <option value="">${t('common.all_members')}</option>
+                    <option value="">${t('common.all_entity', { entity: t('entities.members') })}</option>
                     ${sortedMembers
                         .filter(m => m.member_id)
                         .map(m => {

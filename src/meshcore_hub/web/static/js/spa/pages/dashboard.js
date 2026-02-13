@@ -67,7 +67,7 @@ function renderRecentAds(ads) {
         <table class="table table-compact w-full">
             <thead>
                 <tr>
-                    <th>${t('common.node')}</th>
+                    <th>${t('entities.node')}</th>
                     <th>${t('common.type')}</th>
                     <th class="text-right">${t('common.received')}</th>
                 </tr>
@@ -162,7 +162,7 @@ ${topCount > 0 ? html`
         <div class="stat-figure" style="color: ${pageColors.adverts}">
             ${iconAdvertisements('h-8 w-8')}
         </div>
-        <div class="stat-title">${t('dashboard.advertisements')}</div>
+        <div class="stat-title">${t('entities.advertisements')}</div>
         <div class="stat-value" style="color: ${pageColors.adverts}">${stats.advertisements_7d}</div>
         <div class="stat-desc">${t('time.last_7_days')}</div>
     </div>` : nothing}
@@ -172,7 +172,7 @@ ${topCount > 0 ? html`
         <div class="stat-figure" style="color: ${pageColors.messages}">
             ${iconMessages('h-8 w-8')}
         </div>
-        <div class="stat-title">${t('dashboard.messages')}</div>
+        <div class="stat-title">${t('entities.messages')}</div>
         <div class="stat-value" style="color: ${pageColors.messages}">${stats.messages_7d}</div>
         <div class="stat-desc">${t('time.last_7_days')}</div>
     </div>` : nothing}
@@ -198,7 +198,7 @@ ${topCount > 0 ? html`
         <div class="card-body">
             <h2 class="card-title text-base">
                 ${iconAdvertisements('h-5 w-5')}
-                ${t('dashboard.advertisements')}
+                ${t('entities.advertisements')}
             </h2>
             <p class="text-xs opacity-70">${t('time.per_day_last_7_days')}</p>
             <div class="h-32">
@@ -212,7 +212,7 @@ ${topCount > 0 ? html`
         <div class="card-body">
             <h2 class="card-title text-base">
                 ${iconMessages('h-5 w-5')}
-                ${t('dashboard.messages')}
+                ${t('entities.messages')}
             </h2>
             <p class="text-xs opacity-70">${t('time.per_day_last_7_days')}</p>
             <div class="h-32">

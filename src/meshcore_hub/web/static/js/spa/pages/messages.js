@@ -171,7 +171,7 @@ ${content}`, container);
                 <th>${t('common.type')}</th>
                 <th>${t('common.time')}</th>
                 <th>${t('common.from')}</th>
-                <th>${t('common.message')}</th>
+                <th>${t('entities.message')}</th>
                 <th>${t('common.receivers')}</th>
             </tr>
         </thead>

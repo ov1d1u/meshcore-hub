@@ -124,7 +124,7 @@ export async function render(container, params, router) {
             <div class="stat-figure" style="color: ${pageColors.adverts}">
                 ${iconAdvertisements('h-8 w-8')}
             </div>
-            <div class="stat-title">${t('home.advertisements')}</div>
+            <div class="stat-title">${t('entities.advertisements')}</div>
             <div class="stat-value" style="color: ${pageColors.adverts}">${stats.advertisements_7d}</div>
             <div class="stat-desc">${t('time.last_7_days')}</div>
         </div>` : nothing}
@@ -134,7 +134,7 @@ export async function render(container, params, router) {
             <div class="stat-figure" style="color: ${pageColors.messages}">
                 ${iconMessages('h-8 w-8')}
             </div>
-            <div class="stat-title">${t('home.messages')}</div>
+            <div class="stat-title">${t('entities.messages')}</div>
             <div class="stat-value" style="color: ${pageColors.messages}">${stats.messages_7d}</div>
             <div class="stat-desc">${t('time.last_7_days')}</div>
         </div>` : nothing}

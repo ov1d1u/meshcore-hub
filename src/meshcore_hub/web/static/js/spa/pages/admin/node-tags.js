@@ -321,7 +321,7 @@ ${flashHtml}
         <h2 class="card-title">${t('admin_node_tags.select_node')}</h2>
         <div class="flex gap-4 items-end">
             <div class="form-control flex-1">
-                <label class="label"><span class="label-text">${t('common.node')}</span></label>
+                <label class="label"><span class="label-text">${t('entities.node')}</span></label>
                 <select id="node-selector" class="select select-bordered w-full">
                     <option value="">${t('admin_node_tags.select_node_placeholder')}</option>
                     ${allNodes.map(n => {
