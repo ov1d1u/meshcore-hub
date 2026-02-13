@@ -60,7 +60,7 @@ ${content}`, container);
                     <span class="label-text">${t('entities.node')}</span>
                 </label>
                 <select name="public_key" class="select select-bordered select-sm" @change=${autoSubmit}>
-                    <option value="">${t('common.all_nodes')}</option>
+                    <option value="">${t('common.all_entity', { entity: t('entities.nodes') })}</option>
                     ${sortedNodes.map(n => html`<option value=${n.public_key} ?selected=${public_key === n.public_key}>${n._displayName}</option>`)}
                 </select>
             </div>`

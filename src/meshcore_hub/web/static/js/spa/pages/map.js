@@ -189,7 +189,7 @@ export async function render(container, params, router) {
                     <span class="label-text">${t('common.show')}</span>
                 </label>
                 <select id="filter-category" class="select select-bordered select-sm" @change=${applyFilters}>
-                    <option value="">${t('common.all_nodes')}</option>
+                    <option value="">${t('common.all_entity', { entity: t('entities.nodes') })}</option>
                     <option value="infra">${t('map.infrastructure_only')}</option>
                 </select>
             </div>
