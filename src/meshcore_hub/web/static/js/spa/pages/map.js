@@ -199,11 +199,6 @@ export async function render(container, params, router) {
         <div class="flex gap-4 flex-wrap items-end">
             <div class="form-control">
                 <label class="label py-1">
-                    <span class="label-text">Show</span>
-                </label>
-            </div>
-            <div class="form-control">
-                <label class="label py-1">
                     <span class="label-text">Node Type</span>
                 </label>
                 <select id="filter-type" class="select select-bordered select-sm" @change=${applyFilters}>
