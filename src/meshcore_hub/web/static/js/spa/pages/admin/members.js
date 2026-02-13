@@ -1,7 +1,7 @@
 import { apiGet, apiPost, apiPut, apiDelete } from '../../api.js';
 import {
     html, litRender, nothing,
-    getConfig, errorAlert, successAlert,
+    getConfig, errorAlert, successAlert, t,
 } from '../../components.js';
 import { iconLock } from '../../icons.js';
 
@@ -13,9 +13,9 @@ export async function render(container, params, router) {
             litRender(html`
 <div class="flex flex-col items-center justify-center py-20">
     ${iconLock('h-16 w-16 opacity-30 mb-4')}
-    <h1 class="text-3xl font-bold mb-2">Access Denied</h1>
-    <p class="opacity-70">The admin interface is not enabled.</p>
-    <a href="/" class="btn btn-primary mt-6">Go Home</a>
+    <h1 class="text-3xl font-bold mb-2">${t('admin.access_denied')}</h1>
+    <p class="opacity-70">${t('admin.admin_not_enabled')}</p>
+    <a href="/" class="btn btn-primary mt-6">${t('common.go_home')}</a>
 </div>`, container);
             return;
         }
@@ -24,9 +24,9 @@ export async function render(container, params, router) {
             litRender(html`
 <div class="flex flex-col items-center justify-center py-20">
     ${iconLock('h-16 w-16 opacity-30 mb-4')}
-    <h1 class="text-3xl font-bold mb-2">Authentication Required</h1>
-    <p class="opacity-70">You must sign in to access the admin interface.</p>
-    <a href="/oauth2/start?rd=${encodeURIComponent(window.location.pathname)}" class="btn btn-primary mt-6">Sign In</a>
+    <h1 class="text-3xl font-bold mb-2">${t('admin.auth_required')}</h1>
+    <p class="opacity-70">${t('admin.auth_required_description')}</p>
+    <a href="/oauth2/start?rd=${encodeURIComponent(window.location.pathname)}" class="btn btn-primary mt-6">${t('common.sign_in')}</a>
 </div>`, container);
             return;
         }
@@ -45,11 +45,11 @@ export async function render(container, params, router) {
                 <table class="table table-zebra">
                     <thead>
                         <tr>
-                            <th>Member ID</th>
-                            <th>Name</th>
-                            <th>Callsign</th>
-                            <th>Contact</th>
-                            <th class="w-32">Actions</th>
+                            <th>${t('admin_members.member_id')}</th>
+                            <th>${t('common.name')}</th>
+                            <th>${t('common.callsign')}</th>
+                            <th>${t('common.contact')}</th>
+                            <th class="w-32">${t('common.actions')}</th>
                         </tr>
                     </thead>
                     <tbody>${members.map(m => html`
@@ -69,8 +69,8 @@ export async function render(container, params, router) {
                             <td class="max-w-xs truncate" title=${m.contact || ''}>${m.contact || '-'}</td>
                             <td>
                                 <div class="flex gap-1">
-                                    <button class="btn btn-ghost btn-xs btn-edit">Edit</button>
-                                    <button class="btn btn-ghost btn-xs text-error btn-delete">Delete</button>
+                                    <button class="btn btn-ghost btn-xs btn-edit">${t('common.edit')}</button>
+                                    <button class="btn btn-ghost btn-xs text-error btn-delete">${t('common.delete')}</button>
                                 </div>
                             </td>
                         </tr>`)}</tbody>
@@ -78,23 +78,23 @@ export async function render(container, params, router) {
             </div>`
             : html`
             <div class="text-center py-8 text-base-content/60">
-                <p>No members configured yet.</p>
-                <p class="text-sm mt-2">Click "Add Member" to create the first member.</p>
+                <p>${t('admin_members.no_members_yet')}</p>
+                <p class="text-sm mt-2">${t('admin_members.no_members_hint')}</p>
             </div>`;
 
         litRender(html`
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="text-3xl font-bold">Members</h1>
+        <h1 class="text-3xl font-bold">${t('admin_members.title')}</h1>
         <div class="text-sm breadcrumbs">
             <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/a/">Admin</a></li>
-                <li>Members</li>
+                <li><a href="/">${t('nav.home')}</a></li>
+                <li><a href="/a/">${t('nav.admin')}</a></li>
+                <li>${t('admin_members.title')}</li>
             </ul>
         </div>
     </div>
-    <a href="/oauth2/sign_out" target="_blank" class="btn btn-outline btn-sm">Sign Out</a>
+    <a href="/oauth2/sign_out" target="_blank" class="btn btn-outline btn-sm">${t('common.sign_out')}</a>
 </div>
 
 ${flashHtml}
@@ -102,8 +102,8 @@ ${flashHtml}
 <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
         <div class="flex justify-between items-center">
-            <h2 class="card-title">Network Members (${members.length})</h2>
-            <button id="btn-add-member" class="btn btn-primary btn-sm">Add Member</button>
+            <h2 class="card-title">${t('admin_members.network_members', { count: members.length })}</h2>
+            <button id="btn-add-member" class="btn btn-primary btn-sm">${t('admin_members.add_member')}</button>
         </div>
         ${tableHtml}
     </div>
@@ -111,62 +111,62 @@ ${flashHtml}
 
 <dialog id="addModal" class="modal">
     <div class="modal-box w-11/12 max-w-2xl">
-        <h3 class="font-bold text-lg">Add New Member</h3>
+        <h3 class="font-bold text-lg">${t('admin_members.add_new_member')}</h3>
         <form id="add-member-form" class="py-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text">Member ID <span class="text-error">*</span></span>
+                        <span class="label-text">${t('admin_members.member_id')} <span class="text-error">*</span></span>
                     </label>
                     <input type="text" name="member_id" class="input input-bordered"
                            placeholder="walshie86" required maxlength="50"
                            pattern="[a-zA-Z0-9_]+"
                            title="Letters, numbers, and underscores only">
                     <label class="label">
-                        <span class="label-text-alt">Unique identifier (letters, numbers, underscore)</span>
+                        <span class="label-text-alt">${t('admin_members.member_id_hint')}</span>
                     </label>
                 </div>
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text">Name <span class="text-error">*</span></span>
+                        <span class="label-text">${t('common.name')} <span class="text-error">*</span></span>
                     </label>
                     <input type="text" name="name" class="input input-bordered"
                            placeholder="John Smith" required maxlength="255">
                 </div>
                 <div class="form-control">
-                    <label class="label"><span class="label-text">Callsign</span></label>
+                    <label class="label"><span class="label-text">${t('common.callsign')}</span></label>
                     <input type="text" name="callsign" class="input input-bordered"
                            placeholder="VK4ABC" maxlength="20">
                 </div>
                 <div class="form-control">
-                    <label class="label"><span class="label-text">Contact</span></label>
+                    <label class="label"><span class="label-text">${t('common.contact')}</span></label>
                     <input type="text" name="contact" class="input input-bordered"
                            placeholder="john@example.com or phone number" maxlength="255">
                 </div>
                 <div class="form-control md:col-span-2">
-                    <label class="label"><span class="label-text">Description</span></label>
+                    <label class="label"><span class="label-text">${t('common.description')}</span></label>
                     <textarea name="description" rows="3" class="textarea textarea-bordered"
                               placeholder="Brief description of member's role and responsibilities..."></textarea>
                 </div>
             </div>
             <div class="modal-action">
-                <button type="button" class="btn" id="addCancel">Cancel</button>
-                <button type="submit" class="btn btn-primary">Add Member</button>
+                <button type="button" class="btn" id="addCancel">${t('common.cancel')}</button>
+                <button type="submit" class="btn btn-primary">${t('admin_members.add_member')}</button>
             </div>
         </form>
     </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    <form method="dialog" class="modal-backdrop"><button>${t('common.close')}</button></form>
 </dialog>
 
 <dialog id="editModal" class="modal">
     <div class="modal-box w-11/12 max-w-2xl">
-        <h3 class="font-bold text-lg">Edit Member</h3>
+        <h3 class="font-bold text-lg">${t('admin_members.edit_member')}</h3>
         <form id="edit-member-form" class="py-4">
             <input type="hidden" name="id" id="edit_id">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text">Member ID <span class="text-error">*</span></span>
+                        <span class="label-text">${t('admin_members.member_id')} <span class="text-error">*</span></span>
                     </label>
                     <input type="text" name="member_id" id="edit_member_id" class="input input-bordered"
                            required maxlength="50" pattern="[a-zA-Z0-9_]+"
@@ -174,52 +174,52 @@ ${flashHtml}
                 </div>
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text">Name <span class="text-error">*</span></span>
+                        <span class="label-text">${t('common.name')} <span class="text-error">*</span></span>
                     </label>
                     <input type="text" name="name" id="edit_name" class="input input-bordered"
                            required maxlength="255">
                 </div>
                 <div class="form-control">
-                    <label class="label"><span class="label-text">Callsign</span></label>
+                    <label class="label"><span class="label-text">${t('common.callsign')}</span></label>
                     <input type="text" name="callsign" id="edit_callsign" class="input input-bordered"
                            maxlength="20">
                 </div>
                 <div class="form-control">
-                    <label class="label"><span class="label-text">Contact</span></label>
+                    <label class="label"><span class="label-text">${t('common.contact')}</span></label>
                     <input type="text" name="contact" id="edit_contact" class="input input-bordered"
                            maxlength="255">
                 </div>
                 <div class="form-control md:col-span-2">
-                    <label class="label"><span class="label-text">Description</span></label>
+                    <label class="label"><span class="label-text">${t('common.description')}</span></label>
                     <textarea name="description" id="edit_description" rows="3"
                               class="textarea textarea-bordered"></textarea>
                 </div>
             </div>
             <div class="modal-action">
-                <button type="button" class="btn" id="editCancel">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn" id="editCancel">${t('common.cancel')}</button>
+                <button type="submit" class="btn btn-primary">${t('common.save_changes')}</button>
             </div>
         </form>
     </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    <form method="dialog" class="modal-backdrop"><button>${t('common.close')}</button></form>
 </dialog>
 
 <dialog id="deleteModal" class="modal">
     <div class="modal-box">
-        <h3 class="font-bold text-lg">Delete Member</h3>
+        <h3 class="font-bold text-lg">${t('admin_members.delete_member')}</h3>
         <div class="py-4">
             <p class="py-4">Are you sure you want to delete member <strong id="delete_member_name"></strong>?</p>
             <div class="alert alert-error mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <span>This action cannot be undone.</span>
+                <span>${t('admin_members.cannot_be_undone')}</span>
             </div>
             <div class="modal-action">
-                <button type="button" class="btn" id="deleteCancel">Cancel</button>
-                <button type="button" class="btn btn-error" id="deleteConfirm">Delete</button>
+                <button type="button" class="btn" id="deleteCancel">${t('common.cancel')}</button>
+                <button type="button" class="btn btn-error" id="deleteConfirm">${t('common.delete')}</button>
             </div>
         </div>
     </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    <form method="dialog" class="modal-backdrop"><button>${t('common.close')}</button></form>
 </dialog>`, container);
 
         let activeDeleteId = '';
@@ -249,7 +249,7 @@ ${flashHtml}
             try {
                 await apiPost('/api/v1/members', body);
                 container.querySelector('#addModal').close();
-                router.navigate('/a/members?message=' + encodeURIComponent('Member added successfully'));
+                router.navigate('/a/members?message=' + encodeURIComponent(t('admin_members.member_added')));
             } catch (err) {
                 container.querySelector('#addModal').close();
                 router.navigate('/a/members?error=' + encodeURIComponent(err.message));
@@ -289,7 +289,7 @@ ${flashHtml}
             try {
                 await apiPut('/api/v1/members/' + encodeURIComponent(id), body);
                 container.querySelector('#editModal').close();
-                router.navigate('/a/members?message=' + encodeURIComponent('Member updated successfully'));
+                router.navigate('/a/members?message=' + encodeURIComponent(t('admin_members.member_updated')));
             } catch (err) {
                 container.querySelector('#editModal').close();
                 router.navigate('/a/members?error=' + encodeURIComponent(err.message));
@@ -314,7 +314,7 @@ ${flashHtml}
             try {
                 await apiDelete('/api/v1/members/' + encodeURIComponent(activeDeleteId));
                 container.querySelector('#deleteModal').close();
-                router.navigate('/a/members?message=' + encodeURIComponent('Member deleted successfully'));
+                router.navigate('/a/members?message=' + encodeURIComponent(t('admin_members.member_deleted')));
             } catch (err) {
                 container.querySelector('#deleteModal').close();
                 router.navigate('/a/members?error=' + encodeURIComponent(err.message));
@@ -322,6 +322,6 @@ ${flashHtml}
         });
 
     } catch (e) {
-        litRender(errorAlert(e.message || 'Failed to load members'), container);
+        litRender(errorAlert(e.message || t('common.failed_to_load_page')), container);
     }
 }

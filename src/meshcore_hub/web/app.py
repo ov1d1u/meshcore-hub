@@ -16,6 +16,7 @@ from fastapi.templating import Jinja2Templates
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from meshcore_hub import __version__
+from meshcore_hub.common.i18n import load_locale, t
 from meshcore_hub.common.schemas import RadioConfig
 from meshcore_hub.web.pages import PageLoader
 
@@ -114,6 +115,7 @@ def _build_config_json(app: FastAPI, request: Request) -> str:
         "timezone_iana": app.state.timezone,
         "is_authenticated": bool(request.headers.get("X-Forwarded-User")),
         "default_theme": app.state.web_theme,
+        "locale": app.state.web_locale,
     }
 
     return json.dumps(config)
@@ -174,6 +176,10 @@ def create_app(
     # Trust proxy headers (X-Forwarded-Proto, X-Forwarded-For) for HTTPS detection
     app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
+    # Load i18n translations
+    app.state.web_locale = settings.web_locale or "en"
+    load_locale(app.state.web_locale)
+
     # Store configuration in app state (use args if provided, else settings)
     app.state.web_theme = (
         settings.web_theme if settings.web_theme in ("dark", "light") else "dark"
@@ -227,6 +233,7 @@ def create_app(
     templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
     templates.env.trim_blocks = True
     templates.env.lstrip_blocks = True
+    templates.env.globals["t"] = t
     app.state.templates = templates
 
     # Compute timezone

@@ -1,11 +1,13 @@
 /**
  * MeshCore Hub SPA - Main Application Entry Point
  *
- * Initializes the router, registers all page routes, and handles navigation.
+ * Initializes i18n, the router, registers all page routes,
+ * and handles navigation.
  */
 
 import { Router } from './router.js';
 import { getConfig } from './components.js';
+import { loadLocale, t } from './i18n.js';
 
 // Page modules (lazy-loaded)
 const pages = {
@@ -46,10 +48,10 @@ function pageHandler(loader) {
             console.error('Page load error:', e);
             appContainer.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-20">
-                    <h1 class="text-4xl font-bold mb-4">Error</h1>
-                    <p class="text-lg opacity-70 mb-6">Failed to load page</p>
+                    <h1 class="text-4xl font-bold mb-4">${t('common.error')}</h1>
+                    <p class="text-lg opacity-70 mb-6">${t('common.failed_to_load_page')}</p>
                     <p class="text-sm opacity-50 mb-6">${e.message || 'Unknown error'}</p>
-                    <a href="/" class="btn btn-primary">Go Home</a>
+                    <a href="/" class="btn btn-primary">${t('common.go_home')}</a>
                 </div>`;
         }
     };
@@ -129,28 +131,27 @@ function updateNavActiveState(pathname) {
  * @param {string} pathname
  */
 function updatePageTitle(pathname) {
-    const config = getConfig();
     const networkName = config.network_name || 'MeshCore Network';
     const titles = {
         '/': networkName,
-        '/a': `Admin - ${networkName}`,
-        '/a/': `Admin - ${networkName}`,
-        '/a/node-tags': `Node Tags - Admin - ${networkName}`,
-        '/a/members': `Members - Admin - ${networkName}`,
+        '/a': t('page_title.admin', { network_name: networkName }),
+        '/a/': t('page_title.admin', { network_name: networkName }),
+        '/a/node-tags': t('page_title.admin_node_tags', { network_name: networkName }),
+        '/a/members': t('page_title.admin_members', { network_name: networkName }),
     };
 
     // Add feature-dependent titles
-    if (features.dashboard !== false) titles['/dashboard'] = `Dashboard - ${networkName}`;
-    if (features.nodes !== false) titles['/nodes'] = `Nodes - ${networkName}`;
-    if (features.messages !== false) titles['/messages'] = `Messages - ${networkName}`;
-    if (features.advertisements !== false) titles['/advertisements'] = `Advertisements - ${networkName}`;
-    if (features.map !== false) titles['/map'] = `Map - ${networkName}`;
-    if (features.members !== false) titles['/members'] = `Members - ${networkName}`;
+    if (features.dashboard !== false) titles['/dashboard'] = t('page_title.dashboard', { network_name: networkName });
+    if (features.nodes !== false) titles['/nodes'] = t('page_title.nodes', { network_name: networkName });
+    if (features.messages !== false) titles['/messages'] = t('page_title.messages', { network_name: networkName });
+    if (features.advertisements !== false) titles['/advertisements'] = t('page_title.advertisements', { network_name: networkName });
+    if (features.map !== false) titles['/map'] = t('page_title.map', { network_name: networkName });
+    if (features.members !== false) titles['/members'] = t('page_title.members', { network_name: networkName });
 
     if (titles[pathname]) {
         document.title = titles[pathname];
     } else if (pathname.startsWith('/nodes/')) {
-        document.title = `Node Detail - ${networkName}`;
+        document.title = t('page_title.node_detail', { network_name: networkName });
     } else if (pathname.startsWith('/pages/')) {
         // Custom pages set their own title in the page module
         document.title = networkName;
@@ -165,5 +166,7 @@ router.onNavigate((pathname) => {
     updatePageTitle(pathname);
 });
 
-// Start the router when DOM is ready
+// Load locale then start the router
+const locale = localStorage.getItem('meshcore-locale') || config.locale || 'en';
+await loadLocale(locale);
 router.start();

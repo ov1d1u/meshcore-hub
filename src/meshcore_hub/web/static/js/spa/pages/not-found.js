@@ -1,4 +1,4 @@
-import { html, litRender } from '../components.js';
+import { html, litRender, t } from '../components.js';
 import { iconHome, iconNodes } from '../icons.js';
 
 export async function render(container, params, router) {
@@ -7,18 +7,18 @@ export async function render(container, params, router) {
     <div class="hero-content text-center">
         <div class="max-w-md">
             <div class="text-9xl font-bold text-primary opacity-20">404</div>
-            <h1 class="text-4xl font-bold -mt-8">Page Not Found</h1>
+            <h1 class="text-4xl font-bold -mt-8">${t('not_found.title')}</h1>
             <p class="py-6 text-base-content/70">
-                The page you're looking for doesn't exist or has been moved.
+                ${t('not_found.description')}
             </p>
             <div class="flex gap-4 justify-center">
                 <a href="/" class="btn btn-primary">
                     ${iconHome('h-5 w-5 mr-2')}
-                    Go Home
+                    ${t('common.go_home')}
                 </a>
                 <a href="/nodes" class="btn btn-outline">
                     ${iconNodes('h-5 w-5 mr-2')}
-                    Browse Nodes
+                    ${t('not_found.browse_nodes')}
                 </a>
             </div>
         </div>

@@ -1,4 +1,4 @@
-import { html, litRender, getConfig, errorAlert } from '../../components.js';
+import { html, litRender, unsafeHTML, getConfig, errorAlert, t } from '../../components.js';
 import { iconLock, iconUsers, iconTag } from '../../icons.js';
 
 export async function render(container, params, router) {
@@ -9,10 +9,10 @@ export async function render(container, params, router) {
             litRender(html`
 <div class="flex flex-col items-center justify-center py-20">
     ${iconLock('h-16 w-16 opacity-30 mb-4')}
-    <h1 class="text-3xl font-bold mb-2">Access Denied</h1>
-    <p class="opacity-70">The admin interface is not enabled.</p>
-    <p class="text-sm opacity-50 mt-2">Set <code>WEB_ADMIN_ENABLED=true</code> to enable admin features.</p>
-    <a href="/" class="btn btn-primary mt-6">Go Home</a>
+    <h1 class="text-3xl font-bold mb-2">${t('admin.access_denied')}</h1>
+    <p class="opacity-70">${t('admin.admin_not_enabled')}</p>
+    <p class="text-sm opacity-50 mt-2">${unsafeHTML(t('admin.admin_enable_hint'))}</p>
+    <a href="/" class="btn btn-primary mt-6">${t('common.go_home')}</a>
 </div>`, container);
             return;
         }
@@ -21,9 +21,9 @@ export async function render(container, params, router) {
             litRender(html`
 <div class="flex flex-col items-center justify-center py-20">
     ${iconLock('h-16 w-16 opacity-30 mb-4')}
-    <h1 class="text-3xl font-bold mb-2">Authentication Required</h1>
-    <p class="opacity-70">You must sign in to access the admin interface.</p>
-    <a href="/oauth2/start?rd=${encodeURIComponent(window.location.pathname)}" class="btn btn-primary mt-6">Sign In</a>
+    <h1 class="text-3xl font-bold mb-2">${t('admin.auth_required')}</h1>
+    <p class="opacity-70">${t('admin.auth_required_description')}</p>
+    <a href="/oauth2/start?rd=${encodeURIComponent(window.location.pathname)}" class="btn btn-primary mt-6">${t('common.sign_in')}</a>
 </div>`, container);
             return;
         }
@@ -31,20 +31,20 @@ export async function render(container, params, router) {
         litRender(html`
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-3xl font-bold">Admin</h1>
+        <h1 class="text-3xl font-bold">${t('admin.title')}</h1>
         <div class="text-sm breadcrumbs">
             <ul>
-                <li><a href="/">Home</a></li>
-                <li>Admin</li>
+                <li><a href="/">${t('nav.home')}</a></li>
+                <li>${t('nav.admin')}</li>
             </ul>
         </div>
     </div>
-    <a href="/oauth2/sign_out" target="_blank" class="btn btn-outline btn-sm">Sign Out</a>
+    <a href="/oauth2/sign_out" target="_blank" class="btn btn-outline btn-sm">${t('common.sign_out')}</a>
 </div>
 
 <div class="flex flex-wrap items-center gap-4 text-sm opacity-70 mb-6">
     <span class="flex items-center gap-1.5">
-        Welcome to the admin panel.
+        ${t('admin.welcome')}
     </span>
 </div>
 
@@ -53,23 +53,23 @@ export async function render(container, params, router) {
         <div class="card-body">
             <h2 class="card-title">
                 ${iconUsers('h-6 w-6')}
-                Members
+                ${t('admin.members_title')}
             </h2>
-            <p>Manage network members and operators.</p>
+            <p>${t('admin.members_description')}</p>
         </div>
     </a>
     <a href="/a/node-tags" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
         <div class="card-body">
             <h2 class="card-title">
                 ${iconTag('h-6 w-6')}
-                Node Tags
+                ${t('admin.node_tags_title')}
             </h2>
-            <p>Manage custom tags and metadata for network nodes.</p>
+            <p>${t('admin.node_tags_description')}</p>
         </div>
     </a>
 </div>`, container);
 
     } catch (e) {
-        litRender(errorAlert(e.message || 'Failed to load admin page'), container);
+        litRender(errorAlert(e.message || t('common.failed_to_load_page')), container);
     }
 }
