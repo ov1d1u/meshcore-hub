@@ -53,7 +53,7 @@ export async function render(container, params, router) {
         <div class="card-body">
             <h2 class="card-title">
                 ${iconUsers('h-6 w-6')}
-                ${t('admin.members_title')}
+                ${t('entities.members')}
             </h2>
             <p>${t('admin.members_description')}</p>
         </div>
@@ -62,9 +62,9 @@ export async function render(container, params, router) {
         <div class="card-body">
             <h2 class="card-title">
                 ${iconTag('h-6 w-6')}
-                ${t('admin.node_tags_title')}
+                ${t('entities.tags')}
             </h2>
-            <p>${t('admin.node_tags_description')}</p>
+            <p>${t('admin.tags_description')}</p>
         </div>
     </a>
 </div>`, container);

@@ -174,7 +174,7 @@
         "auth_required_description": "You must sign in to access the admin interface.",
         "welcome": "Welcome to the admin panel.",
         "members_description": "Manage network members and operators.",
-        "node_tags_description": "Manage custom tags and metadata for network nodes."
+        "tags_description": "Manage custom tags and metadata for network nodes."
     },
     "admin_members": {
         "network_members": "Network Members ({{count}})",
