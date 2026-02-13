@@ -342,7 +342,6 @@ The collector automatically cleans up old event data and inactive nodes:
 | `WEB_THEME` | `dark` | Default theme (`dark` or `light`). Users can override via theme toggle in navbar. |
 | `WEB_ADMIN_ENABLED` | `false` | Enable admin interface at /a/ (requires auth proxy) |
 | `TZ` | `UTC` | Timezone for displaying dates/times (e.g., `America/New_York`, `Europe/London`) |
-| `MEMBERS_PAGE_ENABLED` | `false` | Enable members page at /members |
 | `NETWORK_NAME` | `MeshCore Network` | Display name for the network |
 | `NETWORK_CITY` | *(none)* | City where network is located |
 | `NETWORK_COUNTRY` | *(none)* | Country code (ISO 3166-1 alpha-2) |
