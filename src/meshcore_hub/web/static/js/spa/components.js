@@ -183,6 +183,9 @@ export function copyToClipboard(e, text) {
     e.preventDefault();
     e.stopPropagation();
 
+    // Capture target element synchronously before async operations
+    const targetElement = e.currentTarget;
+
     const showSuccess = (target) => {
         const originalText = target.textContent;
         target.textContent = 'Copied!';
@@ -196,14 +199,14 @@ export function copyToClipboard(e, text) {
     // Try modern Clipboard API first
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-            showSuccess(e.currentTarget);
+            showSuccess(targetElement);
         }).catch(err => {
             console.error('Clipboard API failed:', err);
-            fallbackCopy(text, e.currentTarget);
+            fallbackCopy(text, targetElement);
         });
     } else {
         // Fallback for older browsers or non-secure contexts
-        fallbackCopy(text, e.currentTarget);
+        fallbackCopy(text, targetElement);
     }
 
     function fallbackCopy(text, target) {
