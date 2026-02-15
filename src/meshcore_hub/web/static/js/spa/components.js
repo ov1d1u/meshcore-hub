@@ -147,7 +147,9 @@ export function formatDateTimeShort(isoString) {
  */
 export function formatRelativeTime(isoString) {
     if (!isoString) return '';
-    const date = new Date(isoString);
+    const hasTimeZone = isoString.endsWith('Z') || isoString.match(/[+-]\d{2}:\d{2}$/);
+    const adjustedISOString = hasTimeZone ? isoString : isoString + 'Z';
+    const date = new Date(adjustedISOString);
     if (isNaN(date.getTime())) return '';
     const now = new Date();
     const diffMs = now - date;
