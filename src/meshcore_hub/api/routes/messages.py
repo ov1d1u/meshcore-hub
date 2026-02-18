@@ -144,11 +144,15 @@ async def list_messages(
         query = query.where(Message.text.ilike(f"%{search}%"))
 
     # Get total count
-    count_query = select(func.count()).select_from(query.subquery())
-    total = session.execute(count_query).scalar() or 0
+    # count_query = select(func.count()).select_from(query.subquery())
+    # total = session.execute(count_query).scalar() or 0
 
     # Apply pagination
-    query = query.order_by(Message.received_at.desc()).offset(offset).limit(limit)
+    # query = query.order_by(Message.received_at.desc()).offset(offset).limit(limit)
+
+    # Limit number of messages for privacy reasons
+    total = 15
+    query = query.order_by(Message.received_at.desc()).limit(15)
 
     # Execute
     results = session.execute(query).all()
