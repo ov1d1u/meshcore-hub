@@ -11,7 +11,7 @@ export async function render(container, params, router) {
     const query = params.query || {};
     const message_type = query.message_type || '';
     const page = parseInt(query.page, 10) || 1;
-    const limit = parseInt(query.limit, 10) || 15;
+    const limit = parseInt(query.limit, 10) || 50;
     const offset = (page - 1) * limit;
 
     const config = getConfig();
@@ -143,6 +143,10 @@ ${content}`, container);
             </tr>`;
             });
 
+        const paginationBlock = pagination(page, totalPages, '/messages', {
+            message_type, limit,
+        });
+
         renderPage(html`
 <div class="card shadow mb-6 panel-solid" style="--panel-color: var(--color-neutral)">
     <div class="card-body py-4">
@@ -184,7 +188,9 @@ ${content}`, container);
             ${tableRows}
         </tbody>
     </table>
-</div>`);
+</div>
+
+${paginationBlock}`, { total });
 
     } catch (e) {
         renderPage(errorAlert(e.message));
