@@ -48,6 +48,11 @@ ${content}`, container);
                 const typeTitle = isChannel ? t('messages.type_channel') : t('messages.type_contact');
                 let senderBlock;
                 if (isChannel) {
+                    if (msg.channel_idx == 1) {
+                        senderBlock = html`<span class="font-mono text-xs opacity-60">#alerte</span>`;
+                    } else {
+                        senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
+                    }
                     senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
                 } else {
                     const senderName = msg.sender_tag_name || msg.sender_name;
@@ -102,7 +107,11 @@ ${content}`, container);
                 const typeTitle = isChannel ? t('messages.type_channel') : t('messages.type_contact');
                 let senderBlock;
                 if (isChannel) {
-                    senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
+                    if (msg.channel_idx == 1) {
+                        senderBlock = html`<span class="font-mono text-xs opacity-60">#alerte</span>`;
+                    } else {
+                        senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
+                    }
                 } else {
                     const senderName = msg.sender_tag_name || msg.sender_name;
                     if (senderName) {
