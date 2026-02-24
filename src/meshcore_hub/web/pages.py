@@ -8,6 +8,8 @@ from typing import Optional
 import frontmatter
 import markdown
 
+from meshcore_hub.web.qr_extension import QRCodeExtension
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +41,7 @@ class PageLoader:
         self.pages_dir = Path(pages_dir)
         self._pages: dict[str, CustomPage] = {}
         self._md = markdown.Markdown(
-            extensions=["tables", "fenced_code", "toc"],
+            extensions=["tables", "fenced_code", "toc", QRCodeExtension()],
             output_format="html",
         )
 
