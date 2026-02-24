@@ -49,7 +49,7 @@ ${content}`, container);
                 let senderBlock;
                 if (isChannel) {
                     if (msg.channel_idx == 1) {
-                        senderBlock = html`<span class="font-mono text-xs opacity-60">#alerte</span>`;
+                        senderBlock = html`<span class="font-mono text-xs opacity-60">#iasi-alerte</span>`;
                     } else {
                         senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
                     }
@@ -108,7 +108,7 @@ ${content}`, container);
                 let senderBlock;
                 if (isChannel) {
                     if (msg.channel_idx == 1) {
-                        senderBlock = html`<span class="font-mono text-xs opacity-60">#alerte</span>`;
+                        senderBlock = html`<span class="font-mono text-xs opacity-60">#iasi-alerte</span>`;
                     } else {
                         senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
                     }
