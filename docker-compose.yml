@@ -33,9 +33,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: meshcore-interface-receiver
-    profiles:
-      - all
-      - receiver
     restart: unless-stopped
     devices:
       - "${SERIAL_PORT:-/dev/ttyUSB0}:${SERIAL_PORT:-/dev/ttyUSB0}"
@@ -134,9 +131,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: meshcore-collector
-    profiles:
-      - all
-      - core
     restart: unless-stopped
     depends_on:
       db-migrate:
@@ -189,9 +183,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: meshcore-api
-    profiles:
-      - all
-      - core
     restart: unless-stopped
     depends_on:
       db-migrate:
@@ -232,9 +223,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: meshcore-web
-    profiles:
-      - all
-      - core
     restart: unless-stopped
     depends_on:
       api:
@@ -290,10 +278,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: meshcore-db-migrate
-    profiles:
-      - all
-      - core
-      - migrate
     restart: "no"
     volumes:
       - ${DATA_HOME:-./data}:/data
