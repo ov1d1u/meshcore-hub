@@ -89,7 +89,7 @@ class QRCodePreprocessor(Preprocessor):
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
+            box_size=4,
             border=4,
         )
         qr.add_data(data)
