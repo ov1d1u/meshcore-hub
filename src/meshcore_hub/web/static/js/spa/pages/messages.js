@@ -48,12 +48,8 @@ ${content}`, container);
                 const typeTitle = isChannel ? t('messages.type_channel') : t('messages.type_contact');
                 let senderBlock;
                 if (isChannel) {
-                    if (msg.channel_idx == 1) {
-                        senderBlock = html`<span class="font-mono text-xs opacity-60">#iasi-alerte</span>`;
-                    } else {
-                        senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
-                    }
-                    senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
+                    const channelLabel = msg.channel_name || (msg.channel_idx === 0 ? t('messages.type_public') : (msg.channel_idx != null ? t('messages.channel_index', { index: msg.channel_idx }) : t('messages.type_channel')));
+                    senderBlock = html`<span class="${msg.channel_name ? 'font-mono text-xs opacity-60' : 'opacity-60'}">${channelLabel}</span>`;
                 } else {
                     const senderName = msg.sender_tag_name || msg.sender_name;
                     if (senderName) {
@@ -107,11 +103,8 @@ ${content}`, container);
                 const typeTitle = isChannel ? t('messages.type_channel') : t('messages.type_contact');
                 let senderBlock;
                 if (isChannel) {
-                    if (msg.channel_idx == 1) {
-                        senderBlock = html`<span class="font-mono text-xs opacity-60">#iasi-alerte</span>`;
-                    } else {
-                        senderBlock = html`<span class="opacity-60">${t('messages.type_public')}</span>`;
-                    }
+                    const channelLabel = msg.channel_name || (msg.channel_idx === 0 ? t('messages.type_public') : (msg.channel_idx != null ? t('messages.channel_index', { index: msg.channel_idx }) : t('messages.type_channel')));
+                    senderBlock = html`<span class="${msg.channel_name ? 'font-mono text-xs opacity-60' : 'opacity-60'}">${channelLabel}</span>`;
                 } else {
                     const senderName = msg.sender_tag_name || msg.sender_name;
                     if (senderName) {

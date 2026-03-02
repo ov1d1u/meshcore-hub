@@ -147,7 +147,8 @@
         "type_direct": "Direct",
         "type_channel": "Channel",
         "type_contact": "Contact",
-        "type_public": "Public"
+        "type_public": "Public",
+        "channel_index": "Channel {{index}}"
     },
     "map": {
         "show_labels": "Show Labels",

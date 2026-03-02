@@ -40,6 +40,19 @@ class DeviceConfig:
     node_address: Optional[str] = None  # Override for device public key/address
 
 
+@dataclass
+class MeshcoreChannel:
+    """A configured channel on the device."""
+
+    index: int
+    name: str
+    secret: bytes
+
+
+# Most devices have a limited number of channels
+MAX_CHANNELS = 10
+
+
 class BaseMeshCoreDevice(ABC):
     """Abstract base class for MeshCore device interface."""
 
@@ -53,6 +66,7 @@ class BaseMeshCoreDevice(ABC):
         self._connected = False
         self._public_key: Optional[str] = None
         self._event_handlers: dict[EventType, list[EventHandler]] = {}
+        self._configured_channels: list[MeshcoreChannel] = []
 
     @property
     def public_key(self) -> Optional[str]:
@@ -63,6 +77,11 @@ class BaseMeshCoreDevice(ABC):
     def is_connected(self) -> bool:
         """Check if device is connected."""
         return self._connected
+
+    @property
+    def configured_channels(self) -> list[MeshcoreChannel]:
+        """Get the list of configured channels (fetched on connect)."""
+        return self._configured_channels
 
     @abstractmethod
     def connect(self) -> bool:
@@ -384,6 +403,17 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
             self._connected = True
             logger.info(f"Connected to MeshCore device, public_key: {self._public_key}")
+            
+            # Fetch configured channels from the device
+            self._configured_channels = self._loop.run_until_complete(
+                self._fetch_configured_channels()
+            )
+            if self._configured_channels:
+                logger.info(
+                    f"Fetched {len(self._configured_channels)} configured channel(s): {', '.join([ch.name for ch in self._configured_channels])}"
+                )
+            else:
+                logger.debug("No configured channels on device")
 
             # Set up event subscriptions so events can be received immediately
             self._setup_event_subscriptions()
@@ -432,6 +462,37 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             self._subscriptions.append(sub)
             logger.debug(f"Subscribed to {mc_event_type.name}")
 
+    async def _fetch_configured_channels(self) -> list[MeshcoreChannel]:
+        """Fetch the list of configured channels from the device.
+
+        Returns:
+            List of configured channels (index, name, secret).
+        """
+        from meshcore.events import EventType as MCEventType
+
+        configured: list[MeshcoreChannel] = []
+        for channel_idx in range(MAX_CHANNELS):
+            try:
+                result = await self._mc.commands.get_channel(channel_idx)
+                if result.type == MCEventType.CHANNEL_INFO:
+                    payload = result.payload
+                    channel_name = payload.get("channel_name", "")
+                    channel_secret = payload.get("channel_secret", b"")
+                    if channel_name and channel_name.strip():
+                        configured.append(
+                            MeshcoreChannel(
+                                index=channel_idx,
+                                name=channel_name,
+                                secret=channel_secret,
+                            )
+                        )
+                elif result.type == MCEventType.ERROR:
+                    break
+            except Exception as e:
+                logger.debug("Stopped scanning channels at %s: %s", channel_idx, e)
+                break
+        return configured
+
     def disconnect(self) -> None:
         """Disconnect from the device."""
         if self._mc:
@@ -449,6 +510,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
         self._connected = False
         self._mc = None
+        self._configured_channels = []
         logger.info("Disconnected from MeshCore device")
 
     def send_message(

@@ -39,6 +39,7 @@ class Receiver:
         device_name: Optional[str] = None,
         contact_cleanup_enabled: bool = True,
         contact_cleanup_days: int = DEFAULT_CONTACT_CLEANUP_DAYS,
+        allowed_channels: Optional[list[str]] = None,
     ):
         """Initialize receiver.
 
@@ -48,12 +49,18 @@ class Receiver:
             device_name: Optional device/node name to set on startup
             contact_cleanup_enabled: Whether to remove stale contacts from device
             contact_cleanup_days: Remove contacts not advertised for this many days
+            allowed_channels: If set, only channel messages from these channel names
+                are published to MQTT; others are discarded. If None or empty, all
+                channels are allowed.
         """
         self.device = device
         self.mqtt = mqtt_client
         self.device_name = device_name
         self.contact_cleanup_enabled = contact_cleanup_enabled
         self.contact_cleanup_days = contact_cleanup_days
+        self._allowed_channels: Optional[list[str]] = (
+            list(allowed_channels) if allowed_channels else None
+        )
         self._running = False
         self._shutdown_event = threading.Event()
         self._device_connected = False
@@ -124,6 +131,13 @@ class Receiver:
         else:
             logger.warning("Failed to request contact database")
 
+    def _channel_name_for_index(self, channel_idx: int) -> Optional[str]:
+        """Resolve channel index to channel name from device configured channels."""
+        for ch in self.device.configured_channels:
+            if ch.index == channel_idx:
+                return ch.name
+        return None
+
     def _handle_event(self, event_type: EventType, payload: dict[str, Any]) -> None:
         """Handle device event and publish to MQTT.
 
@@ -136,6 +150,19 @@ class Receiver:
             return
 
         try:
+            # Filter channel messages by allowed list (MESHCORE_CHANNELS)
+            allowed = self._allowed_channels
+            if event_type == EventType.CHANNEL_MSG_RECV and allowed:
+                channel_idx = payload.get("channel_idx")
+                if channel_idx is not None:
+                    channel_name = self._channel_name_for_index(int(channel_idx))
+                    if channel_name is not None and channel_name not in allowed:
+                        logger.debug(
+                            "Discarding channel message from channel '%s' (not in MESHCORE_CHANNELS)",
+                            channel_name,
+                        )
+                        return
+
             # Convert event type to MQTT topic name
             event_name = event_type.value
 
@@ -144,11 +171,20 @@ class Receiver:
                 self._publish_contacts(payload)
                 return
 
+            # For channel messages, add channel_name to payload for collector/API
+            publish_payload = dict(payload)
+            if event_type == EventType.CHANNEL_MSG_RECV:
+                channel_idx = payload.get("channel_idx")
+                if channel_idx is not None:
+                    name = self._channel_name_for_index(int(channel_idx))
+                    if name is not None:
+                        publish_payload["channel_name"] = name
+
             # Publish to MQTT
             self.mqtt.publish_event(
                 self.device.public_key,
                 event_name,
-                payload,
+                publish_payload,
             )
 
             logger.debug(f"Published {event_name} event to MQTT")
@@ -351,6 +387,7 @@ def create_receiver(
     mqtt_tls: bool = False,
     contact_cleanup_enabled: bool = True,
     contact_cleanup_days: int = DEFAULT_CONTACT_CLEANUP_DAYS,
+    allowed_channels: Optional[list[str]] = None,
 ) -> Receiver:
     """Create a configured receiver instance.
 
@@ -368,6 +405,8 @@ def create_receiver(
         mqtt_tls: Enable TLS/SSL for MQTT connection
         contact_cleanup_enabled: Whether to remove stale contacts from device
         contact_cleanup_days: Remove contacts not advertised for this many days
+        allowed_channels: If set, only channel messages from these channel names
+            are published to MQTT (from MESHCORE_CHANNELS). If None or empty, all allowed.
 
     Returns:
         Configured Receiver instance
@@ -398,6 +437,7 @@ def create_receiver(
         device_name=device_name,
         contact_cleanup_enabled=contact_cleanup_enabled,
         contact_cleanup_days=contact_cleanup_days,
+        allowed_channels=allowed_channels,
     )
 
 
@@ -415,6 +455,7 @@ def run_receiver(
     mqtt_tls: bool = False,
     contact_cleanup_enabled: bool = True,
     contact_cleanup_days: int = DEFAULT_CONTACT_CLEANUP_DAYS,
+    allowed_channels: Optional[list[str]] = None,
 ) -> None:
     """Run the receiver (blocking).
 
@@ -434,6 +475,8 @@ def run_receiver(
         mqtt_tls: Enable TLS/SSL for MQTT connection
         contact_cleanup_enabled: Whether to remove stale contacts from device
         contact_cleanup_days: Remove contacts not advertised for this many days
+        allowed_channels: If set, only channel messages from these channel names
+            are published (from MESHCORE_CHANNELS). If None or empty, all allowed.
     """
     receiver = create_receiver(
         port=port,
@@ -449,6 +492,7 @@ def run_receiver(
         mqtt_tls=mqtt_tls,
         contact_cleanup_enabled=contact_cleanup_enabled,
         contact_cleanup_days=contact_cleanup_days,
+        allowed_channels=allowed_channels,
     )
 
     # Set up signal handlers

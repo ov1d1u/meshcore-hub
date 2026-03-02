@@ -72,6 +72,7 @@ def _handle_message(
     # Extract fields based on message type
     pubkey_prefix = payload.get("pubkey_prefix") if message_type == "contact" else None
     channel_idx = payload.get("channel_idx") if message_type == "channel" else None
+    channel_name = payload.get("channel_name") if message_type == "channel" else None
     path_len = payload.get("path_len")
     txt_type = payload.get("txt_type")
     signature = payload.get("signature")
@@ -142,6 +143,7 @@ def _handle_message(
             message_type=message_type,
             pubkey_prefix=pubkey_prefix,
             channel_idx=channel_idx,
+            channel_name=channel_name,
             text=text,
             path_len=path_len,
             txt_type=txt_type,

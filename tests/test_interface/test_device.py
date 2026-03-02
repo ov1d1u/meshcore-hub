@@ -1,8 +1,10 @@
 """Tests for device abstraction."""
 
 from meshcore_hub.interface.device import (
+    MeshcoreChannel,
     DeviceConfig,
     EventType,
+    MAX_CHANNELS,
     MeshCoreDevice,
     create_device,
 )
@@ -63,3 +65,17 @@ class TestCreateDevice:
 
         assert device is not None
         assert isinstance(device, MeshCoreDevice)
+
+    def test_configured_channels_property(self) -> None:
+        """Test that device exposes configured_channels list."""
+        device = create_device(mock=True)
+        assert device.configured_channels == []
+        assert isinstance(device.configured_channels, list)
+
+    def test_configured_channel_dataclass_and_max_channels(self) -> None:
+        """Test MeshcoreChannel and MAX_CHANNELS constants."""
+        ch = MeshcoreChannel(index=0, name="test", secret=b"\x00\x01")
+        assert ch.index == 0
+        assert ch.name == "test"
+        assert ch.secret == b"\x00\x01"
+        assert MAX_CHANNELS == 10

@@ -3,20 +3,22 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from meshcore_hub.interface.device import EventType
+from meshcore_hub.common.channels import parse_allowed_channels
+from meshcore_hub.interface.device import EventType, MeshcoreChannel
 from meshcore_hub.interface.receiver import Receiver, create_receiver
+
+
+@pytest.fixture
+def mock_mqtt_client():
+    """Create a mock MQTT client."""
+    client = MagicMock()
+    client.topic_builder = MagicMock()
+    client.topic_builder.event_topic.return_value = "meshcore/abc/event/test"
+    return client
 
 
 class TestReceiver:
     """Tests for Receiver class."""
-
-    @pytest.fixture
-    def mock_mqtt_client(self):
-        """Create a mock MQTT client."""
-        client = MagicMock()
-        client.topic_builder = MagicMock()
-        client.topic_builder.event_topic.return_value = "meshcore/abc/event/test"
-        return client
 
     @pytest.fixture
     def receiver(self, mock_device, mock_mqtt_client):
@@ -141,3 +143,83 @@ class TestCreateReceiver:
             assert config.host == "mqtt.example.com"
             assert config.port == 8883
             assert config.prefix == "custom"
+
+
+class TestParseAllowedChannels:
+    """Tests for parse_allowed_channels."""
+
+    def test_empty_or_none_returns_none(self):
+        """Empty or None value means allow all channels."""
+        assert parse_allowed_channels(None) is None
+        assert parse_allowed_channels("") is None
+        assert parse_allowed_channels("   ") is None
+
+    def test_comma_separated_returns_list(self):
+        """Comma-separated string is split and stripped."""
+        assert parse_allowed_channels("Public,#iasi,iasi-private") == [
+            "Public",
+            "#iasi",
+            "iasi-private",
+        ]
+        assert parse_allowed_channels("  Public , #iasi  , iasi-private  ") == [
+            "Public",
+            "#iasi",
+            "iasi-private",
+        ]
+
+    def test_single_channel(self):
+        """Single channel name returns single-element list."""
+        assert parse_allowed_channels("Public") == ["Public"]
+
+
+class TestReceiverChannelFiltering:
+    """Tests for MESHCORE_CHANNELS filtering of channel messages."""
+
+    def test_channel_message_discarded_when_not_in_allowed_list(
+        self, mock_device, mock_mqtt_client
+    ):
+        """Channel message from channel not in allowed list is not published."""
+        mock_device._configured_channels = [
+            MeshcoreChannel(index=0, name="Other", secret=b""),
+        ]
+        receiver = Receiver(
+            mock_device,
+            mock_mqtt_client,
+            allowed_channels=["Public", "#iasi"],
+        )
+        receiver._handle_event(
+            EventType.CHANNEL_MSG_RECV,
+            {"channel_idx": 0, "text": "hello"},
+        )
+        mock_mqtt_client.publish_event.assert_not_called()
+
+    def test_channel_message_published_when_in_allowed_list(
+        self, mock_device, mock_mqtt_client
+    ):
+        """Channel message from channel in allowed list is published."""
+        mock_device._configured_channels = [
+            MeshcoreChannel(index=0, name="Public", secret=b""),
+        ]
+        mock_device._public_key = "a" * 64
+        receiver = Receiver(
+            mock_device,
+            mock_mqtt_client,
+            allowed_channels=["Public", "#iasi"],
+        )
+        receiver._handle_event(
+            EventType.CHANNEL_MSG_RECV,
+            {"channel_idx": 0, "text": "hello"},
+        )
+        mock_mqtt_client.publish_event.assert_called_once()
+
+    def test_channel_message_published_when_no_allowed_list(
+        self, mock_device, mock_mqtt_client
+    ):
+        """When allowed_channels is None, all channel messages are published."""
+        mock_device._public_key = "a" * 64
+        receiver = Receiver(mock_device, mock_mqtt_client, allowed_channels=None)
+        receiver._handle_event(
+            EventType.CHANNEL_MSG_RECV,
+            {"channel_idx": 0, "text": "hello"},
+        )
+        mock_mqtt_client.publish_event.assert_called_once()

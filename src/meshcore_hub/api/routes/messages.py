@@ -224,6 +224,7 @@ async def list_messages(
                 sender_tag_names.get(m.pubkey_prefix) if m.pubkey_prefix else None
             ),
             "channel_idx": m.channel_idx,
+            "channel_name": m.channel_name,
             "text": m.text,
             "path_len": m.path_len,
             "txt_type": m.txt_type,
@@ -281,6 +282,7 @@ async def get_message(
         "message_type": message.message_type,
         "pubkey_prefix": message.pubkey_prefix,
         "channel_idx": message.channel_idx,
+        "channel_name": message.channel_name,
         "text": message.text,
         "path_len": message.path_len,
         "txt_type": message.txt_type,
