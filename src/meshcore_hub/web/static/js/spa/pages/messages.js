@@ -49,7 +49,7 @@ ${content}`, container);
                 let senderBlock;
                 if (isChannel) {
                     const channelLabel = msg.channel_name || (msg.channel_idx === 0 ? t('messages.type_public') : (msg.channel_idx != null ? t('messages.channel_index', { index: msg.channel_idx }) : t('messages.type_channel')));
-                    senderBlock = html`<span class="${msg.channel_name ? 'font-mono text-xs opacity-60' : 'opacity-60'}">${channelLabel}</span>`;
+                    senderBlock = html`<span class="opacity-60">${channelLabel}</span>`;
                 } else {
                     const senderName = msg.sender_tag_name || msg.sender_name;
                     if (senderName) {
@@ -104,7 +104,7 @@ ${content}`, container);
                 let senderBlock;
                 if (isChannel) {
                     const channelLabel = msg.channel_name || (msg.channel_idx === 0 ? t('messages.type_public') : (msg.channel_idx != null ? t('messages.channel_index', { index: msg.channel_idx }) : t('messages.type_channel')));
-                    senderBlock = html`<span class="${msg.channel_name ? 'font-mono text-xs opacity-60' : 'opacity-60'}">${channelLabel}</span>`;
+                    senderBlock = html`<span class="opacity-60">${channelLabel}</span>`;
                 } else {
                     const senderName = msg.sender_tag_name || msg.sender_name;
                     if (senderName) {
