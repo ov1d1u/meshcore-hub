@@ -114,6 +114,13 @@ def interface() -> None:
     help="Remove contacts not advertised for this many days (RECEIVER mode only)",
 )
 @click.option(
+    "--channels",
+    type=str,
+    default=None,
+    envvar="MESHCORE_CHANNELS",
+    help="Comma-separated list of channel names to monitor (e.g. Public,#iasi,iasi-private). If unset, all channels are allowed.",
+)
+@click.option(
     "--log-level",
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
     default="INFO",
@@ -135,6 +142,7 @@ def run(
     mqtt_tls: bool,
     contact_cleanup: bool,
     contact_cleanup_days: int,
+    channels: str | None,
     log_level: str,
 ) -> None:
     """Run the interface component.
@@ -163,6 +171,7 @@ def run(
     mode_upper = mode.upper()
 
     if mode_upper == "RECEIVER":
+        from meshcore_hub.common.channels import parse_allowed_channels
         from meshcore_hub.interface.receiver import run_receiver
 
         run_receiver(
@@ -179,6 +188,7 @@ def run(
             mqtt_tls=mqtt_tls,
             contact_cleanup_enabled=contact_cleanup,
             contact_cleanup_days=contact_cleanup_days,
+            allowed_channels=parse_allowed_channels(channels),
         )
     elif mode_upper == "SENDER":
         from meshcore_hub.interface.sender import run_sender
@@ -292,6 +302,13 @@ def run(
     envvar="CONTACT_CLEANUP_DAYS",
     help="Remove contacts not advertised for this many days",
 )
+@click.option(
+    "--channels",
+    type=str,
+    default=None,
+    envvar="MESHCORE_CHANNELS",
+    help="Comma-separated list of channel names to monitor (e.g. Public,#iasi,iasi-private). If unset, all channels are allowed.",
+)
 def receiver(
     port: str,
     baud: int,
@@ -306,11 +323,13 @@ def receiver(
     mqtt_tls: bool,
     contact_cleanup: bool,
     contact_cleanup_days: int,
+    channels: str | None,
 ) -> None:
     """Run interface in RECEIVER mode.
 
     Shortcut for: meshcore-hub interface run --mode RECEIVER
     """
+    from meshcore_hub.common.channels import parse_allowed_channels
     from meshcore_hub.interface.receiver import run_receiver
 
     click.echo("Starting interface in RECEIVER mode")
@@ -334,6 +353,7 @@ def receiver(
         mqtt_tls=mqtt_tls,
         contact_cleanup_enabled=contact_cleanup,
         contact_cleanup_days=contact_cleanup_days,
+        allowed_channels=parse_allowed_channels(channels),
     )
 
 

@@ -43,6 +43,9 @@ class MessageRead(BaseModel):
         default=None, description="Sender's name from node tags"
     )
     channel_idx: Optional[int] = Field(default=None, description="Channel index")
+    channel_name: Optional[str] = Field(
+        default=None, description="Channel name (from device config)"
+    )
     text: str = Field(..., description="Message content")
     path_len: Optional[int] = Field(default=None, description="Number of hops")
     txt_type: Optional[int] = Field(default=None, description="Message type indicator")

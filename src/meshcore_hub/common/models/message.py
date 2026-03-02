@@ -47,6 +47,10 @@ class Message(Base, UUIDMixin, TimestampMixin):
         Integer,
         nullable=True,
     )
+    channel_name: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+    )
     text: Mapped[str] = mapped_column(
         Text,
         nullable=False,
