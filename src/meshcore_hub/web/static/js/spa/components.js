@@ -59,9 +59,24 @@ export function typeEmoji(advType) {
  */
 export function extractFirstEmoji(str) {
     if (!str) return null;
-    // Match emoji using Unicode ranges and zero-width joiners
-    const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{231A}-\u{231B}\u{23E9}-\u{23FA}\u{25AA}-\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}\u{2B50}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}](?:\u{FE0F})?(?:\u{200D}[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}](?:\u{FE0F})?)*|\u{00A9}|\u{00AE}|\u{203C}|\u{2049}|\u{2122}|\u{2139}|\u{2194}-\u{2199}|\u{21A9}-\u{21AA}|\u{24C2}|\u{2934}-\u{2935}|\u{2B05}-\u{2B07}|\u{2B1B}-\u{2B1C}/u;
-    const match = str.match(emojiRegex);
+
+    // Iterate by grapheme cluster, then return the first cluster that contains
+    // emoji code points. This keeps compound emojis intact
+    if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
+        const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+        const hasEmojiCodePoint = /(\p{Extended_Pictographic}|\p{Regional_Indicator})/u;
+
+        for (const { segment } of segmenter.segment(str)) {
+            if (hasEmojiCodePoint.test(segment)) {
+                return segment;
+            }
+        }
+        return null;
+    }
+
+    // Fallback for older browsers without Intl.Segmenter.
+    const emojiRegex = /(\p{Regional_Indicator}{2}|\p{Extended_Pictographic}(?:\uFE0F)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F)?)*|[\u{2600}-\u{27BF}]|[\u{00A9}\u{00AE}\u{203C}\u{2049}\u{2122}\u{2139}\u{3030}\u{303D}\u{3297}\u{3299}])/u;
+    const match = emojiRegex.exec(str);
     return match ? match[0] : null;
 }
 
