@@ -344,6 +344,21 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     # Imports both node_tags.yaml and members.yaml if they exist
     command: ["collector", "seed"]
+    
+  # =========================================================================
+  # OAuth2 Proxy
+  # ==========================================================================
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:latest
+    volumes:
+      - ./etc:/etc
+      - ./var:/var
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+    ports:
+      - ${OAUTH2_PROXY_PORT:-4180}:4180
+    env_file: .env
+    command: ["--config", "/etc/oauth2-proxy.cfg", "--email-domain", "*", "--pass-user-headers"]
+    restart: unless-stopped
 
 # ==========================================================================
 # Volumes
