@@ -735,6 +735,82 @@ def cleanup_cmd(
     click.echo("Cleanup complete." if not dry_run else "Dry run complete.")
 
 
+@collector.command("privacy-cleanup")
+@click.option(
+    "--marker",
+    type=str,
+    default="🚫",
+    help="Name marker indicating nodes to ignore/purge (default: 🚫)",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Show what would be deleted without deleting",
+)
+@click.pass_context
+def privacy_cleanup_cmd(ctx: click.Context, marker: str, dry_run: bool) -> None:
+    """Purge already-stored data for privacy-blocked nodes.
+
+    Deletes:
+    - Messages whose sender prefix matches a blocked node public key prefix
+    - Advertisements for blocked node public keys
+    - Receiver junction rows for those events
+    - Blocked nodes (and their tags)
+    """
+
+    import asyncio
+
+    configure_logging(level=ctx.obj["log_level"])
+
+    click.echo(f"Database: {ctx.obj['database_url']}")
+    click.echo(f"Marker: {marker}")
+    click.echo(f"Mode: {'DRY RUN' if dry_run else 'LIVE'}")
+    click.echo("")
+
+    if dry_run:
+        click.echo("Running in dry-run mode - no data will be deleted.")
+    else:
+        click.echo("WARNING: This will permanently delete privacy-blocked data!")
+        if not click.confirm("Continue?"):
+            click.echo("Aborted.")
+            return
+
+    click.echo("")
+
+    from meshcore_hub.common.database import DatabaseManager
+    from meshcore_hub.collector.cleanup import privacy_cleanup_blocked_nodes
+
+    db = DatabaseManager(ctx.obj["database_url"])
+
+    async def run_privacy_cleanup() -> None:
+        async with db.async_session() as session:
+            stats = await privacy_cleanup_blocked_nodes(
+                session,
+                marker=marker,
+                dry_run=dry_run,
+            )
+
+            click.echo("")
+            click.echo("Privacy cleanup results:")
+            click.echo(f"  Blocked nodes: {stats.blocked_nodes}")
+            click.echo(f"  Advertisements: {stats.advertisements_deleted}")
+            click.echo(f"  Messages: {stats.messages_deleted}")
+            click.echo(f"  Event receivers: {stats.event_receivers_deleted}")
+            click.echo(f"  Node tags: {stats.node_tags_deleted}")
+            click.echo(f"  Nodes: {stats.nodes_deleted}")
+            click.echo(f"  Total: {stats.total_deleted}")
+
+            if dry_run:
+                click.echo("")
+                click.echo("(Dry run - no data was actually deleted)")
+
+    asyncio.run(run_privacy_cleanup())
+    db.dispose()
+    click.echo("")
+    click.echo("Privacy cleanup complete." if not dry_run else "Dry run complete.")
+
+
 @collector.command("truncate")
 @click.option(
     "--members",

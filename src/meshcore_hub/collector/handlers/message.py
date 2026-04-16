@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.hash_utils import compute_message_hash
 from meshcore_hub.common.models import Message, Node, add_event_receiver
+from meshcore_hub.collector.handlers.privacy import PRIVACY_NAME_MARKER
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,23 @@ def _handle_message(
                 session.flush()
             else:
                 receiver_node.last_seen = now
+
+        # Privacy: if we can map sender prefix to a known node with the marker in its
+        # name, do not store the message.
+        if pubkey_prefix:
+            blocked_sender = session.execute(
+                select(Node.id)
+                .where(Node.public_key.like(f"{pubkey_prefix}%"))
+                .where(Node.name.isnot(None))
+                .where(Node.name.contains(PRIVACY_NAME_MARKER))
+                .limit(1)
+            ).scalar_one_or_none()
+            if blocked_sender:
+                logger.info(
+                    "Ignoring message from privacy-blocked sender prefix=%r",
+                    pubkey_prefix,
+                )
+                return
 
         # Check if message with same hash already exists
         existing = session.execute(

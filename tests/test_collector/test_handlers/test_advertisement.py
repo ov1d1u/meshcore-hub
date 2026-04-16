@@ -91,6 +91,32 @@ class TestHandleAdvertisement:
         assert node.lat == 42.1234
         assert node.lon == -71.9876
 
+    def test_ignores_privacy_blocked_advertised_name(self, db_manager, db_session):
+        """Privacy-blocked advertised nodes should not be stored."""
+        payload = {
+            "public_key": "c" * 64,
+            "name": "Bad🚫Node",
+            "adv_type": "chat",
+        }
+
+        handle_advertisement("b" * 64, "advertisement", payload, db_manager)
+
+        # Advertised node should not exist
+        node = db_session.execute(
+            select(Node).where(Node.public_key == "c" * 64)
+        ).scalar_one_or_none()
+        assert node is None
+
+        # Advertisement record should not exist
+        ad = db_session.execute(select(Advertisement)).scalar_one_or_none()
+        assert ad is None
+
+        # Receiver node should still be created/updated
+        receiver = db_session.execute(
+            select(Node).where(Node.public_key == "b" * 64)
+        ).scalar_one_or_none()
+        assert receiver is not None
+
     def test_handles_missing_public_key(self, db_manager, db_session):
         """Test that missing public_key is handled gracefully."""
         payload = {

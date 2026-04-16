@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.models import Node
+from meshcore_hub.collector.handlers.privacy import is_privacy_blocked_name
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,14 @@ def handle_contact(
 
     # Device uses 'adv_name' for the advertised name
     name = payload.get("adv_name") or payload.get("name")
+
+    if is_privacy_blocked_name(name):
+        logger.info(
+            "Ignoring contact for privacy-blocked node: %s... adv_name=%r",
+            contact_key[:12],
+            name,
+        )
+        return
 
     # GPS coordinates (optional)
     lat = payload.get("adv_lat")

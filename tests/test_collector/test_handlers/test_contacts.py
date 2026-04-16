@@ -46,6 +46,20 @@ def test_handle_contact_creates_new_node(db_session, mock_db_manager):
     assert node.last_seen is None  # Should NOT be set by contact sync
 
 
+def test_handle_contact_ignores_privacy_blocked_name(db_session, mock_db_manager):
+    """Contact handler should ignore nodes whose name contains the privacy marker."""
+    payload = {
+        "public_key": "p" * 64,
+        "adv_name": "Bad🚫Node",
+        "type": 1,
+    }
+
+    handle_contact("receiver123", "contact", payload, mock_db_manager)
+
+    node = db_session.query(Node).filter_by(public_key="p" * 64).first()
+    assert node is None
+
+
 def test_handle_contact_updates_existing_node_name(db_session, mock_db_manager):
     """Test that contact handler updates name but NOT last_seen."""
     # Create existing node with a last_seen timestamp

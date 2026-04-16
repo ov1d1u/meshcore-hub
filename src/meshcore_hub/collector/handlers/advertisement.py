@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.hash_utils import compute_advertisement_hash
 from meshcore_hub.common.models import Advertisement, Node, add_event_receiver
+from meshcore_hub.collector.handlers.privacy import is_privacy_blocked_name
 
 logger = logging.getLogger(__name__)
 
@@ -72,15 +73,6 @@ def handle_advertisement(
     lon = _coerce_float(lon)
     now = datetime.now(timezone.utc)
 
-    # Compute event hash for deduplication (30-second time bucket)
-    event_hash = compute_advertisement_hash(
-        public_key=adv_public_key,
-        name=name,
-        adv_type=adv_type,
-        flags=flags,
-        received_at=now,
-    )
-
     with db.session_scope() as session:
         # Find or create receiver node first (needed for both new and duplicate events)
         receiver_node = None
@@ -98,6 +90,25 @@ def handle_advertisement(
                 session.flush()
             else:
                 receiver_node.last_seen = now
+
+        # Privacy: still track receiver node activity, but do not store the advertised
+        # node/advertisement if the advertised name contains the privacy marker.
+        if is_privacy_blocked_name(name):
+            logger.info(
+                "Ignoring advertisement for privacy-blocked node: %s... name=%r",
+                adv_public_key[:12],
+                name,
+            )
+            return
+
+        # Compute event hash for deduplication (30-second time bucket)
+        event_hash = compute_advertisement_hash(
+            public_key=adv_public_key,
+            name=name,
+            adv_type=adv_type,
+            flags=flags,
+            received_at=now,
+        )
 
         # Check if advertisement with same hash already exists
         existing = session.execute(

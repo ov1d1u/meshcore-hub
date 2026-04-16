@@ -13,13 +13,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from meshcore_hub.common.models import (
     Advertisement,
     EventLog,
+    EventReceiver,
     Message,
     Node,
+    NodeTag,
     Telemetry,
     TracePath,
 )
+from meshcore_hub.collector.handlers.privacy import PRIVACY_NAME_MARKER
 
 logger = logging.getLogger(__name__)
+
+# SQLAlchemy's `func.count()` triggers false positives in some linters.
+# pylint: disable=not-callable
 
 
 class CleanupStats:
@@ -44,6 +50,209 @@ class CleanupStats:
             f"event_logs={self.event_logs_deleted}, "
             f"nodes={self.nodes_deleted})"
         )
+
+
+class PrivacyCleanupStats:
+    """Statistics from a privacy cleanup operation (marker-based purge)."""
+
+    def __init__(self) -> None:
+        self.blocked_nodes: int = 0
+        self.advertisements_deleted: int = 0
+        self.messages_deleted: int = 0
+        self.event_receivers_deleted: int = 0
+        self.node_tags_deleted: int = 0
+        self.nodes_deleted: int = 0
+        self.total_deleted: int = 0
+
+    def __repr__(self) -> str:
+        return (
+            "PrivacyCleanupStats("
+            f"blocked_nodes={self.blocked_nodes}, "
+            f"advertisements={self.advertisements_deleted}, "
+            f"messages={self.messages_deleted}, "
+            f"event_receivers={self.event_receivers_deleted}, "
+            f"node_tags={self.node_tags_deleted}, "
+            f"nodes={self.nodes_deleted}, "
+            f"total={self.total_deleted})"
+        )
+
+
+async def privacy_cleanup_blocked_nodes(
+    db: AsyncSession,
+    marker: str = PRIVACY_NAME_MARKER,
+    dry_run: bool = False,
+) -> PrivacyCleanupStats:
+    """Purge any already-stored data for nodes whose name contains the marker."""
+
+    stats = PrivacyCleanupStats()
+
+    # Find nodes whose stored name is privacy-blocked.
+    blocked_nodes = (
+        await db.execute(
+            select(Node.id, Node.public_key).where(Node.name.isnot(None)).where(
+                Node.name.contains(marker)
+            )
+        )
+    ).all()
+    stats.blocked_nodes = len(blocked_nodes)
+
+    if not blocked_nodes:
+        logger.info("Privacy cleanup: no blocked nodes found (marker=%r)", marker)
+        return stats
+
+    blocked_node_ids = [row[0] for row in blocked_nodes]
+    blocked_public_keys = [row[1] for row in blocked_nodes]
+    blocked_prefixes = [pk[:12] for pk in blocked_public_keys if pk]
+
+    logger.info(
+        "Privacy cleanup starting (dry_run=%s, marker=%r, nodes=%d)",
+        dry_run,
+        marker,
+        len(blocked_node_ids),
+    )
+
+    # Collect event_hashes before deleting so we can delete junction rows too.
+    msg_hashes: list[str] = []
+    if blocked_prefixes:
+        msg_hashes = [
+            h
+            for (h,) in (
+                await db.execute(
+                    select(Message.event_hash)
+                    .where(Message.event_hash.isnot(None))
+                    .where(Message.pubkey_prefix.in_(blocked_prefixes))
+                )
+            ).all()
+            if h
+        ]
+
+    ad_hashes: list[str] = [
+        h
+        for (h,) in (
+            await db.execute(
+                select(Advertisement.event_hash)
+                .where(Advertisement.event_hash.isnot(None))
+                .where(Advertisement.public_key.in_(blocked_public_keys))
+            )
+        ).all()
+        if h
+    ]
+
+    if dry_run:
+        # Count rows that would be deleted.
+        if blocked_prefixes:
+            stats.messages_deleted = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(Message)
+                    .where(Message.pubkey_prefix.in_(blocked_prefixes))
+                )
+            ).scalar() or 0
+
+        stats.advertisements_deleted = (
+            await db.execute(
+                select(func.count())
+                .select_from(Advertisement)
+                .where(Advertisement.public_key.in_(blocked_public_keys))
+            )
+        ).scalar() or 0
+
+        receiver_count = 0
+        if msg_hashes:
+            receiver_count += (
+                await db.execute(
+                    select(func.count())
+                    .select_from(EventReceiver)
+                    .where(EventReceiver.event_type == "message")
+                    .where(EventReceiver.event_hash.in_(msg_hashes))
+                )
+            ).scalar() or 0
+        if ad_hashes:
+            receiver_count += (
+                await db.execute(
+                    select(func.count())
+                    .select_from(EventReceiver)
+                    .where(EventReceiver.event_type == "advertisement")
+                    .where(EventReceiver.event_hash.in_(ad_hashes))
+                )
+            ).scalar() or 0
+        stats.event_receivers_deleted = receiver_count
+
+        stats.node_tags_deleted = (
+            await db.execute(
+                select(func.count())
+                .select_from(NodeTag)
+                .where(NodeTag.node_id.in_(blocked_node_ids))
+            )
+        ).scalar() or 0
+
+        stats.nodes_deleted = (
+            await db.execute(
+                select(func.count()).select_from(Node).where(Node.id.in_(blocked_node_ids))
+            )
+        ).scalar() or 0
+
+        stats.total_deleted = (
+            stats.advertisements_deleted
+            + stats.messages_deleted
+            + stats.event_receivers_deleted
+            + stats.node_tags_deleted
+            + stats.nodes_deleted
+        )
+
+        logger.info("Privacy cleanup dry run completed: %s", stats)
+        return stats
+
+    # Live deletes.
+    # Messages first (independent of node FK; keyed only by prefix).
+    if blocked_prefixes:
+        msg_result = await db.execute(
+            delete(Message).where(Message.pubkey_prefix.in_(blocked_prefixes))
+        )
+        stats.messages_deleted = msg_result.rowcount or 0  # type: ignore[attr-defined]
+
+    # Advertisements.
+    ad_result = await db.execute(
+        delete(Advertisement).where(Advertisement.public_key.in_(blocked_public_keys))
+    )
+    stats.advertisements_deleted = ad_result.rowcount or 0  # type: ignore[attr-defined]
+
+    # Event receiver junction rows.
+    receivers_deleted = 0
+    if msg_hashes:
+        res = await db.execute(
+            delete(EventReceiver)
+            .where(EventReceiver.event_type == "message")
+            .where(EventReceiver.event_hash.in_(msg_hashes))
+        )
+        receivers_deleted += res.rowcount or 0  # type: ignore[attr-defined]
+    if ad_hashes:
+        res = await db.execute(
+            delete(EventReceiver)
+            .where(EventReceiver.event_type == "advertisement")
+            .where(EventReceiver.event_hash.in_(ad_hashes))
+        )
+        receivers_deleted += res.rowcount or 0  # type: ignore[attr-defined]
+    stats.event_receivers_deleted = receivers_deleted
+
+    # Tags, then nodes.
+    tag_res = await db.execute(delete(NodeTag).where(NodeTag.node_id.in_(blocked_node_ids)))
+    stats.node_tags_deleted = tag_res.rowcount or 0  # type: ignore[attr-defined]
+
+    node_res = await db.execute(delete(Node).where(Node.id.in_(blocked_node_ids)))
+    stats.nodes_deleted = node_res.rowcount or 0  # type: ignore[attr-defined]
+
+    await db.commit()
+
+    stats.total_deleted = (
+        stats.advertisements_deleted
+        + stats.messages_deleted
+        + stats.event_receivers_deleted
+        + stats.node_tags_deleted
+        + stats.nodes_deleted
+    )
+    logger.info("Privacy cleanup completed: %s", stats)
+    return stats
 
 
 async def cleanup_old_data(
@@ -132,8 +341,6 @@ async def _cleanup_table(
     Returns:
         Number of records deleted (or would be deleted in dry_run)
     """
-    from sqlalchemy import select
-
     if dry_run:
         # Count records that would be deleted
         stmt = (

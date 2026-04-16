@@ -46,6 +46,22 @@ class TestHandleContactMessage:
         msgs = db_session.execute(select(Message)).scalars().all()
         assert len(msgs) == 0
 
+    def test_ignores_privacy_blocked_sender_when_known(self, db_manager, db_session):
+        """If sender prefix maps to a 🚫 node, message should not be stored."""
+        sender_public_key = "01ab2186c4d5" + ("f" * 52)
+        db_session.add(Node(public_key=sender_public_key, name="Sender🚫Name"))
+        db_session.commit()
+
+        payload = {
+            "pubkey_prefix": "01ab2186c4d5",
+            "text": "Should be ignored",
+        }
+
+        handle_contact_message("a" * 64, "contact_msg_recv", payload, db_manager)
+
+        msg = db_session.execute(select(Message)).scalar_one_or_none()
+        assert msg is None
+
 
 class TestHandleChannelMessage:
     """Tests for handle_channel_message."""
