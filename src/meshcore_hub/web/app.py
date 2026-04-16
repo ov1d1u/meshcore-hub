@@ -732,8 +732,9 @@ def create_app(
         config_json = _build_config_json(request.app, request)
 
         return templates_inst.TemplateResponse(
-            "spa.html",
-            {
+            request=request,
+            name="spa.html",
+            context={
                 "request": request,
                 "network_name": request.app.state.network_name,
                 "network_city": request.app.state.network_city,
