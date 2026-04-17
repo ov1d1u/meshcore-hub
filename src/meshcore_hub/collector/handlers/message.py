@@ -10,7 +10,10 @@ from sqlalchemy.exc import IntegrityError
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.hash_utils import compute_message_hash
 from meshcore_hub.common.models import Message, Node, add_event_receiver
-from meshcore_hub.collector.handlers.privacy import PRIVACY_NAME_MARKER
+from meshcore_hub.collector.handlers.privacy import (
+    PRIVACY_NAME_MARKER,
+    is_privacy_blocked_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +81,7 @@ def _handle_message(
     txt_type = payload.get("txt_type")
     signature = payload.get("signature")
     snr = payload.get("SNR") or payload.get("snr")
+    sender_name = payload.get("sender_name")
 
     # Parse sender timestamp
     sender_ts = payload.get("sender_timestamp")
@@ -114,6 +118,15 @@ def _handle_message(
                 session.flush()
             else:
                 receiver_node.last_seen = now
+
+        # Privacy: some feeds include sender name but not pubkey prefix. If sender
+        # name itself carries the marker, ignore the message.
+        if isinstance(sender_name, str) and is_privacy_blocked_name(sender_name):
+            logger.info(
+                "Ignoring message from privacy-blocked sender name=%r",
+                sender_name,
+            )
+            return
 
         # Privacy: if we can map sender prefix to a known node with the marker in its
         # name, do not store the message.

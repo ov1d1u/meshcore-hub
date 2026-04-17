@@ -62,6 +62,20 @@ class TestHandleContactMessage:
         msg = db_session.execute(select(Message)).scalar_one_or_none()
         assert msg is None
 
+    def test_ignores_privacy_blocked_sender_name_without_prefix(
+        self, db_manager, db_session
+    ):
+        """If sender_name contains 🚫 and prefix is missing, message is ignored."""
+        payload = {
+            "text": "Should be ignored",
+            "sender_name": "SomeUser 🚫",
+        }
+
+        handle_contact_message("a" * 64, "contact_msg_recv", payload, db_manager)
+
+        msg = db_session.execute(select(Message)).scalar_one_or_none()
+        assert msg is None
+
 
 class TestHandleChannelMessage:
     """Tests for handle_channel_message."""
@@ -102,3 +116,18 @@ class TestHandleChannelMessage:
         ).scalar_one_or_none()
 
         assert node is not None
+
+    def test_ignores_privacy_blocked_sender_name_without_prefix(
+        self, db_manager, db_session
+    ):
+        """Channel message with blocked sender_name should not be stored."""
+        payload = {
+            "channel_idx": 4,
+            "text": "Public channel message",
+            "sender_name": "Blocked 🚫 Sender",
+        }
+
+        handle_channel_message("a" * 64, "channel_msg_recv", payload, db_manager)
+
+        msg = db_session.execute(select(Message)).scalar_one_or_none()
+        assert msg is None
