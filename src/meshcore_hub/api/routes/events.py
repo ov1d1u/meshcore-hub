@@ -10,11 +10,32 @@ from typing import Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from meshcore_hub.api.dependencies import ensure_mqtt_client
+from meshcore_hub.collector.handlers.privacy import (
+    PRIVACY_NAME_MARKER,
+    is_privacy_blocked_name,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 _QUEUE_MAXSIZE = 256
+
+
+def _should_filter_event(event_name: str | None, payload: dict[str, Any]) -> bool:
+    """Return True when an event should not be sent to websocket clients."""
+
+    if event_name != "channel_msg_recv":
+        return False
+
+    text = payload.get("text")
+    if isinstance(text, str) and PRIVACY_NAME_MARKER in text:
+        return True
+
+    sender_name = payload.get("sender_name")
+    if isinstance(sender_name, str) and is_privacy_blocked_name(sender_name):
+        return True
+
+    return False
 
 
 @router.websocket("/events")
@@ -40,6 +61,9 @@ async def events_websocket(websocket: WebSocket) -> None:
         parsed = mqtt_client.topic_builder.parse_event_topic(topic_name)
         if parsed:
             public_key, event_name = parsed
+
+        if _should_filter_event(event_name, payload):
+            return
 
         event = {
             "topic": topic_name,

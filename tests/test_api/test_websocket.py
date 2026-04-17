@@ -60,4 +60,24 @@ def test_websocket_forwards_mqtt_events() -> None:
     assert message["event_name"] == "telemetry"
     assert message["payload"] == payload
     assert message["topic"] == topic
-```}
+
+
+def test_websocket_filters_blocked_channel_messages() -> None:
+    app = create_app()
+    fake_client = FakeMQTTClient(prefix=app.state.mqtt_prefix)
+    app.state.mqtt_client = fake_client
+
+    blocked_topic = fake_client.topic_builder.event_topic("abc123", "channel_msg_recv")
+    blocked_payload = {"text": "Ovidiu N. 🚫: test 4", "channel_idx": 7}
+    allowed_topic = fake_client.topic_builder.event_topic("abc123", "telemetry")
+    allowed_payload = {"foo": "bar"}
+
+    with TestClient(app) as client:
+        with client.websocket_connect("/api/v1/ws/events") as websocket:
+            fake_client.emit(blocked_topic, blocked_payload)
+            fake_client.emit(allowed_topic, allowed_payload)
+            message = websocket.receive_json()
+
+    assert message["event_name"] == "telemetry"
+    assert message["payload"] == allowed_payload
+    assert message["topic"] == allowed_topic
