@@ -131,3 +131,18 @@ class TestHandleChannelMessage:
 
         msg = db_session.execute(select(Message)).scalar_one_or_none()
         assert msg is None
+
+    def test_ignores_privacy_blocked_sender_name_in_text_prefix(
+        self, db_manager, db_session
+    ):
+        """Channel text prefix 'Name: msg' is used when sender_name is absent."""
+        payload = {
+            "channel_idx": 7,
+            "text": "Ovidiu N. 🚫: test 4",
+            "channel_name": "#meshcore-iasi",
+        }
+
+        handle_channel_message("a" * 64, "channel_msg_recv", payload, db_manager)
+
+        msg = db_session.execute(select(Message)).scalar_one_or_none()
+        assert msg is None

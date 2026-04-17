@@ -1,6 +1,7 @@
 """Handler for message events."""
 
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -16,6 +17,18 @@ from meshcore_hub.collector.handlers.privacy import (
 )
 
 logger = logging.getLogger(__name__)
+
+SENDER_PREFIX_RE = re.compile(r"^\s*(?:\[[^\]]+\]\s*)?([^:]{1,255}):\s+.+$")
+
+
+def _extract_sender_name_from_text(text: str) -> str | None:
+    """Extract leading 'Sender: message' name when present."""
+
+    match = SENDER_PREFIX_RE.match(text)
+    if not match:
+        return None
+    sender = match.group(1).strip()
+    return sender or None
 
 
 def handle_contact_message(
@@ -82,6 +95,7 @@ def _handle_message(
     signature = payload.get("signature")
     snr = payload.get("SNR") or payload.get("snr")
     sender_name = payload.get("sender_name")
+    inferred_sender_name = _extract_sender_name_from_text(text)
 
     # Parse sender timestamp
     sender_ts = payload.get("sender_timestamp")
@@ -125,6 +139,12 @@ def _handle_message(
             logger.info(
                 "Ignoring message from privacy-blocked sender name=%r",
                 sender_name,
+            )
+            return
+        if inferred_sender_name and is_privacy_blocked_name(inferred_sender_name):
+            logger.info(
+                "Ignoring message from privacy-blocked inferred sender name=%r",
+                inferred_sender_name,
             )
             return
 
