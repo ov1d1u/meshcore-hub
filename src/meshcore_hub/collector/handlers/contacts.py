@@ -6,6 +6,7 @@ from typing import Any
 
 from sqlalchemy import select
 
+from meshcore_hub.collector.cleanup import purge_node_by_public_key
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.models import Node
 from meshcore_hub.collector.handlers.privacy import is_privacy_blocked_name
@@ -49,10 +50,13 @@ def handle_contact(
     name = payload.get("adv_name") or payload.get("name")
 
     if is_privacy_blocked_name(name):
+        with db.session_scope() as session:
+            purge_stats = purge_node_by_public_key(session, contact_key)
         logger.info(
-            "Ignoring contact for privacy-blocked node: %s... adv_name=%r",
+            "Purged privacy-blocked node from contact: %s... adv_name=%r total_deleted=%d",
             contact_key[:12],
             name,
+            purge_stats["total_deleted"],
         )
         return
 

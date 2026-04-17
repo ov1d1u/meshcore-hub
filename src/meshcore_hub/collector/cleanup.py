@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from meshcore_hub.common.models import (
     Advertisement,
@@ -26,6 +27,87 @@ logger = logging.getLogger(__name__)
 
 # SQLAlchemy's `func.count()` triggers false positives in some linters.
 # pylint: disable=not-callable
+
+
+def purge_node_by_public_key(session: Session, public_key: str) -> dict[str, int]:
+    """Purge node-related data for a single public key.
+
+    Deletes messages (by sender prefix), advertisements, matching event receiver
+    junction rows, node tags, and the node record itself.
+    """
+
+    prefix = public_key[:12]
+
+    msg_hashes = [
+        h
+        for (h,) in session.execute(
+            select(Message.event_hash)
+            .where(Message.event_hash.isnot(None))
+            .where(Message.pubkey_prefix == prefix)
+        ).all()
+        if h
+    ]
+    ad_hashes = [
+        h
+        for (h,) in session.execute(
+            select(Advertisement.event_hash)
+            .where(Advertisement.event_hash.isnot(None))
+            .where(Advertisement.public_key == public_key)
+        ).all()
+        if h
+    ]
+
+    node_id = session.execute(
+        select(Node.id).where(Node.public_key == public_key).limit(1)
+    ).scalar_one_or_none()
+
+    event_receivers_deleted = 0
+    if msg_hashes:
+        result = session.execute(
+            delete(EventReceiver)
+            .where(EventReceiver.event_type == "message")
+            .where(EventReceiver.event_hash.in_(msg_hashes))
+        )
+        event_receivers_deleted += result.rowcount or 0  # type: ignore[attr-defined]
+    if ad_hashes:
+        result = session.execute(
+            delete(EventReceiver)
+            .where(EventReceiver.event_type == "advertisement")
+            .where(EventReceiver.event_hash.in_(ad_hashes))
+        )
+        event_receivers_deleted += result.rowcount or 0  # type: ignore[attr-defined]
+
+    messages_deleted = (
+        session.execute(delete(Message).where(Message.pubkey_prefix == prefix)).rowcount or 0
+    )
+    advertisements_deleted = (
+        session.execute(
+            delete(Advertisement).where(Advertisement.public_key == public_key)
+        ).rowcount
+        or 0
+    )
+    node_tags_deleted = 0
+    nodes_deleted = 0
+    if node_id:
+        node_tags_deleted = (
+            session.execute(delete(NodeTag).where(NodeTag.node_id == node_id)).rowcount or 0
+        )
+        nodes_deleted = session.execute(delete(Node).where(Node.id == node_id)).rowcount or 0
+
+    return {
+        "messages_deleted": messages_deleted,
+        "advertisements_deleted": advertisements_deleted,
+        "event_receivers_deleted": event_receivers_deleted,
+        "node_tags_deleted": node_tags_deleted,
+        "nodes_deleted": nodes_deleted,
+        "total_deleted": (
+            messages_deleted
+            + advertisements_deleted
+            + event_receivers_deleted
+            + node_tags_deleted
+            + nodes_deleted
+        ),
+    }
 
 
 class CleanupStats:

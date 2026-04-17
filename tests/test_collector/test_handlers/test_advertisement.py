@@ -2,7 +2,7 @@
 
 from sqlalchemy import select
 
-from meshcore_hub.common.models import Advertisement, Node
+from meshcore_hub.common.models import Advertisement, EventReceiver, Message, Node, NodeTag
 from meshcore_hub.collector.handlers.advertisement import handle_advertisement
 
 
@@ -92,9 +92,42 @@ class TestHandleAdvertisement:
         assert node.lon == -71.9876
 
     def test_ignores_privacy_blocked_advertised_name(self, db_manager, db_session):
-        """Privacy-blocked advertised nodes should not be stored."""
+        """Privacy-blocked advertised node should be purged from existing data."""
+        blocked_key = "c" * 64
+        blocked_node = Node(public_key=blocked_key, name="OldName")
+        receiver_node = Node(public_key="b" * 64, name="Receiver")
+        db_session.add_all([blocked_node, receiver_node])
+        db_session.flush()
+        db_session.add_all(
+            [
+                NodeTag(node_id=blocked_node.id, key="name", value="OldName"),
+                Message(
+                    message_type="contact",
+                    pubkey_prefix=blocked_key[:12],
+                    text="Old message",
+                    event_hash="msg-hash-ad-1",
+                ),
+                Advertisement(
+                    public_key=blocked_key,
+                    name="OldName",
+                    event_hash="ad-hash-ad-1",
+                ),
+                EventReceiver(
+                    event_type="message",
+                    event_hash="msg-hash-ad-1",
+                    receiver_node_id=receiver_node.id,
+                ),
+                EventReceiver(
+                    event_type="advertisement",
+                    event_hash="ad-hash-ad-1",
+                    receiver_node_id=receiver_node.id,
+                ),
+            ]
+        )
+        db_session.commit()
+
         payload = {
-            "public_key": "c" * 64,
+            "public_key": blocked_key,
             "name": "Bad🚫Node",
             "adv_type": "chat",
         }
@@ -103,13 +136,41 @@ class TestHandleAdvertisement:
 
         # Advertised node should not exist
         node = db_session.execute(
-            select(Node).where(Node.public_key == "c" * 64)
+            select(Node).where(Node.public_key == blocked_key)
         ).scalar_one_or_none()
         assert node is None
 
-        # Advertisement record should not exist
-        ad = db_session.execute(select(Advertisement)).scalar_one_or_none()
-        assert ad is None
+        # Related rows should be removed
+        assert (
+            db_session.execute(
+                select(Advertisement).where(Advertisement.public_key == blocked_key)
+            ).scalar_one_or_none()
+            is None
+        )
+        assert (
+            db_session.execute(
+                select(Message).where(Message.pubkey_prefix == blocked_key[:12])
+            ).scalar_one_or_none()
+            is None
+        )
+        assert (
+            db_session.execute(
+                select(NodeTag).where(NodeTag.node_id == blocked_node.id)
+            ).scalar_one_or_none()
+            is None
+        )
+        assert (
+            db_session.execute(
+                select(EventReceiver).where(EventReceiver.event_hash == "msg-hash-ad-1")
+            ).scalar_one_or_none()
+            is None
+        )
+        assert (
+            db_session.execute(
+                select(EventReceiver).where(EventReceiver.event_hash == "ad-hash-ad-1")
+            ).scalar_one_or_none()
+            is None
+        )
 
         # Receiver node should still be created/updated
         receiver = db_session.execute(

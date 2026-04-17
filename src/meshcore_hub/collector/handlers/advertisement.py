@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from meshcore_hub.collector.cleanup import purge_node_by_public_key
 from meshcore_hub.common.database import DatabaseManager
 from meshcore_hub.common.hash_utils import compute_advertisement_hash
 from meshcore_hub.common.models import Advertisement, Node, add_event_receiver
@@ -94,10 +95,12 @@ def handle_advertisement(
         # Privacy: still track receiver node activity, but do not store the advertised
         # node/advertisement if the advertised name contains the privacy marker.
         if is_privacy_blocked_name(name):
+            purge_stats = purge_node_by_public_key(session, adv_public_key)
             logger.info(
-                "Ignoring advertisement for privacy-blocked node: %s... name=%r",
+                "Purged privacy-blocked node from advertisement: %s... name=%r total_deleted=%d",
                 adv_public_key[:12],
                 name,
+                purge_stats["total_deleted"],
             )
             return
 

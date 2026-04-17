@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 from meshcore_hub.collector.handlers.contacts import handle_contact
-from meshcore_hub.common.models import Node
+from meshcore_hub.common.models import Advertisement, EventReceiver, Message, Node, NodeTag
 
 
 @pytest.fixture
@@ -46,18 +46,71 @@ def test_handle_contact_creates_new_node(db_session, mock_db_manager):
     assert node.last_seen is None  # Should NOT be set by contact sync
 
 
-def test_handle_contact_ignores_privacy_blocked_name(db_session, mock_db_manager):
-    """Contact handler should ignore nodes whose name contains the privacy marker."""
+def test_handle_contact_purges_privacy_blocked_name(db_session, mock_db_manager):
+    """Contact handler should purge existing data for blocked names."""
+    blocked_key = "p" * 64
+    receiver_key = "r" * 64
+    blocked_node = Node(public_key=blocked_key, name="OldName")
+    receiver_node = Node(public_key=receiver_key, name="Receiver")
+    db_session.add_all([blocked_node, receiver_node])
+    db_session.flush()
+    db_session.add_all(
+        [
+            NodeTag(node_id=blocked_node.id, key="name", value="OldName"),
+            Message(
+                message_type="contact",
+                pubkey_prefix=blocked_key[:12],
+                text="Old message",
+                event_hash="msg-hash-contact-1",
+            ),
+            Advertisement(
+                public_key=blocked_key,
+                name="OldName",
+                event_hash="ad-hash-contact-1",
+            ),
+            EventReceiver(
+                event_type="message",
+                event_hash="msg-hash-contact-1",
+                receiver_node_id=receiver_node.id,
+            ),
+            EventReceiver(
+                event_type="advertisement",
+                event_hash="ad-hash-contact-1",
+                receiver_node_id=receiver_node.id,
+            ),
+        ]
+    )
+    db_session.commit()
+
     payload = {
-        "public_key": "p" * 64,
+        "public_key": blocked_key,
         "adv_name": "Bad🚫Node",
         "type": 1,
     }
 
     handle_contact("receiver123", "contact", payload, mock_db_manager)
 
-    node = db_session.query(Node).filter_by(public_key="p" * 64).first()
+    node = db_session.query(Node).filter_by(public_key=blocked_key).first()
     assert node is None
+    assert (
+        db_session.query(Advertisement).filter_by(public_key=blocked_key).count() == 0
+    )
+    assert (
+        db_session.query(Message).filter_by(pubkey_prefix=blocked_key[:12]).count() == 0
+    )
+    assert db_session.query(NodeTag).filter_by(node_id=blocked_node.id).count() == 0
+    assert (
+        db_session.query(EventReceiver)
+        .filter_by(event_hash="msg-hash-contact-1")
+        .count()
+        == 0
+    )
+    assert (
+        db_session.query(EventReceiver)
+        .filter_by(event_hash="ad-hash-contact-1")
+        .count()
+        == 0
+    )
 
 
 def test_handle_contact_updates_existing_node_name(db_session, mock_db_manager):
