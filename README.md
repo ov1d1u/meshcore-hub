@@ -801,5 +801,5 @@ This project is licensed under the GNU General Public License v3.0 or later (GPL
 
 ## Acknowledgments
 
-- [MeshCore](https://meshcore.dev/) - The mesh networking protocol
+- [MeshCore](https://meshcore.io/) - The mesh networking protocol
 - [meshcore](https://github.com/fdlamotte/meshcore) - Python library for MeshCore devices
