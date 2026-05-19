@@ -617,6 +617,7 @@ Key variables:
 - `WEB_AUTO_REFRESH_SECONDS` - Auto-refresh interval in seconds for list pages (default: `30`, `0` to disable)
 - `TZ` - Timezone for web dashboard date/time display (default: `UTC`, e.g., `America/New_York`, `Europe/London`)
 - `FEATURE_DASHBOARD`, `FEATURE_NODES`, `FEATURE_ADVERTISEMENTS`, `FEATURE_MESSAGES`, `FEATURE_MAP`, `FEATURE_MEMBERS`, `FEATURE_PAGES` - Feature flags to enable/disable specific web dashboard pages (default: all `true`). Dependencies: Dashboard auto-disables when all of Nodes/Advertisements/Messages are disabled. Map auto-disables when Nodes is disabled.
+- `NETWORK_ANNOUNCEMENT` - Markdown announcement text for flash banner, shown on all pages when set (default: none)
 - `METRICS_ENABLED` - Enable Prometheus metrics endpoint at /metrics (default: `true`)
 - `METRICS_CACHE_TTL` - Seconds to cache metrics output (default: `60`)
 - `LOG_LEVEL` - Logging verbosity
