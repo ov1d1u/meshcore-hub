@@ -21,6 +21,42 @@ logger = logging.getLogger(__name__)
 _QUEUE_MAXSIZE = 256
 
 
+def _resolve_channel_name(payload: dict[str, Any]) -> str:
+    """Resolve a channel label for websocket channel message payloads."""
+
+    channel_name = payload.get("channel_name")
+    if isinstance(channel_name, str) and channel_name.strip():
+        return channel_name.strip()
+
+    channel_idx = payload.get("channel_idx")
+    if isinstance(channel_idx, int):
+        if channel_idx == 0:
+            return "Public"
+        return f"Channel {channel_idx}"
+    if isinstance(channel_idx, str):
+        normalized_idx = channel_idx.strip()
+        if normalized_idx.isdigit():
+            parsed_idx = int(normalized_idx)
+            if parsed_idx == 0:
+                return "Public"
+            return f"Channel {parsed_idx}"
+
+    channel_hash = payload.get("channel_hash")
+    if isinstance(channel_hash, str) and channel_hash.strip():
+        return f"Channel {channel_hash.strip().upper()}"
+
+    return "Channel"
+
+
+def _normalize_websocket_payload(event_name: str | None, payload: dict[str, Any]) -> dict[str, Any]:
+    """Normalize websocket payload fields for frontend realtime rendering."""
+
+    normalized_payload = dict(payload)
+    if event_name == "channel_msg_recv":
+        normalized_payload["channel_name"] = _resolve_channel_name(normalized_payload)
+    return normalized_payload
+
+
 def _should_filter_event(event_name: str | None, payload: dict[str, Any]) -> bool:
     """Return True when an event should not be sent to websocket clients."""
 
@@ -65,12 +101,14 @@ async def events_websocket(websocket: WebSocket) -> None:
         if _should_filter_event(event_name, payload):
             return
 
+        normalized_payload = _normalize_websocket_payload(event_name, payload)
+
         event = {
             "topic": topic_name,
             "pattern": pattern,
             "public_key": public_key,
             "event_name": event_name,
-            "payload": payload,
+            "payload": normalized_payload,
             "received_at": datetime.now(timezone.utc).isoformat(),
         }
         loop.call_soon_threadsafe(_enqueue, event)

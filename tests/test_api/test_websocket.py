@@ -81,3 +81,37 @@ def test_websocket_filters_blocked_channel_messages() -> None:
     assert message["event_name"] == "telemetry"
     assert message["payload"] == allowed_payload
     assert message["topic"] == allowed_topic
+
+
+def test_websocket_channel_message_includes_channel_name_fallback() -> None:
+    app = create_app()
+    fake_client = FakeMQTTClient(prefix=app.state.mqtt_prefix)
+    app.state.mqtt_client = fake_client
+
+    topic = fake_client.topic_builder.event_topic("abc123", "channel_msg_recv")
+    payload = {"text": "hello", "channel_idx": 1}
+
+    with TestClient(app) as client:
+        with client.websocket_connect("/api/v1/ws/events") as websocket:
+            fake_client.emit(topic, payload)
+            message = websocket.receive_json()
+
+    assert message["event_name"] == "channel_msg_recv"
+    assert message["payload"]["channel_name"] == "Channel 1"
+
+
+def test_websocket_channel_message_preserves_existing_channel_name() -> None:
+    app = create_app()
+    fake_client = FakeMQTTClient(prefix=app.state.mqtt_prefix)
+    app.state.mqtt_client = fake_client
+
+    topic = fake_client.topic_builder.event_topic("abc123", "channel_msg_recv")
+    payload = {"text": "hello", "channel_idx": 1, "channel_name": "#Ops"}
+
+    with TestClient(app) as client:
+        with client.websocket_connect("/api/v1/ws/events") as websocket:
+            fake_client.emit(topic, payload)
+            message = websocket.receive_json()
+
+    assert message["event_name"] == "channel_msg_recv"
+    assert message["payload"]["channel_name"] == "#Ops"

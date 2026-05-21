@@ -68,6 +68,7 @@ ${content}`, container);
             sender_name: payload.sender_name || null,
             sender_tag_name: null,
             channel_idx: payload.channel_idx ?? null,
+            channel_name: payload.channel_name || null,
             received_at: eventData.received_at || new Date().toISOString(),
             receivers: [],
             received_by: eventData.public_key || null,
