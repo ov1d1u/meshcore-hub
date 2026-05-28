@@ -51,6 +51,7 @@ class MeshcoreChannel:
 
 # Most devices have a limited number of channels
 MAX_CHANNELS = 10
+EMPTY_CHANNEL_SECRET = bytes.fromhex(16 * "00")
 
 
 class BaseMeshCoreDevice(ABC):
@@ -257,6 +258,52 @@ class BaseMeshCoreDevice(ABC):
         pass
 
     @abstractmethod
+    def set_channel(
+        self,
+        channel_idx: int,
+        channel_name: str,
+        channel_secret: Optional[bytes] = None,
+    ) -> bool:
+        """Set or clear a device channel.
+
+        Args:
+            channel_idx: Channel index to set (0-based)
+            channel_name: Channel name; empty string clears channel
+            channel_secret: Optional channel secret bytes
+
+        Returns:
+            True if operation succeeded
+        """
+        pass
+
+    @abstractmethod
+    def clear_channels(self, max_channels: int = MAX_CHANNELS) -> bool:
+        """Remove all configured channels on the device.
+
+        Args:
+            max_channels: Maximum channel indexes to clear
+
+        Returns:
+            True if all channels were cleared successfully
+        """
+        pass
+
+    @abstractmethod
+    def configure_channels(self, channel_names: list[str]) -> bool:
+        """Reconfigure channels from a list of channel names.
+
+        Implementations should clear existing channels first, then create each
+        channel from ``channel_names`` in index order starting at 0.
+
+        Args:
+            channel_names: Channel names to create
+
+        Returns:
+            True if channels were configured successfully
+        """
+        pass
+
+    @abstractmethod
     def run(self) -> None:
         """Run the device event loop (blocking)."""
         pass
@@ -403,7 +450,7 @@ class MeshCoreDevice(BaseMeshCoreDevice):
 
             self._connected = True
             logger.info(f"Connected to MeshCore device, public_key: {self._public_key}")
-            
+
             # Fetch configured channels from the device
             self._configured_channels = self._loop.run_until_complete(
                 self._fetch_configured_channels()
@@ -762,6 +809,89 @@ class MeshCoreDevice(BaseMeshCoreDevice):
         except Exception as e:
             logger.error(f"Failed to schedule remove contact: {e}")
             return False
+
+    def set_channel(
+        self,
+        channel_idx: int,
+        channel_name: str,
+        channel_secret: Optional[bytes] = None,
+    ) -> bool:
+        """Set or clear a channel on the device."""
+        if not self._connected or not self._mc:
+            logger.error("Cannot set channel: not connected")
+            return False
+
+        try:
+
+            async def _set_channel() -> None:
+                await self._mc.commands.set_channel(
+                    channel_idx,
+                    channel_name,
+                    channel_secret,
+                )
+
+            self._loop.run_until_complete(_set_channel())
+            if channel_name:
+                logger.info("Set channel %s to '%s'", channel_idx, channel_name)
+            else:
+                logger.info("Cleared channel %s", channel_idx)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to set channel {channel_idx}: {e}")
+            return False
+
+    def clear_channels(self, max_channels: int = MAX_CHANNELS) -> bool:
+        """Remove all configured channels on the device."""
+        if not self._connected or not self._mc:
+            logger.error("Cannot clear channels: not connected")
+            return False
+
+        for channel_idx in range(max_channels):
+            if not self.set_channel(channel_idx, "", EMPTY_CHANNEL_SECRET):
+                logger.error("Failed to clear channel %s", channel_idx)
+                return False
+
+        self._configured_channels = []
+        logger.info("Cleared channels 0-%s", max_channels - 1)
+        return True
+
+    def configure_channels(self, channel_names: list[str]) -> bool:
+        """Clear existing channels and create channels from names."""
+        if not self._connected or not self._mc:
+            logger.error("Cannot configure channels: not connected")
+            return False
+
+        normalized_names = [name.strip() for name in channel_names if name.strip()]
+        if not normalized_names:
+            normalized_names = ["Public"]
+
+        if len(normalized_names) > MAX_CHANNELS:
+            logger.error(
+                "Cannot configure %s channels: maximum supported is %s",
+                len(normalized_names),
+                MAX_CHANNELS,
+            )
+            return False
+
+        if not self.clear_channels(max_channels=MAX_CHANNELS):
+            return False
+
+        for channel_idx, channel_name in enumerate(normalized_names):
+            if not self.set_channel(channel_idx, channel_name):
+                logger.error(
+                    "Failed to create channel %s ('%s')", channel_idx, channel_name
+                )
+                return False
+
+        self._configured_channels = self._loop.run_until_complete(
+            self._fetch_configured_channels()
+        )
+        logger.info(
+            "Configured %s channel(s): %s",
+            len(self._configured_channels),
+            ", ".join(ch.name for ch in self._configured_channels),
+        )
+        return True
 
     def run(self) -> None:
         """Run the device event loop."""

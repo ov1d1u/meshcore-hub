@@ -134,6 +134,39 @@ class TestMockMeshCoreDevice:
 
         assert result is True
 
+    def test_configure_channels(self, mock_device) -> None:
+        """Test channel provisioning on mock device."""
+        mock_device.connect()
+
+        result = mock_device.configure_channels(["Public", "#mesh"])
+
+        assert result is True
+        assert [channel.name for channel in mock_device.configured_channels] == [
+            "Public",
+            "#mesh",
+        ]
+
+    def test_configure_channels_defaults_to_public(self, mock_device) -> None:
+        """Empty channel config defaults to Public."""
+        mock_device.connect()
+
+        result = mock_device.configure_channels([])
+
+        assert result is True
+        assert [channel.name for channel in mock_device.configured_channels] == [
+            "Public"
+        ]
+
+    def test_clear_channels(self, mock_device) -> None:
+        """Configured channels can be cleared."""
+        mock_device.connect()
+        mock_device.configure_channels(["Public", "#mesh"])
+
+        result = mock_device.clear_channels()
+
+        assert result is True
+        assert mock_device.configured_channels == []
+
     def test_event_handler_registration(self, mock_device) -> None:
         """Test event handler registration."""
         events_received = []

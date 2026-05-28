@@ -104,7 +104,11 @@ class InterfaceSettings(CommonSettings):
     # Allowed channels to monitor (comma-separated names; empty = all)
     meshcore_channels: Optional[str] = Field(
         default=None,
-        description="Comma-separated list of channel names to monitor (e.g. Public,#iasi,iasi-private). If empty or unset, all channels are allowed.",
+        description=(
+            "Comma-separated list of channel names to provision and monitor "
+            "(e.g. Public,#iasi,iasi-private). If empty or unset, only "
+            "Public is provisioned."
+        ),
     )
 
     # Contact cleanup settings

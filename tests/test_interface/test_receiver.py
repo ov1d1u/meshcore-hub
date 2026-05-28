@@ -34,6 +34,25 @@ class TestReceiver:
         assert mock_device.is_connected
         mock_mqtt_client.connect.assert_called_once()
         mock_mqtt_client.start_background.assert_called_once()
+        assert [channel.name for channel in mock_device.configured_channels] == [
+            "Public"
+        ]
+
+    def test_start_provisions_allowed_channels(self, mock_device, mock_mqtt_client):
+        """Test that startup provisions channels from MESHCORE_CHANNELS value."""
+        receiver = Receiver(
+            mock_device,
+            mock_mqtt_client,
+            allowed_channels=["Public", "#iasi", "iasi-private"],
+        )
+
+        receiver.start()
+
+        assert [channel.name for channel in mock_device.configured_channels] == [
+            "Public",
+            "#iasi",
+            "iasi-private",
+        ]
 
     def test_stop_disconnects_device_and_mqtt(
         self, receiver, mock_device, mock_mqtt_client

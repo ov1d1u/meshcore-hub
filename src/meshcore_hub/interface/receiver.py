@@ -49,9 +49,9 @@ class Receiver:
             device_name: Optional device/node name to set on startup
             contact_cleanup_enabled: Whether to remove stale contacts from device
             contact_cleanup_days: Remove contacts not advertised for this many days
-            allowed_channels: If set, only channel messages from these channel names
-                are published to MQTT; others are discarded. If None or empty, all
-                channels are allowed.
+            allowed_channels: Channel names from MESHCORE_CHANNELS used to provision
+                device channels and filter channel messages. If None or empty,
+                receiver provisions only the Public channel.
         """
         self.device = device
         self.mqtt = mqtt_client
@@ -93,8 +93,8 @@ class Receiver:
     def _initialize_device(self, device_name: Optional[str] = None) -> None:
         """Initialize device after connection.
 
-        Sets the hardware clock, optionally sets device name, sends a local advertisement,
-        starts message fetching, and syncs the contact database.
+        Sets the hardware clock, optionally sets device name, provisions channels,
+        sends a local advertisement, starts message fetching, and syncs contacts.
 
         Args:
             device_name: Optional device/node name to set
@@ -112,6 +112,13 @@ class Receiver:
                 logger.info(f"Set device name to '{device_name}'")
             else:
                 logger.warning(f"Failed to set device name to '{device_name}'")
+
+        # Reprovision device channels from MESHCORE_CHANNELS (or default to Public)
+        channel_names = self._allowed_channels if self._allowed_channels else ["Public"]
+        if self.device.configure_channels(channel_names):
+            logger.info("Configured device channels: %s", ", ".join(channel_names))
+        else:
+            logger.warning("Failed to configure device channels")
 
         # Send a flood advertisement to broadcast device name
         if self.device.send_advertisement(flood=True):
@@ -405,8 +412,9 @@ def create_receiver(
         mqtt_tls: Enable TLS/SSL for MQTT connection
         contact_cleanup_enabled: Whether to remove stale contacts from device
         contact_cleanup_days: Remove contacts not advertised for this many days
-        allowed_channels: If set, only channel messages from these channel names
-            are published to MQTT (from MESHCORE_CHANNELS). If None or empty, all allowed.
+        allowed_channels: Channel names from MESHCORE_CHANNELS. These channels are
+            provisioned on device at startup and used to filter channel messages.
+            If None or empty, defaults to provisioning only Public.
 
     Returns:
         Configured Receiver instance
@@ -475,8 +483,9 @@ def run_receiver(
         mqtt_tls: Enable TLS/SSL for MQTT connection
         contact_cleanup_enabled: Whether to remove stale contacts from device
         contact_cleanup_days: Remove contacts not advertised for this many days
-        allowed_channels: If set, only channel messages from these channel names
-            are published (from MESHCORE_CHANNELS). If None or empty, all allowed.
+        allowed_channels: Channel names from MESHCORE_CHANNELS. These channels are
+            provisioned on device at startup and used to filter channel messages.
+            If None or empty, defaults to provisioning only Public.
     """
     receiver = create_receiver(
         port=port,

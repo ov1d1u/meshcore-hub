@@ -289,6 +289,7 @@ All components are configured via environment variables. Create a `.env` file or
 | `SERIAL_PORT` | `/dev/ttyUSB0` | Serial port for MeshCore device |
 | `SERIAL_BAUD` | `115200` | Serial baud rate |
 | `MESHCORE_DEVICE_NAME` | *(none)* | Device/node name set on startup (broadcast in advertisements) |
+| `MESHCORE_CHANNELS` | *(none)* | Comma-separated channel names to provision and monitor; receiver clears existing channels and creates these (defaults to `Public` when empty) |
 | `NODE_ADDRESS` | *(none)* | Override for device public key (64-char hex string) |
 | `NODE_ADDRESS_SENDER` | *(none)* | Override for sender device public key |
 | `CONTACT_CLEANUP_ENABLED` | `true` | Enable automatic removal of stale contacts from companion node |

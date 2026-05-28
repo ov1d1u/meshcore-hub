@@ -12,6 +12,8 @@ from meshcore_hub.interface.device import (
     BaseMeshCoreDevice,
     DeviceConfig,
     EventType,
+    MAX_CHANNELS,
+    MeshcoreChannel,
 )
 
 logger = logging.getLogger(__name__)
@@ -352,6 +354,88 @@ class MockMeshCoreDevice(BaseMeshCoreDevice):
         don't have a real async event loop.
         """
         return self.remove_contact(public_key)
+
+    def set_channel(
+        self,
+        channel_idx: int,
+        channel_name: str,
+        channel_secret: Optional[bytes] = None,
+    ) -> bool:
+        """Set or clear a mock channel."""
+        if not self._connected:
+            logger.error("Cannot set channel: not connected")
+            return False
+
+        existing_index = next(
+            (
+                i
+                for i, channel in enumerate(self._configured_channels)
+                if channel.index == channel_idx
+            ),
+            None,
+        )
+
+        if not channel_name:
+            if existing_index is not None:
+                del self._configured_channels[existing_index]
+            logger.info("Mock: Cleared channel %s", channel_idx)
+            return True
+
+        channel = MeshcoreChannel(
+            index=channel_idx,
+            name=channel_name,
+            secret=channel_secret or b"",
+        )
+        if existing_index is not None:
+            self._configured_channels[existing_index] = channel
+        else:
+            self._configured_channels.append(channel)
+
+        self._configured_channels.sort(key=lambda ch: ch.index)
+        logger.info("Mock: Set channel %s to '%s'", channel_idx, channel_name)
+        return True
+
+    def clear_channels(self, max_channels: int = MAX_CHANNELS) -> bool:
+        """Clear all mock channels."""
+        if not self._connected:
+            logger.error("Cannot clear channels: not connected")
+            return False
+
+        self._configured_channels = []
+        logger.info("Mock: Cleared channels 0-%s", max_channels - 1)
+        return True
+
+    def configure_channels(self, channel_names: list[str]) -> bool:
+        """Reconfigure mock channels from names."""
+        if not self._connected:
+            logger.error("Cannot configure channels: not connected")
+            return False
+
+        normalized_names = [name.strip() for name in channel_names if name.strip()]
+        if not normalized_names:
+            normalized_names = ["Public"]
+
+        if len(normalized_names) > MAX_CHANNELS:
+            logger.error(
+                "Cannot configure %s channels: maximum supported is %s",
+                len(normalized_names),
+                MAX_CHANNELS,
+            )
+            return False
+
+        if not self.clear_channels(max_channels=MAX_CHANNELS):
+            return False
+
+        for channel_idx, channel_name in enumerate(normalized_names):
+            if not self.set_channel(channel_idx, channel_name):
+                return False
+
+        logger.info(
+            "Mock: Configured %s channel(s): %s",
+            len(self._configured_channels),
+            ", ".join(ch.name for ch in self._configured_channels),
+        )
+        return True
 
     def run(self) -> None:
         """Run the mock device event loop."""

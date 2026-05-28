@@ -118,7 +118,7 @@ def interface() -> None:
     type=str,
     default=None,
     envvar="MESHCORE_CHANNELS",
-    help="Comma-separated list of channel names to monitor (e.g. Public,#iasi,iasi-private). If unset, all channels are allowed.",
+    help="Comma-separated channel names to provision and monitor (e.g. Public,#iasi,iasi-private). If unset, receiver provisions only Public.",
 )
 @click.option(
     "--log-level",
@@ -307,7 +307,7 @@ def run(
     type=str,
     default=None,
     envvar="MESHCORE_CHANNELS",
-    help="Comma-separated list of channel names to monitor (e.g. Public,#iasi,iasi-private). If unset, all channels are allowed.",
+    help="Comma-separated channel names to provision and monitor (e.g. Public,#iasi,iasi-private). If unset, receiver provisions only Public.",
 )
 def receiver(
     port: str,
