@@ -55,6 +55,7 @@ services:
       - SERIAL_PORT=${SERIAL_PORT:-/dev/ttyUSB0}
       - SERIAL_BAUD=${SERIAL_BAUD:-115200}
       - NODE_ADDRESS=${NODE_ADDRESS:-}
+      - MESHCORE_CHANNELS=${MESHCORE_CHANNELS:-}
     command: ["interface", "receiver"]
     healthcheck:
       test: ["CMD", "meshcore-hub", "health", "interface"]
