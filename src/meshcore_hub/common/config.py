@@ -79,6 +79,16 @@ class CommonSettings(BaseSettings):
         description="WebSocket path for MQTT transport (used when MQTT_TRANSPORT=websockets)",
     )
 
+    # Allowed channels to monitor (comma-separated names; empty = all)
+    meshcore_channels: Optional[str] = Field(
+        default=None,
+        description=(
+            "Comma-separated list of channel names to provision and monitor "
+            "(e.g. Public,#iasi,iasi-private). If empty or unset, only "
+            "Public is provisioned."
+        ),
+    )
+
 
 class InterfaceSettings(CommonSettings):
     """Settings for the Interface component."""
@@ -99,16 +109,6 @@ class InterfaceSettings(CommonSettings):
     # Device name
     meshcore_device_name: Optional[str] = Field(
         default=None, description="Device/node name (optional)"
-    )
-
-    # Allowed channels to monitor (comma-separated names; empty = all)
-    meshcore_channels: Optional[str] = Field(
-        default=None,
-        description=(
-            "Comma-separated list of channel names to provision and monitor "
-            "(e.g. Public,#iasi,iasi-private). If empty or unset, only "
-            "Public is provisioned."
-        ),
     )
 
     # Contact cleanup settings

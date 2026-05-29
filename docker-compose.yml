@@ -303,6 +303,7 @@ services:
       - NETWORK_ANNOUNCEMENT=${NETWORK_ANNOUNCEMENT:-}
       - CONTENT_HOME=/content
       - TZ=${TZ:-UTC}
+      - MESHCORE_CHANNELS=${MESHCORE_CHANNELS:-}
       - COLLECTOR_LETSMESH_DECODER_KEYS=${COLLECTOR_LETSMESH_DECODER_KEYS:-}
       # Feature flags (set to false to disable specific pages)
       - FEATURE_DASHBOARD=${FEATURE_DASHBOARD:-true}

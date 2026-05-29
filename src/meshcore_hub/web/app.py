@@ -2,8 +2,6 @@
 
 import json
 import logging
-import os
-import re
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -18,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from meshcore_hub import __version__
-from meshcore_hub.collector.letsmesh_decoder import LetsMeshPacketDecoder
+from meshcore_hub.common.channels import parse_allowed_channels
 from meshcore_hub.common.i18n import load_locale, t
 from meshcore_hub.common.schemas import RadioConfig
 from meshcore_hub.web.middleware import CacheControlMiddleware
@@ -32,22 +30,12 @@ TEMPLATES_DIR = PACKAGE_DIR / "templates"
 STATIC_DIR = PACKAGE_DIR / "static"
 
 
-def _parse_decoder_key_entries(raw: str | None) -> list[str]:
-    """Parse COLLECTOR_LETSMESH_DECODER_KEYS into key entries."""
-    if not raw:
-        return []
-    return [part.strip() for part in re.split(r"[,\s]+", raw) if part.strip()]
-
-
-def _build_channel_labels() -> dict[str, str]:
-    """Build UI channel labels from built-in + configured decoder keys."""
-    raw_keys = os.getenv("COLLECTOR_LETSMESH_DECODER_KEYS")
-    decoder = LetsMeshPacketDecoder(
-        enabled=False,
-        channel_keys=_parse_decoder_key_entries(raw_keys),
-    )
-    labels = decoder.channel_labels_by_index()
-    return {str(idx): label for idx, label in sorted(labels.items())}
+def _build_channel_labels(channel_names: str | None) -> dict[str, str]:
+    """Build UI channel labels from MESHCORE_CHANNELS."""
+    names = parse_allowed_channels(channel_names)
+    if not names:
+        return {}
+    return {str(idx): name for idx, name in enumerate(names)}
 
 
 def _resolve_logo(media_home: Path) -> tuple[str, bool, Path | None]:
@@ -273,7 +261,7 @@ def create_app(
 
     # Auto-refresh interval
     app.state.auto_refresh_seconds = settings.web_auto_refresh_seconds
-    app.state.channel_labels = _build_channel_labels()
+    app.state.channel_labels = _build_channel_labels(settings.meshcore_channels)
 
     # Store configuration in app state (use args if provided, else settings)
     app.state.web_theme = (
