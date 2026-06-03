@@ -52,7 +52,8 @@ class MeshcoreChannel:
 # Most devices have a limited number of channels
 MAX_CHANNELS = 10
 EMPTY_CHANNEL_SECRET = bytes.fromhex(16 * "00")
-
+PUBLIC_CHANNEL_NAME = "Public"
+PUBLIC_CHANNEL_SECRET = bytes.fromhex("8b3387e9c5cdea6ac9e5edbaa115cd72")
 
 class BaseMeshCoreDevice(ABC):
     """Abstract base class for MeshCore device interface."""
@@ -877,7 +878,10 @@ class MeshCoreDevice(BaseMeshCoreDevice):
             return False
 
         for channel_idx, channel_name in enumerate(normalized_names):
-            if not self.set_channel(channel_idx, channel_name):
+            channel_secret = None
+            if channel_name == PUBLIC_CHANNEL_NAME:
+                channel_secret = PUBLIC_CHANNEL_SECRET
+            if not self.set_channel(channel_idx, channel_name, channel_secret):
                 logger.error(
                     "Failed to create channel %s ('%s')", channel_idx, channel_name
                 )
