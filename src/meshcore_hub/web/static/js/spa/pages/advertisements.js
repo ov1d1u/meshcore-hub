@@ -103,13 +103,14 @@ ${content}`, container);
             name: payload.name || null,
             node_name: payload.node_name || null,
             node_tag_name: payload.node_tag_name || null,
+            node_tag_description: payload.node_tag_description || null,
             adv_type: payload.adv_type || null,
             flags: payload.flags ?? null,
             received_at: eventData.received_at || new Date().toISOString(),
             receivers: [],
             received_by: eventData.public_key || null,
-            receiver_name: null,
-            receiver_tag_name: null,
+            receiver_name: payload.receiver_name || null,
+            receiver_tag_name: payload.receiver_tag_name || null,
         };
 
         if (!matchesFilters(advertisement)) {
@@ -131,6 +132,8 @@ ${content}`, container);
                     if (!receiverExists) {
                         existing.receivers.push({
                             public_key: advertisement.received_by,
+                            name: advertisement.receiver_name,
+                            tag_name: advertisement.receiver_tag_name,
                         });
                     }
                 }

@@ -203,9 +203,9 @@ class Receiver:
                             contact_name = contact.get("adv_name") or contact.get("name")
                             break
                     if contact_name:
-                        payload["sender_name"] = contact_name
+                        publish_payload["sender_name"] = contact_name
 
-                payload["received_via"] = self.device.public_key
+                publish_payload["received_via"] = self.device.public_key
 
             # If event is an advertisment, try to include contact name if known
             if event_type == EventType.ADVERTISEMENT:
@@ -220,7 +220,7 @@ class Receiver:
                         contact_type = contact.get("type")
                         break
                 if contact_name:
-                    payload["node_name"] = contact_name
+                    publish_payload["node_name"] = contact_name
                 if contact_type is not None:
                     contact_types = {
                         0: "none",
@@ -228,8 +228,8 @@ class Receiver:
                         2: "repeater",
                         3: "room",
                     }
-                    payload["adv_type"] = contact_types.get(contact_type, "unknown")
-                payload["received_via"] = self.device.public_key
+                    publish_payload["adv_type"] = contact_types.get(contact_type, "unknown")
+                publish_payload["received_via"] = self.device.public_key
 
             # Publish to MQTT
             self.mqtt.publish_event(
